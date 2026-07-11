@@ -69,7 +69,10 @@ cx.imageSmoothingEnabled = false;
 // dismissible in-fiction rotate prompt. never a wall, never an input pause.
 let rotDismissed = false;
 function fit() {
-  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  let s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  if (s > 1) s = Math.floor(s); // integer scale above 1x: every game pixel maps to a
+                                // uniform block, so the 6px fonts stay crisp (a 2.3x
+                                // fractional scale smears glyphs into 2-and-3px runs)
   cv.style.width  = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';
   const isTouch = 'ontouchstart' in window;
