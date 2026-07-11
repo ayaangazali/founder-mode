@@ -1,0 +1,14 @@
+# Serve ONLY the game (index.html), og.png, and the api/ badge function.
+# The workroom (docs, qa reports, design lab, tests, plans) and the
+# pre-sanitize v0.1 backup must never be reachable from the public URL.
+.claude/
+design/
+docs/
+node_modules/
+qa/
+screenshots/
+test/
+*.md
+.gitignore
+index.v0.1.bak.html
+shot*.png

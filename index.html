@@ -6,9 +6,9 @@
 <title>FOUNDER MODE — the SF startup platformer</title>
 <meta property="og:title" content="FOUNDER MODE — the SF startup platformer">
 <meta property="og:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Can you reach the IPO bell?">
-<!-- BUILD-GUIDE Step 4 — og.png lives next to index.html; domain is the GAME_URL
-     placeholder root (TODO M2 deploy: swap when the real domain is confirmed) -->
-<meta property="og:image" content="https://foundermode.lol/og.png">
+<!-- BUILD-GUIDE Step 4 — og.png lives next to index.html on the live Vercel root
+     (swap host when the joke domain is bought) -->
+<meta property="og:image" content="https://founder-mode-kit.vercel.app/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -1601,9 +1601,10 @@ function drawTitle(){
 // ------------------------- END SCREENS + BADGE -------------------------
 const ui = document.getElementById('ui');
 const uicard = document.getElementById('uicard');
-// TODO(M2 deploy): confirm canonical domain before launch. HARDCODED on purpose —
-// location.href inside LinkedIn webviews can be a tracking redirector (ruling §2 amendments).
-const GAME_URL = 'https://foundermode.lol';
+// M2 deployed 2026-07-11: live on Vercel. Swap to the joke domain when bought
+// (foundermode.lol still unregistered). HARDCODED on purpose — location.href
+// inside LinkedIn webviews can be a tracking redirector (ruling §2 amendments).
+const GAME_URL = 'https://founder-mode-kit.vercel.app';
 
 // ---- EASTER EGG FLAIR (badge + share text) ----
 // ZERO CHURN: every enemy handled at win time. T2D3: win under 3:00 on the
