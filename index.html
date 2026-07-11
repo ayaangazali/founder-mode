@@ -105,6 +105,7 @@ window.addEventListener('keydown', e => {
     else if (k === 'h') cycleLook('h');
     else if (k === 'v') cycleLook('v');
   }
+  if (e.key.toLowerCase() === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
   if (e.key.toLowerCase() === 'r' && (state === ST.DEAD || state === ST.WIN)){
     resumePlay(state === ST.DEAD); // death retries from checkpoint; a win restart is a fresh run
   }
@@ -146,6 +147,7 @@ if ('ontouchstart' in window) {
       if (k){ cycleLook(k); return; }             // tap chip = cycle, not start
     }
     if (state !== ST.PLAY){ touch.J = true; setTimeout(() => touch.J = false, 120); }
+    else throwDeck(); // in play, a canvas tap pitches — if you're holding a deck
   }, {passive:false});
 }
 
@@ -272,19 +274,25 @@ const enemyDefs = [
 ];
 
 // powerups {x,y,t}  t: coffee | yc | sheet | matcha | contract | rug
+//                       press (GOOD PRESS shield) | deck (PITCH DECK attack) | angel (ANGEL CHECK refill)
 const powerDefs = [
   {x:1085,y:130,t:'coffee'},
   {x:2248,y:126,t:'matcha'},                                 // v1.0: the calm counter-meta
   {x:2585,y:154,t:'sheet'},
+  {x:2820,y:196,t:'press'},                                  // shield: one bad take, absorbed
   {x:2900,y:200,t:'rug'},                                    // v1.0 trap: glints slightly wrong
+  {x:4268,y:80, t:'deck'},                                   // top of the hacker-house climb — earn the pitch
   {x:4715,y:122,t:'coffee'},                                 // CEREBRAL VALLEY
   {x:5060,y:126,t:'rug'},
   {x:5245,y:150,t:'sheet'},
+  {x:5730,y:196,t:'deck'},                                   // second deck before the fund gauntlet
   {x:5970,y:132,t:'yc'},
   {x:6270,y:196,t:'contract'},                               // v1.0: big logo, heavy process
   {x:7475,y:126,t:'coffee'},
   {x:7520,y:196,t:'rug'},
-  {x:8175,y:152,t:'sheet'}
+  {x:7920,y:196,t:'press'},                                  // shield before the final gauntlet
+  {x:8175,y:152,t:'sheet'},
+  {x:8180,y:150,t:'angel'}                                   // full runway refill before SYNERGY.AI
 ];
 
 // joke signs {x, lines[]} — re-laid for the v1.0 world + the 8px readable font
@@ -392,6 +400,16 @@ let hitstopT = 0, shakeT = 0, prevJump = false;
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
 let crates = [];   // v1.0: SDK crates dropped by THE PLATFORM — fall, land, become 8s platforms
+let deckCd = 0;    // PITCH DECK attack cooldown (frames; the attack only exists while p.deckT > 0)
+
+// the founder's one weapon, and only while holding a fresh deck (PITCH DECK pickup)
+function throwDeck(){
+  if (state !== ST.PLAY || player.deckT <= 0 || deckCd > 0) return;
+  deckCd = 15;
+  shots.push({ x: player.x + (player.face > 0 ? 12 : -16), y: player.y + 5,
+               vx: player.face * 4, vy: 0, w: 14, h: 9, t:'deck', mine:true });
+  beep(520, .08, 'square', .06);
+}
 
 let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
 
@@ -408,7 +426,8 @@ function reset(fromCheckpoint){
   const startX = fromCheckpoint ? checkpoint : 20;
   player = { x:startX, y:GROUND_Y-40, w:12, h:16, vx:0, vy:0, onGround:false, face:1,
              coffeeT:0, ycT:0, hurtT:0, bounceT:0, jbuf:0, pogo:false, runFrame:0,
-             matchaT:0, slowT:0 };  // v1.0 powerups: zen jump / enterprise process
+             matchaT:0, slowT:0,    // v1.0 powerups: zen jump / enterprise process
+             shield:0, deckT:0 };   // GOOD PRESS charge / PITCH DECK attack window
   cam = Math.max(0, startX - 100);
   if (!fromCheckpoint){
     coins = [];
@@ -488,6 +507,14 @@ function collidePlats(p){
 
 function hurtPlayer(){
   if (player.hurtT > 0 || player.ycT > 0) return;
+  if (player.shield > 0){
+    // GOOD PRESS: the bad take bounces off the news cycle instead of you
+    player.shield--;
+    player.hurtT = 60; shakeT = 2;
+    addPop(player.x, player.y-10, 'BAD TAKE DEFLECTED', '#7ce0ff');
+    beep(700, .12, 'triangle', .08);
+    return;
+  }
   hearts--;
   sHurt();
   player.hurtT = 90;
@@ -577,6 +604,8 @@ function update(){
   if (p.bounceT > 0) p.bounceT--;
   if (p.matchaT > 0){ p.matchaT--; if (frame % 6 === 0) parts.push({x:p.x + Math.random()*10, y:p.y + 12, vx:0, vy:-0.4, t:16, c:'#39c46d'}); }
   if (p.slowT > 0) p.slowT--;
+  if (p.deckT > 0) p.deckT--;
+  if (deckCd > 0) deckCd--;
 
   // burn rate: standing still burns runway (ROADMAP §3 — the theme lives in the loop;
   // AUDIT WEEK shortens the tick). Frame-counted: backgrounded tabs don't burn.
@@ -614,6 +643,13 @@ function update(){
       if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! VELOCITY +47%', '#c58bff'); }
       if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! INVINCIBLE', '#ff8c37'); }
       if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! INNER PEACE +15% JUMP', '#39c46d'); }
+      if (pw.t === 'press'){ p.shield = 1; addPop(pw.x, pw.y-8, 'GOOD PRESS! one bad take, on the house', '#7ce0ff'); }
+      if (pw.t === 'deck'){
+        p.deckT = 60*10;
+        addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! tap — pitch AT them (10s)'
+                                                        : 'PITCH DECK! press X — pitch AT them (10s)', '#ffd94a');
+      }
+      if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5'); }
       if (pw.t === 'contract'){ raised += 100; p.slowT = 60*8; addPop(pw.x, pw.y-8, 'ENTERPRISE CONTRACT! +$100K', '#7ce0ff'); addPop(pw.x, pw.y-18, '(procurement has questions)', '#8d99ae'); }
       if (pw.t === 'rug'){ raised = Math.max(0, raised - 5); addPop(pw.x, pw.y-8, 'RUGGED. -$5K', '#d64550'); }
       if (pw.t === 'sheet'){
@@ -759,7 +795,34 @@ function update(){
     if (s.t === 'buzz'){ s.wob += 0.15; s.y += Math.sin(s.wob) * 0.8; }
     if (s.t === 'thread'){ s.vy += 0.12; if (s.y + s.h >= GROUND_Y) s.gone = true; } // THREAD hits the floor, ends
     s.x += s.vx; s.y += s.vy;
-    if (aabb(p, s)){ s.gone = true; hurtPlayer(); if (state !== ST.PLAY) return; }
+    if (s.mine){
+      // the flying PITCH DECK — flattens enemies, argues with bosses on their own terms
+      for (const e of enemies){
+        if (!e.dead && aabb(s, e)){
+          s.gone = true; e.dead = true; sStomp(); raised += 10;
+          addPop(e.x, e.y-8, 'DECKED! +$10K', '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
+          if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37');
+        }
+      }
+      for (const b of bosses){
+        if (b.active && !b.dead && aabb(s, b)){
+          s.gone = true;
+          if (!(b.hitT > 0)){
+            b.hp--; b.hitT = 30;
+            addParts(b.x+b.w/2, b.y, '#fff', 12);
+            addPop(b.x-40, b.y-12, b.hp>0 ? 'CONVICTION: '+b.hp : 'DOWN ROUND!!', '#ffd94a');
+            if (b.hp <= 0){
+              b.dead = true; shots.length = 0;
+              const bonus = b.id==='ai' ? 500 : b.id==='platform' ? 350 : 250;
+              const line = b.id==='ai' ? 'SYNERGY.AI ACQUIRED (BY YOU)' : b.id==='platform' ? 'DEPRECATED!' : 'VC HUMBLED';
+              raised += bonus; sWin();
+              addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
+              addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
+            }
+          }
+        }
+      }
+    } else if (aabb(p, s)){ s.gone = true; hurtPlayer(); if (state !== ST.PLAY) return; }
     if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
   }
   shots = shots.filter(s => !s.gone);
@@ -1315,6 +1378,29 @@ function draw(){
       cx.fillStyle = '#888';
       for (let i = 0; i < 5; i++) cx.fillRect(Math.round(x + 2), Math.round(pw.y + 7 + i * 2 + bob), 9, 1);
       px(x + 8, pw.y + 12 + bob, 4, 2, '#c9a227');                          // the signature line, gilded
+    } else if (pw.t === 'press'){
+      // GOOD PRESS: a glowing newspaper — one bad take, absorbed
+      px(x, pw.y + bob, 13, 10, '#e8ecf5');
+      px(x + 1, pw.y + 1 + bob, 11, 2, '#111');                             // masthead
+      cx.fillStyle = '#8d99ae';
+      for (let i = 0; i < 3; i++) cx.fillRect(Math.round(x + 2), Math.round(pw.y + 5 + i * 2 + bob), 6, 1);
+      px(x + 9, pw.y + 4 + bob, 3, 4, '#7ce0ff');                           // the flattering photo
+      if ((frame >> 3) % 2) px(x - 1, pw.y - 1 + bob, 15, 1, 'rgba(124,224,255,.5)'); // press glow
+    } else if (pw.t === 'deck'){
+      // PITCH DECK: the founder's weapon, briefly
+      px(x, pw.y + bob, 14, 10, '#7ce0ff');
+      px(x + 1, pw.y + 1 + bob, 12, 8, '#0e2a3a');
+      px(x + 2, pw.y + 2 + bob, 6, 1, '#7ce0ff');                           // title bar
+      px(x + 2, pw.y + 4 + bob, 4, 4, '#ffd94a');                           // the chart goes up
+      px(x + 8, pw.y + 5 + bob, 4, 1, '#7ce0ff'); px(x + 8, pw.y + 3 + bob, 3, 1, '#7ce0ff');
+    } else if (pw.t === 'angel'){
+      // ANGEL CHECK: a cheque with wings. it flaps.
+      const wf = (frame >> 3) % 2;
+      px(x + 2, pw.y + 3 + bob, 10, 6, '#fff');                             // the check
+      px(x + 3, pw.y + 5 + bob, 6, 1, '#8d99ae');                           // payee line
+      px(x + 9, pw.y + 6 + bob, 2, 2, '#7cffa5');                           // the number
+      px(x - 1, pw.y + (wf ? 1 : 3) + bob, 3, 3, '#fff');                   // wings
+      px(x + 12, pw.y + (wf ? 1 : 3) + bob, 3, 3, '#fff');
     } else if (pw.t === 'rug'){
       // RUG TOKEN: looks like a coin. glints slightly wrong.
       px(x, pw.y + bob, 8, 10, '#ffd94a'); px(x + 1, pw.y + 1 + bob, 6, 8, '#e0b81a');
@@ -1370,6 +1456,13 @@ function draw(){
       px(x, s.y, 14, 2, '#d64550');
       cx.fillStyle = '#111'; cx.font = 'bold 5px monospace';
       cx.fillText('1/9', Math.round(x + 3), Math.round(s.y + 7));
+    } else if (s.t === 'deck'){
+      // the founder's own flying slide deck
+      px(x, s.y, 14, 9, '#7ce0ff');
+      px(x + 1, s.y + 1, 12, 7, '#0e2a3a');
+      px(x + 2, s.y + 2, 6, 1, '#7ce0ff');                        // title bar
+      px(x + 2, s.y + 4, 4, 3, '#ffd94a');                        // the chart goes up
+      px(x + 7, s.y + 5, 5, 1, '#7ce0ff'); px(x + 7, s.y + 3, 3, 1, '#7ce0ff');
     } else {
       // pill drawn to fit the word (>= hitbox on all sides); collision AABB stays 26x9
       cx.font = 'bold 6px monospace';
@@ -1382,6 +1475,11 @@ function draw(){
 
   // player (flash when hurt / rainbow-ish when YC)
   if (!(player.hurtT > 0 && frame % 6 < 3)){
+    if (player.shield > 0){ // GOOD PRESS bubble: a thin ring of favorable coverage
+      cx.strokeStyle = frame % 20 < 10 ? '#7ce0ff' : 'rgba(124,224,255,.4)';
+      cx.lineWidth = 1;
+      cx.strokeRect(Math.round(player.x - cam - 3) + 0.5, Math.round(player.y - 3) + 0.5, player.w + 6, player.h + 6);
+    }
     drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
     if (player.coffeeT > 0 && frame % 5 === 0) parts.push({x:player.x - 2 + Math.random()*4, y:player.y + 14, vx:-player.face, vy:-0.5, t:14, c:'#c58bff'});
   }
@@ -1426,6 +1524,8 @@ function drawHUD(){
   else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
   else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', 12, 44); }
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
+  if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText('PITCHING ' + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
+  if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
 }
 
 function drawTitle(){
