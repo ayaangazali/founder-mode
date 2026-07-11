@@ -211,7 +211,10 @@ const LEVEL_W = 9200;
 // ground segments [x0, x1] — gaps between are pits (all pits <= 60px, validated)
 const segs = [
   [0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],
-  [3956,4420],[4480,4900],[4948,5320],[5372,5656],      // CEREBRAL VALLEY
+  // CEREBRAL VALLEY. First pit narrowed 4420→4432 (was 60px = the exact base-
+  // speed jump maximum, a ~1px landing window — measured frame-perfect, i.e.
+  // unfair; now 48px like the zone's other pits)
+  [3956,4432],[4480,4900],[4948,5320],[5372,5656],
   [5656,6300],[6344,7150],[7204,8000],[8052,9200]
 ];
 
@@ -224,7 +227,7 @@ const plats = [
   [300,190,56],[420,152,56],[560,190,56],
   [900,182,72],[1060,146,56],[1180,182,56],
   [1650,178,64],
-  [2050,184,56],[2170,148,56],[2290,184,56],
+  [2050,184,56],[2170,148,56],[2280,184,56], // 2290→2280: crate ended 4px before the pit lip — solid undersides made lip jumps bonk into the pit
   [2550,170,88],
   [3150,182,56],[3260,150,56],[3430,182,56],
   [3700,174,72],
@@ -285,7 +288,10 @@ const powerDefs = [
   {x:4715,y:122,t:'coffee'},                                 // CEREBRAL VALLEY
   {x:5060,y:126,t:'rug'},
   {x:5245,y:150,t:'sheet'},
+  {x:5410,y:150,t:'deck'},                                   // on the arena perch: fight THE PLATFORM by air or by deck
   {x:5730,y:196,t:'deck'},                                   // second deck before the fund gauntlet
+  {x:6390,y:196,t:'deck'},                                   // at Chad's door — every boss offers both options
+  {x:8430,y:196,t:'deck'},                                   // at SYNERGY.AI's door
   {x:5970,y:132,t:'yc'},
   {x:6270,y:196,t:'contract'},                               // v1.0: big logo, heavy process
   {x:7475,y:126,t:'coffee'},
@@ -574,6 +580,27 @@ function update(){
   p.x += p.vx;
   p.x = clamp(p.x, cam - 2, LEVEL_W - p.w);
   p.y += p.vy;
+  // solid undersides (city crates/scaffolds): jumping into a block bonks your
+  // head — you land ON platforms, you don't phase up through them. Deliberate
+  // exceptions: cloud platforms stay soft (The Cloud is an abstraction), and
+  // SDK crates + the robotaxi stay one-way (the trap-into-ladder boss fight
+  // and the roof ride both depend on pass-through).
+  if (p.vy < 0){
+    for (const pl of plats){
+      if (pl[0] > 7160) continue;                          // clouds: pass-through
+      // corner forgiveness: grazing a block's edge by <7px never bonks — a pit
+      // jump that clips a lip-adjacent crate must not get spiked into the pit
+      const ov = Math.min(p.x + p.w, pl[0] + pl[2]) - Math.max(p.x, pl[0]);
+      if (ov >= 7){
+        const under = pl[1] + 12;                          // crate underside
+        if (p.y - p.vy >= under && p.y < under){           // head crossed it going up
+          p.y = under; p.vy = 0.6; p.jbuf = 0;             // bonk
+          beep(150, .06, 'square', .05);
+          break;
+        }
+      }
+    }
+  }
   p.onGround = false;
 
   // narrower centered foot sensor (no 1px-toe mid-air stands); prev-frame-above guard (no pit-wall snap-up)
@@ -672,11 +699,18 @@ function update(){
         shots.push({x:e.x + 1, y:e.y + e.h, vx:0, vy:0.4, w:14, h:9, t:'thread'});
       // falls through to player collision below
     } else if (e.t === 'c'){
-      // COMPLIANCE PHANTOM: ignores terrain entirely; drifts toward you, slowly.
-      // It is not angry. It just needs a moment of your RUNWAY.
-      if (Math.abs(e.x - p.x) < 320){
+      // COMPLIANCE PHANTOM: ignores terrain entirely. PATROLS its beat (the spec's
+      // word) and only drifts at you inside 120px — a 320px chase radius made it
+      // intercept players exactly on pit landings, where knockback chains into
+      // the pit (bot-verified death cluster at the 4480 lip).
+      if (e.home === undefined) e.home = e.x;
+      if (Math.abs(e.x - p.x) < 120){
         e.x += (p.x > e.x ? 1 : -1) * 0.3;
         e.y += (p.y > e.y ? 1 : -1) * 0.2;
+      } else {
+        e.x += e.dir * 0.25;
+        if (e.x > e.home + 60) e.dir = -1; else if (e.x < e.home - 60) e.dir = 1;
+        e.y += (GROUND_Y - 40 - e.y) * 0.02;
       }
       e.y = clamp(e.y, 120, GROUND_Y - e.h);
     } else {
@@ -1189,7 +1223,7 @@ function drawBG(){
   cx.fillStyle = B.star;
   for (let i = 0; i < 24; i++){
     const sx = (i * 137 + 40) % W, sy = (i * 61) % 90;
-    if ((frame + i * 13) % 120 < 100) cx.fillRect(sx, sy, 1, 1);
+    cx.fillRect(sx, sy, 1, 1); // steady — the sky doesn't flicker (owner call)
   }
   if (!B.voidZone){ // THE CLOUD: the city is gone
   // far skyline (parallax .25)
@@ -1213,7 +1247,10 @@ function drawBG(){
     cx.fillRect(bx, 160, 50, 80); cx.fillRect(bx + 70, 140, 44, 100); cx.fillRect(bx + 130, 172, 60, 70); cx.fillRect(bx + 205, 150, 40, 90);
     cx.fillStyle = B.win;
     for (let wy = 0; wy < 5; wy++) for (let wx = 0; wx < 3; wx++)
-      if ((bx * 7 + wx * 13 + wy * 29) % 5 < 2) cx.fillRect(bx + 74 + wx * 12, 146 + wy * 16, 4, 5);
+      // seed windows from the building's WORLD tile, not the parallax float —
+      // the old bx seed re-rolled every frame while scrolling (flickering city)
+      if (((Math.round((bx + cam * 0.5) / 260) * 7 + wx * 13 + wy * 29) % 5 + 5) % 5 < 2)
+        cx.fillRect(bx + 74 + wx * 12, 146 + wy * 16, 4, 5);
   }
   }
   if (B.bunting){ // THE MISSION: papel picado strung between the near buildings, parallax .5

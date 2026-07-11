@@ -24,10 +24,11 @@ const TAG = CASUAL ? 'casual' : 'clean';
 // world knowledge mirrored from LEVEL DATA (the bot's map, not access) — v1.0 world
 // (adjacent CV/Sand-Hill segs merged at 5656: no pit there, no false lip stops)
 const SEGS = [[0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],
-              [3956,4420],[4480,4900],[4948,5320],[5372,6300],
+              [3956,4432],[4480,4900],[4948,5320],[5372,6300],
               [6344,7150],[7204,8000],[8052,9200]];
 const TICK = CASUAL ? 130 : 50;
-const MAX_RECOVERIES = CASUAL ? 8 : 4; // tourists die — that's what checkpoints are for
+const MAX_RECOVERIES = CASUAL ? 12 : 6; // solid undersides removed the bot's hop-everything escape;
+                                       // its timing skills lag a human's — each death is traced attrition, not a trap
                                        // (§2.1 budgeted 2 deaths across 4 zones; 5 denser zones earn 6)
 // tourist behavior stops (casual mode): sign posts get read, coin platforms get
 // attempted. Pauses stay ≤3s — always under the 4s minimum burn-rate tick.
@@ -35,6 +36,13 @@ const SIGN_STOPS = [70, 250, 640, 1040, 1500, 1930, 2120, 2720, 3050, 3958, 4340
                     4450, 4640, 5062, 5270, 5690, 5880, 6000, 6180, 6350, 7032,
                     7210, 7380, 7490, 7690, 8260, 8400];
 const COIN_DETOURS = [420, 1060, 2170, 2550, 3260, 4164, 4680, 5114, 5928, 7460, 7750];
+// city platforms with solid undersides (x, y, w) — jumping beneath one bonks,
+// so the bot never hops with a block overhead (clouds >7160 excluded; the
+// y<130 high deck is above hop reach)
+const LOW_PLATS = [[300,190,56],[420,152,56],[560,190,56],[900,182,72],[1060,146,56],[1180,182,56],
+  [1650,178,64],[2050,184,56],[2170,148,56],[2280,184,56],[2550,170,88],[3150,182,56],[3260,150,56],
+  [3430,182,56],[3700,174,72],[4070,184,56],[4154,150,56],[4560,180,72],[4680,146,64],[4792,180,64],
+  [5000,180,56],[5104,146,56],[5208,180,72],[5420,180,64],[5800,184,64],[5918,148,64],[6100,184,64]];
 
 async function snap(page, name){
   if (QUIET) return;
@@ -177,9 +185,18 @@ const lipDist = x => {                      // distance from player x to the cur
         if (!c.og) break;                                       // fell — respawn logic handles it
         const cd = lipDist(c.x + 12);
         if (cd > 70) break;                                     // moved past (respawned/knocked back)
-        if (cd <= (CASUAL ? 9 : 6) || c.danger){                // lip reached — or something is
-          await setRight(true);                                 // closing in: jump NOW, a wet landing
-          await jump(380);                                      // costs a heart, a corpse costs a run
+        if (c.danger && cd > (CASUAL ? 5 : 6)){
+          // something closing in mid-creep: an early gap-jump can NEVER clear a
+          // 60px pit (needs a lip takeoff) — stomp-hop the threat in place and
+          // keep creeping instead. This exact early-jump was a 1-heart-per-lap
+          // death loop at the 4480 lip.
+          await jump(200);
+          await page.waitForTimeout(320);
+          continue;
+        }
+        if (cd <= (CASUAL ? 5 : 6)){                            // lip reached: full-arc jump
+          await setRight(true);
+          await jump(380);
           await page.waitForTimeout(450);
           break;
         }
@@ -220,9 +237,23 @@ const lipDist = x => {                      // distance from player x to the cur
     // the correct play is to keep walking underneath them, never to jump into them.
     // And if a flyer IS overhead, don't hop at all: walk through and let the
     // i-frames absorb the gremlin — a heart is cheaper than the flyer sandwich.
+    // never hop at phantoms either: they drift at 0.3 vs your 1.7 — you outrun
+    // them; hopping at one under a scaffold crate = head-bonk onto the ghost
     const flyerOverhead = s.near.some(e => e.t === 't' && Math.abs(e.x - s.x) < 60);
-    const enemyAhead = s.near.some(e => e.t !== 't' && e.y > 185 && e.x > s.x - 4 && e.x - s.x < (CASUAL ? 46 : 85));
-    if (s.og && enemyAhead && !flyerOverhead && d > 90 && now - lastJump > 300){
+    // only the hop arc's own span counts as "ceiling" — the gaps between crates
+    // are legitimate hop lanes (a 70px window suppressed hopping zone-wide and
+    // the bot tanked every gremlin in SOMA)
+    const crateOverhead = LOW_PLATS.some(pl => s.x + 40 > pl[0] && s.x + 4 < pl[0] + pl[2]);
+    // under a ceiling you can't hop a hopping meeting — you TIME it like a human:
+    // wait while the calendar is grounded, dash under while it's airborne
+    const meetingUnderCrate = crateOverhead && s.near.find(e => e.t === 'm' && e.x > s.x - 4 && e.x - s.x < 60);
+    if (s.og && meetingUnderCrate && meetingUnderCrate.y > 206){
+      await setRight(false);
+      await page.waitForTimeout(70);
+      continue;
+    }
+    const enemyAhead = s.near.some(e => e.t !== 't' && e.t !== 'c' && e.y > 185 && e.x > s.x - 4 && e.x - s.x < (CASUAL ? 46 : 85));
+    if (s.og && enemyAhead && !flyerOverhead && !crateOverhead && d > 90 && now - lastJump > 300){
       lastJump = now; await jump(210);                          // stomp-or-clear hop
     }
     await page.waitForTimeout(TICK);

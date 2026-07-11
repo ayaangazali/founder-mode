@@ -384,3 +384,23 @@ GitHub (private).
   zero page errors. The 3–6 minute §2.1 band is now met; morning-report item (e) is RESOLVED
   by option B. CV difficulty pass: phantom 4500→4620, DEMO DAY sign 4180→4340 (tourist-bot
   telemetry; sanctioned levers only).
+
+## 2026-07-11 — [FEEL PATCH: SOLID UNDERSIDES] (owner requests, evening session)
+
+- SPEEDRUN CONTRACT VERSION NOTE: city platforms are now SOLID from below (head-bonk,
+  7px corner forgiveness; clouds stay soft; SDK crates + robotaxi stay one-way). The
+  jump-up-through-platform tech is gone from all city zones — routes change. Physics
+  constants untouched.
+- Steady lights: stars no longer blink; skyline windows seed per world tile (the old
+  parallax-float seed re-rolled the pattern every frame while scrolling).
+- PITCH DECK staged at all three boss doors (5410/6390/8430): every boss fightable by
+  stomp or deck.
+- Level fixes the new physics exposed (all bot-verified death loops): crate 2290→2280
+  (ended 4px before a pit lip), CV pit 4420-4480 → 4432-4480 (60px was the exact jump
+  maximum — a ~1.4px frame-perfect landing window), compliance phantom now patrols ±60
+  and chases only within 120px (320px chase intercepted players on pit landings).
+- Bot benchmarks post-change: clean profile PASS x2 at 03:18 (budget 6); tourist PASS
+  x2 at 05:46 (budget 12 — explicitly a bot-skill-floor benchmark, not a difficulty
+  verdict; the bot cannot time hopping meetings under the now-solid crates the way a
+  sighted human does). Human playtest should rule on CV difficulty; levers-table knobs
+  (enemy density) are the sanctioned response if it feels brutal.
