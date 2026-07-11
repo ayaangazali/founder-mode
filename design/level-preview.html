@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>FOUNDER MODE — v1.0 world map preview</title>
+<style>
+body{background:#0b0b14;color:#e8ecf5;font-family:"Courier New",monospace;padding:20px}
+h1{color:#ffd94a;font-size:20px} .row{margin:14px 0} canvas{background:#141433;border:1px solid #23263a;image-rendering:pixelated}
+#report{white-space:pre-wrap;font-size:12px;background:#141433;border:2px solid #23263a;padding:12px;margin-top:16px}
+.ok{color:#7cffa5}.bad{color:#ff5a5a}
+.legend{font-size:11px;color:#8d99ae;margin:8px 0}
+</style></head><body>
+<h1>FOUNDER MODE v1.0 — full 9200px world, CEREBRAL VALLEY inserted (validated)</h1>
+<div class="legend">■ ground · <span style="color:#ff5a5a">▮ pit</span> · <span style="color:#c58bff">▬ platform</span> · <span style="color:#ffd94a">• coins</span> · <span style="color:#7cffa5">g/m/s/t/c enemies</span> · <span style="color:#7ce0ff">◆ powerup</span> · <span style="color:#ffe9b3">| sign</span> · <span style="color:#ff8c37">▓ boss arena</span> · <span style="color:#fff">▲ checkpoint</span> · zone bands on top</div>
+<div id="rows"></div>
+<div id="report"></div>
+<script>
+// ---------- ORIGINAL v0.1 DATA (verbatim from index.html) ----------
+let segs=[[0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],[3956,4600],[4644,5450],[5504,6300],[6352,7500]];
+let plats=[[300,190,56],[420,152,56],[560,190,56],[900,182,72],[1060,146,56],[1180,182,56],[1650,178,64],[2050,184,56],[2170,148,56],[2290,184,56],[2550,170,88],[3150,182,56],[3290,150,56],[3430,182,56],[3700,168,72],[4100,184,64],[4250,148,64],[4400,184,64],[5600,178,72],[5750,142,64],[5900,178,72],[6050,142,64],[6180,178,64],[6450,168,72]];
+let coinRows=[{x:310,y:172,n:3},{x:430,y:134,n:3},{x:910,y:164,n:4},{x:1070,y:128,n:3},{x:1660,y:160,n:4},{x:2060,y:166,n:3},{x:2180,y:130,n:3},{x:2300,y:166,n:3},{x:2560,y:152,n:5},{x:3160,y:164,n:3},{x:3300,y:132,n:3},{x:3440,y:164,n:3},{x:3710,y:150,n:4},{x:4110,y:166,n:4},{x:4260,y:130,n:4},{x:4410,y:166,n:4},{x:5610,y:160,n:4},{x:5760,y:124,n:4},{x:5910,y:160,n:4},{x:6060,y:124,n:4},{x:6460,y:150,n:4},{x:790,y:200,n:2},{x:1432,y:200,n:2},{x:2360,y:200,n:2},{x:2990,y:200,n:2},{x:3910,y:200,n:2},{x:4608,y:200,n:2},{x:5460,y:200,n:2},{x:6310,y:200,n:2}];
+let enemyDefs=[{x:520,t:'g'},{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},{x:1980,t:'m'},{x:2230,t:'m'},{x:2620,t:'m'},{x:2860,t:'m'},{x:3200,t:'s'},{x:3480,t:'s'},{x:3760,t:'g'},{x:3850,t:'m'},{x:4050,t:'s'},{x:4300,t:'g'},{x:4480,t:'m'},{x:5620,t:'m'},{x:5880,t:'g'},{x:6100,t:'s'},{x:6420,t:'m'}];
+let powerDefs=[{x:1085,y:130,t:'coffee'},{x:2585,y:154,t:'sheet'},{x:4270,y:132,t:'yc'},{x:5775,y:126,t:'coffee'},{x:6475,y:152,t:'sheet'}];
+let signs=[{x:70,l:['SOMA']},{x:250,l:['$8 TOAST']},{x:640,l:['CHURN']},{x:1150,l:['HIRING 10X']},{x:1500,l:['WEWORK']},{x:1930,l:['MISSION']},{x:2320,l:['CAFE ;']},{x:2720,l:['VALENCIA']},{x:3050,l:['PIVOT AHEAD']},{x:3620,l:['SAND HILL']},{x:4200,l:['ANGEL XING']},{x:4560,l:['VC AHEAD']},{x:4700,l:['CHAD HQ']},{x:5540,l:['THE CLOUD']},{x:6000,l:['ENTERING CLOUD']},{x:6560,l:['FINAL BOSS']},{x:6700,l:['SYNERGY CAMPUS']}]; // v0.2 signs included
+let bosses=[{id:'vc',x:5150,trigger:4720,wall:5330},{id:'ai',x:7080,trigger:6760,wall:7340}];
+let checkpoints=[20,1930,3660,5540];
+
+// ---------- SHIFT +1700 at x>=3956 ----------
+const INS=3956, SH=1700, sh=v=>v>=INS?v+SH:v;
+segs=segs.map(s=>[sh(s[0]),sh(s[1])]); plats=plats.map(p=>[sh(p[0]),p[1],p[2]]);
+coinRows=coinRows.map(c=>({...c,x:sh(c.x)})); enemyDefs=enemyDefs.map(e=>({...e,x:sh(e.x)}));
+powerDefs=powerDefs.map(p=>({...p,x:sh(p.x)})); signs=signs.map(g=>({...g,x:sh(g.x)}));
+bosses=bosses.map(b=>({...b,x:sh(b.x),trigger:sh(b.trigger),wall:sh(b.wall)}));
+// relocate the SAND HILL sign (announces a moved zone) + new checkpoints
+signs=signs.map(g=>g.l[0]==='SAND HILL'?{...g,x:5720}:g);
+checkpoints=[20,1930,3970,5750,7240];
+
+// ---------- CEREBRAL VALLEY INSERT ----------
+segs.push([3956,4420],[4480,4900],[4948,5320],[5372,5656]); segs.sort((a,b)=>a[0]-b[0]);
+plats.push([4050,184,56],[4154,150,56],[4258,116,64],[4560,180,72],[4680,146,64],[4792,180,64],[5000,180,56],[5104,146,56],[5208,180,72],[5420,180,64]); plats.sort((a,b)=>a[0]-b[0]);
+coinRows.push({x:4060,y:166,n:3},{x:4164,y:132,n:3},{x:4268,y:98,n:4},{x:4570,y:162,n:4},{x:4690,y:128,n:3},{x:5010,y:162,n:3},{x:5114,y:128,n:4},{x:5430,y:162,n:4},{x:4430,y:200,n:2},{x:4910,y:200,n:2},{x:5330,y:200,n:2});
+enemyDefs.push({x:4100,t:'g'},{x:4250,t:'t'},{x:4500,t:'c'},{x:4750,t:'t'},{x:5050,t:'c'},{x:5200,t:'t'},{x:4880,t:'m'});
+powerDefs.push({x:4715,y:122,t:'coffee'},{x:5245,y:150,t:'sheet'});
+signs.push({x:3980,l:['CEREBRAL VALLEY']},{x:4450,l:['HACKER HOUSE']},{x:4950,l:['GPU 4 SALE']},{x:5250,l:['DEMO DAY']},{x:5310,l:['DEVREL WARN']});
+bosses.splice(1,0,{id:'platform',x:5560,trigger:5390,wall:5640});
+
+const LEVEL_W=9200, GROUND_Y=232;
+const zone=x=> x<1900?'SOMA':x<3900?'MISSION':x<5656?'CEREBRAL V':x<7160?'SAND HILL':'CLOUD';
+const zcol={SOMA:'#3a2a55','MISSION':'#7a4467','CEREBRAL V':'#4a2a6e','SAND HILL':'#8a6d2a',CLOUD:'#3a5a6e'};
+
+// ---------- RENDER: 4 rows × 2300 world px, scale 0.5 ----------
+const rows=document.getElementById('rows'); const SC=0.5, ROWW=2300;
+for(let r=0;r<4;r++){
+  const cvs=document.createElement('canvas'); cvs.width=ROWW*SC; cvs.height=150; rows.appendChild(cvs);
+  const c=cvs.getContext('2d'); const x0=r*ROWW, X=x=> (x-x0)*SC;
+  // zone bands
+  for(let x=x0;x<x0+ROWW;x+=20){ c.fillStyle=zcol[zone(x)]; c.fillRect(X(x),0,20*SC+1,8); }
+  // boss arenas
+  c.fillStyle='rgba(255,140,55,.25)';
+  for(const b of bosses){ if(b.wall>x0&&b.trigger<x0+ROWW) c.fillRect(X(b.trigger),8,(b.wall-b.trigger)*SC,120); }
+  // ground: y map worldY 90..250 -> 20..140
+  const Y=y=> 20+(y-90)*0.75;
+  c.fillStyle='#ff5a5a'; c.fillRect(0,Y(GROUND_Y),ROWW*SC,3); // pit line under
+  c.fillStyle='#8a8f9e';
+  for(const s of segs){ if(s[1]>x0&&s[0]<x0+ROWW) c.fillRect(X(Math.max(s[0],x0)),Y(GROUND_Y),(Math.min(s[1],x0+ROWW)-Math.max(s[0],x0))*SC,4); }
+  c.fillStyle='#c58bff';
+  for(const p of plats){ if(p[0]+p[2]>x0&&p[0]<x0+ROWW) c.fillRect(X(p[0]),Y(p[1]),p[2]*SC,3); }
+  c.fillStyle='#ffd94a';
+  for(const cr of coinRows){ if(cr.x>x0-80&&cr.x<x0+ROWW) for(let i=0;i<cr.n;i++) c.fillRect(X(cr.x+i*16),Y(cr.y)-2,2,2); }
+  c.font='bold 9px monospace';
+  for(const e of enemyDefs){ if(e.x>x0&&e.x<x0+ROWW){ c.fillStyle='#7cffa5'; c.fillText(e.t,X(e.x),Y(GROUND_Y)-4); } }
+  c.fillStyle='#7ce0ff';
+  for(const p of powerDefs){ if(p.x>x0&&p.x<x0+ROWW) c.fillRect(X(p.x),Y(p.y),4,4); }
+  for(const g of signs){ if(g.x>x0&&g.x<x0+ROWW){ c.fillStyle='#ffe9b3'; c.fillRect(X(g.x),Y(GROUND_Y)-14,2,14); c.save(); c.translate(X(g.x)+3,Y(GROUND_Y)-16); c.rotate(-0.9); c.font='7px monospace'; c.fillText(g.l[0],0,0); c.restore(); } }
+  c.fillStyle='#fff';
+  for(const cp of checkpoints){ if(cp>x0&&cp<x0+ROWW){ c.beginPath(); c.moveTo(X(cp),Y(GROUND_Y)+10); c.lineTo(X(cp)-4,Y(GROUND_Y)+18); c.lineTo(X(cp)+4,Y(GROUND_Y)+18); c.fill(); } }
+  // robotaxi route
+  c.strokeStyle='#41f2ff'; c.setLineDash([4,3]); c.beginPath(); const rt={x0:4960,x1:5300};
+  if(rt.x1>x0&&rt.x0<x0+ROWW){ c.moveTo(X(Math.max(rt.x0,x0)),Y(GROUND_Y)-8); c.lineTo(X(Math.min(rt.x1,x0+ROWW)),Y(GROUND_Y)-8); c.stroke(); }
+  c.setLineDash([]);
+  const lab=document.createElement('div'); lab.className='legend'; lab.textContent=`x ${x0} – ${x0+ROWW}`;
+  rows.appendChild(lab);
+}
+
+// ---------- VALIDATION ----------
+const R=[]; const ok=(m)=>R.push(['ok',m]); const bad=(m)=>R.push(['bad',m]);
+// 1. pit widths
+let maxPit=0; for(let i=1;i<segs.length;i++){ const w=segs[i][0]-segs[i-1][1]; maxPit=Math.max(maxPit,w);
+  if(w>60) bad(`PIT ${segs[i-1][1]}–${segs[i][0]} is ${w}px (max jumpable ≈60)`); }
+ok(`pit check: ${segs.length-1} pits, widest ${maxPit}px (limit 60)`);
+// 2. platform reachability — model calibrated to v0.1's shipped physics:
+//    jump apex ≈62px; horizontal carry during a jump ≈70px at base speed.
+//    A plat is reachable if a launch surface (ground or lower/equal-ish plat)
+//    exists with rise <=52 (plat) / <=62 (ground) and edge-gap <=70.
+const gap=(ax0,ax1,bx0,bx1)=> Math.max(0, ax0-bx1, bx0-ax1);
+for(const p of plats){
+  const [px,py,pw]=p; let reach=false;
+  for(const s of segs){ if(GROUND_Y-py<=62 && gap(px,px+pw,s[0],s[1])<=70){ reach=true; break; } }
+  if(!reach) for(const q of plats){ if(q===p) continue; const [qx,qy,qw]=q;
+    if(qy-py>=-8 && qy-py<= (GROUND_Y-qy<8?62:52) && gap(px,px+pw,qx,qx+qw)<=70){ reach=true; break; } }
+  if(!reach) bad(`PLAT [${px},${py},${pw}] unreachable (rise>52 or gap>70 from every launch)`);
+}
+ok(`reachability: ${plats.length} platforms checked (rise≤52 plat / ≤62 ground, gap≤70)`);
+// 3. nothing (signs/enemies except boss) inside arenas
+for(const b of bosses){ for(const g of signs) if(g.x>b.trigger&&g.x<b.wall) bad(`SIGN "${g.l[0]}" x=${g.x} inside ${b.id} arena [${b.trigger},${b.wall}]`);
+  for(const e of enemyDefs) if(e.x>b.trigger&&e.x<b.wall) bad(`ENEMY ${e.t} x=${e.x} inside ${b.id} arena`); }
+ok('arena purity checked (signs+enemies vs 3 boss arenas)');
+// 4. checkpoints on ground
+for(const cp of checkpoints) if(!segs.some(s=>cp>=s[0]&&cp<=s[1])) bad(`CHECKPOINT ${cp} is over a pit`);
+ok('checkpoints on solid ground');
+// 5. coins over pits: legal as deliberate jump-bait ONLY if the pit is jumpable
+//    (<=60) and the coin sits in the jump-arc band (y 192..210) — v0.1's own pattern.
+let bait=0;
+for(const cr of coinRows){ for(let i=0;i<cr.n;i++){ const cx=cr.x+i*16;
+  const onGround=segs.some(s=>cx>=s[0]&&cx<=s[1]);
+  const onPlat=plats.some(p=>cx>=p[0]-8&&cx<=p[0]+p[2]+8&&cr.y<=p[1]);
+  if(!onGround&&!onPlat){
+    let pitW=Infinity; for(let j=1;j<segs.length;j++) if(cx>segs[j-1][1]&&cx<segs[j][0]) pitW=segs[j][0]-segs[j-1][1];
+    if(pitW<=60 && cr.y>=192 && cr.y<=210) bait++;
+    else bad(`COIN at x=${cx},y=${cr.y} uncollectable (pit ${pitW}px or wrong height)`);
+  } } }
+ok(`coin placement checked (${bait} legal jump-bait coins over jumpable pits)`);
+// 6. boss walls inside their ground segs
+for(const b of bosses) if(!segs.some(s=>b.trigger>=s[0]&&b.wall<=s[1])) bad(`${b.id} arena [${b.trigger},${b.wall}] spans a pit`);
+ok('boss arenas on continuous ground');
+const rep=document.getElementById('report');
+const bads=R.filter(r=>r[0]==='bad');
+rep.innerHTML = `<b>VALIDATION — ${bads.length===0?'<span class=ok>ALL CHECKS PASS</span>':'<span class=bad>'+bads.length+' PROBLEMS</span>'}</b>\n`+
+  R.map(([k,m])=>`<span class="${k}">${k==='ok'?'✓':'✗'} ${m}</span>`).join('\n');
+</script></body></html>

@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>FOUNDER MODE — the SF startup platformer</title>
+<meta property="og:title" content="FOUNDER MODE — the SF startup platformer">
+<meta property="og:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Can you reach the IPO bell?">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:#0b0b14; overflow:hidden; touch-action:none; }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  canvas#game {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background:#0b0b14;
+  }
+  #ui { position:fixed; inset:0; pointer-events:none; display:none; align-items:center; justify-content:center;
+        background:rgba(8,8,20,.78); z-index:10; }
+  #ui .card { pointer-events:auto; text-align:center; font-family:"Courier New",monospace; }
+  #ui button {
+    font-family:"Courier New",monospace; font-weight:bold; font-size:16px;
+    background:#ffd94a; color:#1a1a2e; border:3px solid #1a1a2e; padding:10px 18px;
+    margin:6px; cursor:pointer; box-shadow:0 4px 0 #8a6d00;
+  }
+  #ui button:active { transform:translateY(3px); box-shadow:0 1px 0 #8a6d00; }
+  #ui button.alt { background:#7ce0ff; box-shadow:0 4px 0 #1a6b85; }
+  #ui button.alt:active { box-shadow:0 1px 0 #1a6b85; }
+  #touch { position:fixed; inset:0; pointer-events:none; display:none; z-index:5; }
+  #touch div {
+    position:absolute; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); width:70px; height:70px; border-radius:14px;
+    background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35);
+    color:#fff; font:bold 26px "Courier New",monospace; text-align:center; line-height:66px;
+    pointer-events:auto; user-select:none; -webkit-user-select:none;
+  }
+  #tL{left:calc(18px + env(safe-area-inset-left, 0px))}
+  #tR{left:calc(104px + env(safe-area-inset-left, 0px))}
+  #touch div#tJ{right:calc(18px + env(safe-area-inset-right, 0px)); width:86px; height:86px; line-height:82px; border-radius:50%;}
+  #rot { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+         display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
+         font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
+  #rot span { color:#8d99ae; font-size:11px; display:block; margin-top:4px; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="480" height="270"></canvas></div>
+<div id="ui"><div class="card" id="uicard"></div></div>
+<div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div></div>
+<div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
+<script>
+"use strict";
+/* ============================================================
+   FOUNDER MODE — a pixel platformer about surviving SF tech.
+   One file. No assets. No frameworks. Ship it.
+   ============================================================ */
+const W = 480, H = 270;
+const cv = document.getElementById('game');
+const cx = cv.getContext('2d');
+cx.imageSmoothingEnabled = false;
+
+// --- scale canvas to window, keep 16:9, integer-ish scale ---
+// portrait on touch: non-blocking (ruling 2.1) — top-align canvas, buttons directly under it,
+// dismissible in-fiction rotate prompt. never a wall, never an input pause.
+let rotDismissed = false;
+function fit() {
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  cv.style.width  = Math.floor(W * s) + 'px';
+  cv.style.height = Math.floor(H * s) + 'px';
+  const isTouch = 'ontouchstart' in window;
+  const portrait = isTouch && window.innerHeight > window.innerWidth;
+  document.getElementById('wrap').style.alignItems = portrait ? 'flex-start' : 'center';
+  for (const id of ['tL','tR','tJ']){
+    const el = document.getElementById(id);
+    if (portrait){ el.style.bottom = 'auto'; el.style.top = (Math.floor(H * s) + 14) + 'px'; }
+    else { el.style.bottom = ''; el.style.top = ''; }
+  }
+  document.getElementById('rot').style.display = (portrait && !rotDismissed) ? 'block' : 'none';
+}
+window.addEventListener('resize', fit); fit();
+document.getElementById('rot').addEventListener('touchstart', e => { e.preventDefault(); rotDismissed = true; fit(); }, {passive:false});
+document.getElementById('rot').addEventListener('mousedown', () => { rotDismissed = true; fit(); });
+
+// ------------------------- INPUT -------------------------
+const keys = {};
+let anyKeyPressed = false;
+window.addEventListener('keydown', e => {
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === ' ') keys['space'] = true;
+  anyKeyPressed = true;
+  idleT = 0;
+  initAudio();
+  if (state === ST.TITLE){ // founder picker — edge-triggered, never starts the game
+    const k = e.key.toLowerCase();
+    if (k === 'c') cycleLook('s');
+    else if (k === 'h') cycleLook('h');
+    else if (k === 'v') cycleLook('v');
+  }
+  if (e.key.toLowerCase() === 'r' && (state === ST.DEAD || state === ST.WIN)){
+    resumePlay(state === ST.DEAD); // death retries from checkpoint; a win restart is a fresh run
+  }
+});
+window.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+  if (e.key === ' ') keys['space'] = false;
+});
+// input hygiene: alt-tab / app-switch with a key held must not auto-run the founder
+function clearAllInput(){ for (const k in keys) keys[k] = false; touch.L = touch.R = touch.J = false; }
+window.addEventListener('blur', clearAllInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearAllInput(); });
+const L = () => keys['arrowleft'] || keys['a'] || touch.L;
+const R = () => keys['arrowright'] || keys['d'] || touch.R;
+const JUMP = () => keys['space'] || keys['arrowup'] || keys['w'] || touch.J;
+
+// touch controls — one container handler; recompute L/R/J from every live touch point
+// (handles thumb-slide between buttons, the gutter between them, and touchcancel) with 10px slop
+const touch = { L:false, R:false, J:false };
+if ('ontouchstart' in window) {
+  const tEl = document.getElementById('touch');
+  tEl.style.display = 'block';
+  const recompute = e => {
+    touch.L = touch.R = touch.J = false;
+    const rects = ['tL','tR','tJ'].map(id => document.getElementById(id).getBoundingClientRect());
+    for (const t of e.touches){
+      rects.forEach((r, i) => {
+        if (t.clientX >= r.left - 10 && t.clientX <= r.right + 10 && t.clientY >= r.top - 10 && t.clientY <= r.bottom + 10)
+          touch[['L','R','J'][i]] = true;
+      });
+    }
+  };
+  for (const ev of ['touchstart','touchmove','touchend','touchcancel'])
+    tEl.addEventListener(ev, e => { e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio(); recompute(e); }, {passive:false});
+  cv.addEventListener('touchstart', e => {
+    e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio();
+    if (state === ST.TITLE){
+      const k = pickerHit(e.touches[0].clientX, e.touches[0].clientY);
+      if (k){ cycleLook(k); return; }             // tap chip = cycle, not start
+    }
+    if (state !== ST.PLAY){ touch.J = true; setTimeout(() => touch.J = false, 120); }
+  }, {passive:false});
+}
+
+// founder-picker tap/click zones (title screen) — generous padding for thumbs
+const PICKER_ZONES = [
+  { x:112, y:192, w:104, h:12, k:'s' },
+  { x:112, y:206, w:104, h:12, k:'h' },
+  { x:112, y:220, w:104, h:12, k:'v' },
+];
+function pickerHit(clientX, clientY){
+  const r = cv.getBoundingClientRect();
+  const mx = (clientX - r.left) * W / r.width;
+  const my = (clientY - r.top)  * H / r.height;
+  for (const z of PICKER_ZONES)
+    if (mx > z.x - 8 && mx < z.x + z.w + 8 && my > z.y - 5 && my < z.y + z.h + 5)
+      return z.k;
+  return null;
+}
+cv.addEventListener('mousedown', e => {
+  idleT = 0;
+  if (state !== ST.TITLE) return;
+  const k = pickerHit(e.clientX, e.clientY);
+  if (k) cycleLook(k);
+});
+
+// ------------------------- AUDIO -------------------------
+let AC = null, muted = false;
+function initAudio(){ if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } }
+function beep(freq, dur, type='square', vol=0.08, slide=0) {
+  if (!AC || muted) return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, AC.currentTime);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), AC.currentTime+dur);
+  g.gain.setValueAtTime(vol, AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime+dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(); o.stop(AC.currentTime+dur);
+}
+const sJump  = () => beep(300, .18, 'square', .06, 260);
+const sCoin  = () => { beep(880,.07,'square',.06); setTimeout(()=>beep(1320,.12,'square',.06),60); };
+const sStomp = () => beep(180, .12, 'triangle', .12, -120);
+const sHurt  = () => beep(160, .3, 'sawtooth', .09, -110);
+const sPow   = () => { [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.1,'square',.07),i*70)); };
+const sBoss  = () => beep(80, .5, 'sawtooth', .1, -30);
+const sWin   = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.08),i*130)); };
+window.addEventListener('keydown', e => { if (e.key.toLowerCase()==='m') muted = !muted; });
+
+// ------------------------- HELPERS -------------------------
+const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+const aabb = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+function px(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(Math.round(x),Math.round(y),w,h); }
+
+// ------------------------- LEVEL DATA -------------------------
+const GROUND_Y = 232;
+const LEVEL_W = 7500;
+
+// ground segments [x0, x1] — gaps between are pits
+const segs = [
+  [0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],
+  [3956,4600],[4644,5450],[5504,6300],[6352,7500]
+];
+
+// floating platforms [x, y, w]  (crates / scaffolding / clouds)
+const plats = [
+  [300,190,56],[420,152,56],[560,190,56],
+  [900,182,72],[1060,146,56],[1180,182,56],
+  [1650,178,64],
+  [2050,184,56],[2170,148,56],[2290,184,56],
+  [2550,170,88],
+  [3150,182,56],[3290,150,56],[3430,182,56],
+  [3700,168,72],
+  [4100,184,64],[4250,148,64],[4400,184,64],
+  [5600,178,72],[5750,142,64],[5900,178,72],[6050,142,64],[6180,178,64],
+  [6450,168,72]
+];
+
+// coins: rows {x,y,n}
+const coinRows = [
+  {x:310,y:172,n:3},{x:430,y:134,n:3},
+  {x:910,y:164,n:4},{x:1070,y:128,n:3},
+  {x:1660,y:160,n:4},
+  {x:2060,y:166,n:3},{x:2180,y:130,n:3},{x:2300,y:166,n:3},
+  {x:2560,y:152,n:5},
+  {x:3160,y:164,n:3},{x:3300,y:132,n:3},{x:3440,y:164,n:3},
+  {x:3710,y:150,n:4},
+  {x:4110,y:166,n:4},{x:4260,y:130,n:4},{x:4410,y:166,n:4},
+  {x:5610,y:160,n:4},{x:5760,y:124,n:4},{x:5910,y:160,n:4},{x:6060,y:124,n:4},
+  {x:6460,y:150,n:4},
+  {x:790,y:200,n:2},{x:1432,y:200,n:2},{x:2360,y:200,n:2},{x:2990,y:200,n:2},
+  {x:3910,y:200,n:2},{x:4608,y:200,n:2},{x:5460,y:200,n:2},{x:6310,y:200,n:2}
+];
+
+// enemies {x, t}  t: g=churn gremlin, m=standing meeting, s=scooter bro
+const enemyDefs = [
+  {x:520,t:'g'},{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
+  {x:1980,t:'m'},{x:2230,t:'m'},{x:2620,t:'m'},{x:2860,t:'m'},
+  {x:3200,t:'s'},{x:3480,t:'s'},{x:3760,t:'g'},{x:3850,t:'m'},
+  {x:4050,t:'s'},{x:4300,t:'g'},{x:4480,t:'m'},
+  {x:5620,t:'m'},{x:5880,t:'g'},{x:6100,t:'s'},{x:6420,t:'m'}
+];
+
+// powerups {x,y,t}  t: coffee | yc | sheet
+const powerDefs = [
+  {x:1085,y:130,t:'coffee'},
+  {x:2585,y:154,t:'sheet'},
+  {x:4270,y:132,t:'yc'},
+  {x:5775,y:126,t:'coffee'},
+  {x:6475,y:152,t:'sheet'}
+];
+
+// joke signs {x, lines[]}
+const signs = [
+  {x:70,  l:['SOMA','← nothing  glory →']},
+  {x:250, l:['$8 ARTISANAL','TOAST']},
+  {x:640, l:['CHURN GREMLINS','stomp on sight']},
+  {x:1500,l:['COWORKING','space available','(all of it)']},
+  {x:1930,l:['THE MISSION','beware: standing','meetings']},
+  {x:2720,l:['VALENCIA ST','4 coffee shops','0 profits']},
+  {x:3620,l:['SAND HILL ROAD','pitch or perish']},
+  {x:4560,l:['WARNING: VC AHEAD','know your CAC']},
+  {x:5540,l:['THE CLOUD','99.99% uptime*']},
+  {x:6000,l:['MIND THE GAPS',"(that's the 0.01%)"]},
+  {x:6560,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']}
+];
+
+// cameo NPCs {x, id, h, line} — background only: no collision, no update, no state.
+// composite ARCHETYPES, never identifiable people (canon rule 3; shipping tier of design-cameos.md)
+const cameos = [
+  {x:455,  id:'shipper',    h:16, line:"IT'S 2AM. GREAT TIME TO SHIP."},
+  {x:1740, id:'stealth',    h:16, line:"WE'RE IN STEALTH. TELL EVERYONE."},
+  {x:2470, id:'eacc',       h:15, line:"THE FUTURE WON'T POST ITSELF."},
+  {x:3560, id:'podcast',    h:16, line:"GREAT QUESTION. SEE EPISODE 400."},
+  {x:3990, id:'contrarian', h:17, line:"EVERYONE AGREES WITH ME. TROUBLING."},
+  {x:6135, id:'exited',     h:16, line:"I EXITED. I'M FINE. ASK ME IF I'M FINE."}
+];
+
+function zoneName(x){
+  if (x < 1900) return 'SOMA';
+  if (x < 3600) return 'THE MISSION';
+  if (x < 5460) return 'SAND HILL ROAD';
+  return 'THE CLOUD';
+}
+const checkpoints = [20, 1930, 3660, 4700, 5350, 6740];
+
+// ------------------------- STATE -------------------------
+const ST = { TITLE:0, PLAY:1, WIN:2, DEAD:3 };
+let state = ST.TITLE;
+let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (backgrounded tabs don't count)
+let hitstopT = 0, shakeT = 0, prevJump = false;
+let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
+
+let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
+
+function makeEnemy(d){
+  const base = { x:d.x, y:GROUND_Y-14, w:14, h:14, t:d.t, dir:-1, dead:false, vy:0, hopT:0 };
+  if (d.t==='m'){ base.w=16; base.h=18; base.y=GROUND_Y-18; }
+  if (d.t==='s'){ base.w=16; base.h=14; }
+  return base;
+}
+
+function reset(fromCheckpoint){
+  const startX = fromCheckpoint ? checkpoint : 20;
+  player = { x:startX, y:GROUND_Y-40, w:12, h:16, vx:0, vy:0, onGround:false, face:1,
+             coffeeT:0, ycT:0, hurtT:0, bounceT:0, jbuf:0, pogo:false, runFrame:0 };
+  cam = Math.max(0, startX - 100);
+  if (!fromCheckpoint){
+    coins = [];
+    coinRows.forEach(r => { for(let i=0;i<r.n;i++) coins.push({x:r.x+i*16, y:r.y, w:8, h:10, got:false}); });
+    enemies = enemyDefs.map(makeEnemy);
+    powers = powerDefs.map(p => ({...p, w:14, h:14, got:false}));
+    bosses = [
+      { id:'vc', x:5150, y:GROUND_Y-34, w:26, h:34, hp:3, maxhp:3, trigger:4720, wall:5330, active:false, dead:false,
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'CHAD CAPITAL',
+        quips:["WHAT'S YOUR MOAT?","COME BACK AT $1M ARR","A FEATURE, NOT A COMPANY.","LOVE IT. PASSING.","MY VEST IS LOAD-BEARING","I NEED 10X, KID"] },
+      { id:'ai', x:7080, y:GROUND_Y-44, w:32, h:44, hp:5, maxhp:5, trigger:6760, wall:7340, active:false, dead:false,
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'SYNERGY.AI',
+        quips:["I AM AGENTIC.","YOUR STARTUP IS A PROMPT","DEPLOYING SYNERGY...","I RAISED $2B ON A DECK","HUMANS ARE LEGACY CODE"] }
+    ];
+    bosses.forEach(b => { b.x0 = b.x; b.y0 = b.y; });
+    shots = []; parts = []; popups = [];
+    raised = 0; hearts = 3; maxHearts = 3;
+    checkpoint = 20; bellDone = false;
+    playMs = 0; endTime = 0;
+  } else {
+    // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
+    hearts = 3; player.hurtT = 120;
+    shots.length = 0;
+    for (const b of bosses){
+      if (!b.dead){ // live boss back to its trigger state; dead bosses stay dead
+        b.active = false; b.x = b.x0; b.y = b.y0; b.vy = 0;
+        b.hp = b.maxhp; b.atkT = 0; b.quipT = 0; b.quip = 0;
+      }
+    }
+    raised = Math.floor(raised * 0.75);
+    addPop(player.x, player.y - 20, 'BRIDGE ROUND: -25%', '#ff8c37');
+  }
+}
+// ------------------------- PHYSICS / UPDATE -------------------------
+const GRAV = 0.35, JUMPV = -6.6;
+
+function groundBelow(x, w){
+  // returns ground top y if over a segment, else null
+  for (const s of segs){
+    if (x + w > s[0] && x < s[1]) return GROUND_Y;
+  }
+  return null;
+}
+
+function collidePlats(p){
+  // one-way platforms: land only when falling onto top
+  if (p.vy < 0) return;
+  for (const pl of plats){
+    const [px0, py0, pw] = pl;
+    if (p.x + p.w > px0 && p.x < px0 + pw){
+      const prevBottom = p.y + p.h - p.vy;
+      if (prevBottom <= py0 + 4 && p.y + p.h >= py0){
+        p.y = py0 - p.h; p.vy = 0; p.onGround = true;
+      }
+    }
+  }
+}
+
+function hurtPlayer(){
+  if (player.hurtT > 0 || player.ycT > 0) return;
+  hearts--;
+  sHurt();
+  player.hurtT = 90;
+  player.vy = -4; player.vx = -player.face * 3;
+  shakeT = 2; hitstopT = 3; // juice only — control stays with the player (ruling 2.2)
+  addPop(player.x, player.y-10, '-1 RUNWAY', '#ff5a5a');
+  if (hearts <= 0){
+    endTime = playMs;
+    state = ST.DEAD;
+    showEndUI(false);
+  }
+}
+
+function addPop(x,y,txt,c){ popups.push({x,y,txt,c,t:60}); }
+function addParts(x,y,c,n=8){
+  for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-0.5)*3,vy:-Math.random()*3-1,t:30+Math.random()*20,c});
+}
+
+function update(){
+  frame++;
+  if (state === ST.TITLE) idleT++; else idleT = 0; // EGG: reverse-pitch idle clock (title only)
+  if (state !== ST.PLAY) return;
+  playMs += 1000 / 60; // simulated play clock — the only clock the HUD/badge trust
+  const p = player;
+
+  // -------- player --------
+  const speed = p.coffeeT > 0 ? 2.5 : 1.7;
+  if (L()) { p.vx = -speed; p.face = -1; }
+  else if (R()) { p.vx = speed; p.face = 1; }
+  else p.vx *= 0.7;
+
+  // jump buffer, rising edge only (holding jump never auto-pogos)
+  const jNow = JUMP();
+  if (jNow && !prevJump){ p.jbuf = 6; p.pogo = false; } // a fresh press re-arms the stomp
+  else if (p.jbuf > 0) p.jbuf--;
+  prevJump = jNow;
+  if (p.jbuf > 0 && p.onGround){ p.vy = JUMPV; p.onGround = false; p.jbuf = 0; sJump(); }
+  // variable jump height (stomp reward-bounces exempt from the jump-cut)
+  if (!jNow && p.vy < -2.5 && !(p.bounceT > 0)) p.vy = -2.5;
+
+  p.vy += GRAV; if (p.vy > 8) p.vy = 8;
+  p.x += p.vx;
+  p.x = clamp(p.x, cam - 2, LEVEL_W - p.w);
+  p.y += p.vy;
+  p.onGround = false;
+
+  // narrower centered foot sensor (no 1px-toe mid-air stands); prev-frame-above guard (no pit-wall snap-up)
+  const g = groundBelow(p.x + 3, p.w - 6);
+  if (g !== null && p.y + p.h >= g && p.vy >= 0 && p.y + p.h - p.vy <= g + 4){ p.y = g - p.h; p.vy = 0; p.onGround = true; }
+  collidePlats(p);
+  if (p.onGround) p.pogo = false; // touching ground also re-arms the stomp
+
+  // boss walls
+  for (const b of bosses){
+    if (b.active && !b.dead && p.x + p.w > b.wall) p.x = b.wall - p.w;
+  }
+
+  // fell in a pit
+  if (p.y > H + 30){
+    hearts--; sHurt();
+    addPop(cam+220, 120, zoneName(p.x) === 'THE CLOUD' ? '-1 RUNWAY (the 0.01% downtime)' : '-1 RUNWAY (pivot failed)', '#ff5a5a');
+    if (hearts <= 0){ endTime = playMs; state = ST.DEAD; showEndUI(false); return; }
+    p.x = checkpoint; p.y = GROUND_Y - 40; p.vx = 0; p.vy = 0; p.hurtT = 90;
+    cam = Math.max(0, checkpoint - 100);
+  }
+
+  if (p.coffeeT > 0) p.coffeeT--;
+  if (p.ycT > 0) p.ycT--;
+  if (p.hurtT > 0) p.hurtT--;
+  if (p.bounceT > 0) p.bounceT--;
+  if (Math.abs(p.vx) > 0.5 && p.onGround && frame % 6 === 0) p.runFrame ^= 1;
+
+  // checkpoints
+  for (const c of checkpoints) if (p.x > c && checkpoint < c) checkpoint = c;
+
+  // camera
+  const target = clamp(p.x - 180, 0, LEVEL_W - W);
+  cam += (target - cam) * 0.12;
+  if (cam < 0) cam = 0;
+
+  // -------- coins --------
+  for (const c of coins){
+    if (!c.got && aabb(p, c)){
+      c.got = true; raised += 5; sCoin();
+      addPop(c.x, c.y - 6, '+$5K', '#ffd94a');
+    }
+  }
+
+  // -------- powerups --------
+  for (const pw of powers){
+    if (!pw.got && aabb(p, pw)){
+      pw.got = true; sPow();
+      if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! VELOCITY +47%', '#c58bff'); }
+      if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! INVINCIBLE', '#ff8c37'); }
+      if (pw.t === 'sheet'){ if (hearts < 5) hearts++; maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'TERM SHEET! +1 RUNWAY', '#7cffa5'); }
+    }
+  }
+
+  // -------- enemies --------
+  for (const e of enemies){
+    if (e.dead) continue;
+    const espd = e.t==='s' ? 1.1 : 0.45;
+    // gravity for enemies
+    e.vy = (e.vy||0) + GRAV; if (e.vy > 8) e.vy = 8;
+    e.y += e.vy;
+    const eg = groundBelow(e.x, e.w);
+    if (eg !== null && e.y + e.h >= eg && e.vy >= 0){ e.y = eg - e.h; e.vy = 0;
+      if (e.t==='m'){ e.hopT++; if (e.hopT > 70){ e.vy = -4.5; e.hopT = 0; } }
+    }
+    // turn at pit edges / patrol
+    const nextX = e.x + e.dir * espd;
+    if (groundBelow(nextX + (e.dir>0?e.w:0), 1) === null) e.dir *= -1;
+    else e.x = nextX;
+    if (e.t==='s' && Math.abs(p.x - e.x) < 140) e.dir = p.x < e.x ? -1 : 1;
+    if (e.x < 0) { e.x = 0; e.dir = 1; }
+
+    // collide with player
+    if (Math.abs(e.x - p.x) < 300 && aabb(p, e)){
+      if (p.ycT > 0){ e.dead = true; sStomp(); raised += 10; addPop(e.x, e.y-8, 'DISRUPTED! +$10K', '#ff8c37'); addParts(e.x+7, e.y+7, '#ff8c37');
+        if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
+      }
+      else if (p.vy > 1 && p.y + p.h - e.y < 10){
+        e.dead = true; p.vy = -5; p.bounceT = 12; sStomp(); raised += 10;
+        const msgs = {g:'CHURN CRUSHED! +$10K', m:'MEETING CANCELED! +$10K', s:'THESIS DECLINED! +$10K'};
+        addPop(e.x, e.y-8, msgs[e.t], '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
+        if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
+      }
+      else { hurtPlayer(); if (state !== ST.PLAY) return; }
+    }
+  }
+
+  // -------- bosses --------
+  for (const b of bosses){
+    if (b.dead) continue;
+    if (!b.active && p.x > b.trigger){ b.active = true; sBoss(); b.quipT = 1; }
+    if (!b.active) continue;
+
+    // movement: pace toward player
+    const bspd = b.id==='ai' ? 0.8 : 0.6;
+    b.dir = p.x < b.x ? -1 : 1;
+    b.x += b.dir * bspd;
+    b.x = clamp(b.x, b.trigger + 30, b.wall - b.w - 4);
+    // occasional hop
+    b.vy = (b.vy||0) + GRAV;
+    b.y += b.vy;
+    if (b.y + b.h >= GROUND_Y){ b.y = GROUND_Y - b.h; b.vy = 0;
+      if (frame % 160 === 0) b.vy = b.id==='ai' ? -5.5 : -4.5;
+    }
+
+    // quips
+    b.quipT--;
+    if (b.quipT <= 0){ b.quip = (b.quip+1) % b.quips.length; b.quipT = 140; }
+
+    // boss i-frames tick
+    if (b.hitT > 0) b.hitT--;
+
+    // attacks
+    b.atkT--;
+    if (b.atkT <= 0){
+      if (b.id === 'vc'){
+        // lob a term sheet arc
+        shots.push({x:b.x+b.w/2, y:b.y+6, vx:(p.x<b.x?-1:1)*(1.4+Math.random()), vy:-4.2, w:12, h:10, t:'sheet', label:'TERMS'});
+        b.atkT = 95;
+      } else {
+        const words = ['PIVOT','SYNERGY','GTM','AGENTIC','B2B'];
+        const sx = b.x+(b.dir<0?-4:b.w-6);
+        // staggered spawn band, skip if a live buzz is crowding the muzzle (de-collision, ruling 2.5)
+        if (!shots.some(s2 => s2.t==='buzz' && Math.abs(s2.x - sx) < 30))
+          shots.push({x:sx, y:b.y-6+Math.random()*28, vx:b.dir*2.2, vy:0, w:26, h:9, t:'buzz',
+                      label: words[Math.floor(Math.random()*words.length)], wob:Math.random()*6.28});
+        b.atkT = 70;
+      }
+    }
+
+    // player vs boss
+    if (aabb(p, b)){
+      if (p.vy > 1 && p.y + p.h - b.y < 12){
+        // stomp: always bounce + separate above the boss (never re-enter the AABB next frame)
+        p.vy = -5.5; p.bounceT = 12; p.y = b.y - p.h - 1; sStomp();
+        // damage needs i-frames expired AND an armed stomp (fresh jump press or ground touch
+        // since the last bounce) — a zero-input drop bounces forever but only ever hits once
+        if (!(b.hitT > 0) && !p.pogo){
+          b.hp--; b.hitT = 30;
+          addParts(b.x+b.w/2, b.y, '#fff', 12);
+          addPop(b.x-40, b.y-12, b.hp>0 ? 'CONVICTION: '+b.hp : 'DOWN ROUND!!', '#ffd94a');
+          if (b.hp <= 0){
+            b.dead = true;
+            shots.length = 0; // no posthumous term sheets
+            const bonus = b.id==='ai' ? 500 : 250;
+            raised += bonus; sWin();
+            addPop(b.x-40, b.y-20, (b.id==='ai'?'SYNERGY.AI ACQUIRED (BY YOU)':'VC HUMBLED')+' +$'+bonus+'K', '#7cffa5');
+            addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
+          }
+        }
+        p.pogo = true; // disarm until the next jump press / ground touch
+      } else { hurtPlayer(); if (state !== ST.PLAY) return; }
+    }
+  }
+
+  // -------- shots --------
+  for (const s of shots){
+    if (s.t === 'sheet'){ s.vy += 0.18; }
+    if (s.t === 'buzz'){ s.wob += 0.15; s.y += Math.sin(s.wob) * 0.8; }
+    s.x += s.vx; s.y += s.vy;
+    if (aabb(p, s)){ s.gone = true; hurtPlayer(); if (state !== ST.PLAY) return; }
+    if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
+  }
+  shots = shots.filter(s => !s.gone);
+
+  // -------- particles / popups --------
+  for (const q of parts){ q.x += q.vx; q.y += q.vy; q.vy += 0.15; q.t--; }
+  parts = parts.filter(q => q.t > 0);
+  for (const q of popups){ q.y -= 0.4; q.t--; }
+  popups = popups.filter(q => q.t > 0);
+
+  // -------- IPO bell (win) --------
+  const finalBoss = bosses[1];
+  if (state === ST.PLAY && finalBoss.dead && !bellDone && p.x > 7400){
+    bellDone = true;
+    endTime = playMs;
+    raised += 1000;
+    state = ST.WIN; sWin();
+    showEndUI(true);
+  }
+}
+// ------------------------- SPRITES -------------------------
+// ---------------- FOUNDER LOOK (customization) ----------------
+// 6 skin tones, light→deep. Hair color is paired to tone (keeps the picker to
+// three keys and every hair-on-skin / hair-on-background pair pre-validated —
+// contrast tables in /qa/design-customization.md §2, checker: qa/contrast-check.js).
+const SKINS = [
+  { skin:'#ffdfc2', hair:'#6b4a2e', hairDk:'#503620' },
+  { skin:'#f2c9a0', hair:'#4a3626', hairDk:'#35261a' },  // 1 = canon default
+  { skin:'#dba470', hair:'#3a2a1e', hairDk:'#2a1d14' },
+  { skin:'#b5825a', hair:'#2e2016', hairDk:'#20160e' },
+  { skin:'#9a6a45', hair:'#241812', hairDk:'#170f0a' },
+  { skin:'#84573a', hair:'#1d130c', hairDk:'#120b06' },
+];
+const HAIRS = ['HOOD UP','BUZZ','CURLY','PONYTAIL'];   // style names shown in the picker
+const HOODIES = [
+  { name:'FOG',      main:'#7f8ea3', pocket:'#5f6e83' },  // 0 = canon default
+  { name:'MATCHA',   main:'#5da06b', pocket:'#41794e' },
+  { name:'GRAPE',    main:'#a281e6', pocket:'#7e5fc0' },
+  { name:'SUNSET',   main:'#d9748f', pocket:'#a9556c' },
+  { name:'OAT MILK', main:'#d8c9a8', pocket:'#b0a17f' },
+  { name:'UPTIME',   main:'#3aa8a0', pocket:'#2a7f79' },
+];
+
+// picker state (indices) — NOT reset by reset(); survives runs and reloads
+let look = { s:1, h:0, v:0 };
+try {
+  const j = JSON.parse(localStorage.getItem('fm_look'));
+  if (j) look = {
+    s: clamp(j.s|0, 0, SKINS.length-1),
+    h: clamp(j.h|0, 0, HAIRS.length-1),
+    v: clamp(j.v|0, 0, HOODIES.length-1),
+  };
+} catch(e){ /* private mode / blocked storage — canon default */ }
+
+// resolved colors consumed by every draw site (incl. makeBadge & sprites.js)
+function resolveLook(){
+  const S = SKINS[look.s], V = HOODIES[look.v];
+  return { skin:S.skin, hair:S.hair, hairDk:S.hairDk,
+           hood:V.main, pocket:V.pocket, hairStyle:look.h };
+}
+window.FOUNDER_LOOK = resolveLook();
+
+function cycleLook(k){                       // k: 's' | 'h' | 'v'
+  const n = k==='h' ? HAIRS.length : 6;
+  look[k] = (look[k] + 1) % n;
+  window.FOUNDER_LOOK = resolveLook();
+  try { localStorage.setItem('fm_look', JSON.stringify(look)); } catch(e){}
+  beep(880, .05, 'square', .05);             // picker tick
+}
+
+// hoodie founder sprite (12x16 at s=1)
+// lk (optional): resolved look object; defaults to the player's chosen look.
+function drawFounder(ctx2, x, y, s, face, runF, yc, lk){
+  const L = lk || window.FOUNDER_LOOK ||
+    { skin:'#f2c9a0', hair:'#4a3626', hairDk:'#35261a',
+      hood:'#7f8ea3', pocket:'#5f6e83', hairStyle:0 };     // canon fallback
+  const hood = yc ? '#ff8c37' : L.hood;                     // accel flash overrides hoodie
+  const R = (px2, py2, w, h, c) => { ctx2.fillStyle = c;
+    ctx2.fillRect(Math.round(x + px2*s), Math.round(y + py2*s), w*s, h*s); };
+
+  // hoodie body + pocket + drawstring
+  R(1,6,10,6, hood);
+  R(4,9,4,3, L.pocket);
+  R(5,6,1,3, '#fff');
+  // jeans (run animation alternates legs) + sneakers — not customizable (canon)
+  if (runF){ R(2,12,3,3,'#3b5bdb'); R(7,12,3,4,'#3b5bdb'); }
+  else     { R(2,12,3,4,'#3b5bdb'); R(7,12,3,3,'#3b5bdb'); }
+  R(2,15,3,1,'#e8e8e8'); R(7,15,3,1,'#e8e8e8');
+  // face + eye
+  R(3,2,6,4, L.skin);
+  if (face >= 0) R(7,3,1,2,'#222'); else R(4,3,1,2,'#222');
+
+  // hair / hood — drawn LAST so it frames the face and lies over the shoulder
+  const st = L.hairStyle;
+  if (st === 0){                                   // HOOD UP (pixel-identical to v0.1)
+    R(2,0,8,2, hood); R(2,2,1,1, hood); R(9,2,1,1, hood);
+  } else {
+    R(3,5,6,1, hood);                              // collar: hood worn down
+    if (st === 1){                                 // BUZZ
+      R(3,1,6,1, L.hair); R(3,2,1,1, L.hair); R(8,2,1,1, L.hair);
+    } else if (st === 2){                          // CURLY
+      R(2,0,8,2, L.hair); R(1,0,1,3, L.hair); R(10,0,1,3, L.hair);
+      R(2,2,1,1, L.hair); R(9,2,1,1, L.hair);
+      R(3,0,1,1, L.hairDk); R(6,0,1,1, L.hairDk); R(4,1,1,1, L.hairDk); R(9,1,1,1, L.hairDk);
+    } else {                                       // PONYTAIL
+      R(2,0,8,2, L.hair); R(2,2,1,2, L.hair); R(9,2,1,2, L.hair);
+      const tx = face >= 0 ? 0 : 10;
+      R(tx,1,2,7, L.hair); R(tx,4,2,1, L.hairDk);
+      if (runF) R(tx,8,2,1, L.hair);
+    }
+  }
+}
+
+function drawEnemy(e){
+  const x = e.x - cam, y = e.y;
+  if (e.t === 'g'){ // churn gremlin
+    px(x, y+3, 14, 11, '#d64550');
+    px(x+2, y, 3, 4, '#d64550'); px(x+9, y, 3, 4, '#d64550'); // ears
+    px(x+3, y+6, 3, 3, '#fff'); px(x+8, y+6, 3, 3, '#fff');
+    px(x+4, y+7, 1, 2, '#111'); px(x+9, y+7, 1, 2, '#111');
+    px(x+4, y+11, 6, 1, '#7a1220');
+  } else if (e.t === 'm'){ // standing meeting (evil calendar invite)
+    px(x, y, 16, 14, '#f4f4f4');
+    px(x, y, 16, 4, '#d64550');
+    cx.fillStyle = '#333'; cx.font = 'bold 5px monospace';
+    cx.fillText('MTG', Math.round(x+3), Math.round(y+11));
+    px(x+2, y+14, 3, 4, '#333'); px(x+11, y+14, 3, 4, '#333'); // legs
+    px(x+3, y+1, 2, 2, '#fff'); px(x+11, y+1, 2, 2, '#fff');   // eyes in header
+  } else { // scooter bro
+    px(x+3, y, 6, 4, '#39c46d');           // helmet
+    px(x+4, y+3, 4, 3, '#f2c9a0');         // face
+    px(x+3, y+6, 7, 5, '#2b2d42');         // body
+    px(x, y+11, 16, 1, '#aaa');            // deck
+    px(x+1, y+12, 2, 2, '#eee'); px(x+13, y+12, 2, 2, '#eee'); // wheels
+  }
+}
+
+function drawBoss(b){
+  const x = b.x - cam, y = b.y;
+  if (!(b.hitT > 0 && frame % 4 < 2)){ // flash while in i-frames
+  if (b.id === 'vc'){
+    // Chad Capital: navy vest, blue shirt, khakis
+    px(x+7, y, 12, 8, '#f2c9a0');           // head
+    px(x+7, y, 12, 2, '#b98a4e');           // hair (swoop)
+    px(x+9, y+3, 2, 2, '#222'); px(x+15, y+3, 2, 2, '#222');
+    px(x+4, y+8, 18, 14, '#8ab6d6');        // shirt
+    px(x+6, y+8, 14, 14, '#1d3557');        // VEST
+    px(x+11, y+8, 4, 14, '#8ab6d6');        // vest zipper gap
+    px(x+5, y+22, 7, 10, '#c9b18c'); px(x+14, y+22, 7, 10, '#c9b18c'); // khakis
+    px(x+5, y+32, 7, 2, '#6b4f2a'); px(x+14, y+32, 7, 2, '#6b4f2a');
+  } else {
+    // SYNERGY.AI robot
+    px(x, y+6, 32, 30, '#23263a');
+    px(x+4, y, 24, 10, '#2e3350');                        // head
+    px(x+15, y-6, 2, 6, '#888'); px(x+14, y-8, 4, 3, '#ff5a5a'); // antenna
+    const glow = frame % 30 < 15 ? '#41f2ff' : '#1fb6c9';
+    px(x+8, y+3, 6, 4, glow); px(x+18, y+3, 6, 4, glow);  // eyes
+    cx.fillStyle = glow; cx.font = 'bold 7px monospace';
+    cx.fillText('AI', Math.round(x+11), Math.round(y+22));
+    px(x+4, y+26, 24, 2, '#41f2ff');
+    px(x+2, y+36, 10, 8, '#181a29'); px(x+20, y+36, 10, 8, '#181a29'); // treads
+  }
+  }
+  // hp pips
+  for (let i=0;i<b.maxhp;i++) px(x + i*7, y - 12, 5, 4, i < b.hp ? '#ff5a5a' : '#3a3a3a');
+  // quip bubble — anchored to the boss, only while the boss is actually on screen
+  if (b.active && !b.dead && x > -b.w && x < W){
+    const q = b.quips[b.quip];
+    cx.font = 'bold 6px monospace';
+    const tw = cx.measureText(q).width;
+    const bx = clamp(x + b.w/2 - tw/2 - 3, 2, W - tw - 8);
+    px(bx, y - 34, tw + 6, 10, '#fff');
+    px(bx + 6, y - 24, 4, 3, '#fff');
+    cx.fillStyle = '#111'; cx.fillText(q, Math.round(bx + 3), Math.round(y - 26.5));
+  }
+}
+
+// cameo NPCs — pure background decoration; the satire lives in the animation
+// (the stealth founder ceases to exist; the contrarian faces the one way you can't go;
+//  the e/acc guy accelerates in place; the exited one is exempt from gravity)
+function drawCameoSprite(c){
+  let x = c.x - cam; if (x < -40 || x > W + 40) return;
+  let y = GROUND_Y - c.h;
+  if (c.id === 'shipper'){
+    // milk crate + hunched founder + laptop, screen-lit face
+    px(x+2, y+10, 12, 6, '#8a5a2b'); px(x+3, y+11, 10, 4, '#a06a34'); px(x+3, y+13, 10, 1, '#8a5a2b');
+    px(x+0, y+12, 2, 3, '#fff');                                   // coffee on the ground
+    if ((frame>>4)%2) px(x+0, y+10, 1, 1, '#bbb');                 // steam
+    px(x+3, y+8, 9, 2, '#3b5bdb');                                 // folded jeans
+    px(x+3, y+4, 8, 4, '#3f4c63');                                 // hoodie torso (hunched)
+    px(x+3, y+0, 8, 2, '#3f4c63');                                 // hood up
+    px(x+4, y+1, 6, 3, '#ffdfae');                                 // face, lit by screen
+    px(x+8, y+2, 1, 1, '#222');                                    // eye locked on the build
+    px(x+12, y+3, 2, 6, '#2b2d42');                                // laptop lid
+    px(x+11, y+4, 1, 4, '#41f2ff');                                // screen glow spill
+    px(x+9, y+8, 4, 1, '#aab4c4');                                 // laptop base
+  } else if (c.id === 'stealth'){
+    if (frame % 90 > 85) return;                                   // periodically ceases to exist
+    const g1='#565e70', g2='#454b5a';
+    px(x+3, y+0, 6, 2, g2);                                        // silhouette hair
+    px(x+3, y+2, 6, 4, g1);                                        // gray face (whole person NDA'd)
+    px(x+2, y+3, 8, 2, '#111');                                    // redaction bar over the eyes
+    px(x+1, y+6, 10, 6, g2);                                       // jacket
+    px(x+5, y+7, 2, 5, g1);                                        // zip
+    px(x+2, y+12, 3, 3, g2); px(x+7, y+12, 3, 3, g2);              // legs
+    px(x+2, y+15, 3, 1, '#111'); px(x+7, y+15, 3, 1, '#111');      // shoes
+  } else if (c.id === 'eacc'){
+    x += (frame>>2)%2;                                             // vibrating (accelerating in place)
+    px(x+4, y+0, 6, 2, '#2b2d42'); px(x+10, y+0, 2, 2, '#2b2d42'); // backwards cap + bill
+    px(x+4, y+2, 6, 3, '#f2c9a0');                                 // face
+    px(x+4, y+2, 6, 1, '#111');                                    // sunglasses. it is dusk.
+    px(x+3, y+5, 8, 6, '#2b2d42');                                 // black tee
+    px(x+10, y+6, 2, 2, '#f2c9a0');                                // hands out front
+    px(x+11, y+4, 3, 5, '#0e1020'); px(x+11, y+4, 3, 1, '#41f2ff');// phone, mid-post
+    if ((frame>>1)%2) px(x+10, y+3, 1, 1, '#fff');                 // thumb blur
+    px(x+4, y+11, 3, 3, '#2b2d42'); px(x+8, y+11, 3, 3, '#2b2d42');// joggers
+    px(x+4, y+14, 3, 1, '#eee'); px(x+8, y+14, 3, 1, '#eee');      // sneakers
+  } else if (c.id === 'podcast'){
+    px(x+4, y+0, 7, 1, '#222');                                    // headphone band
+    px(x+3, y+1, 2, 4, '#222'); px(x+10, y+1, 2, 4, '#222');       // ear cups
+    px(x+3, y+2, 1, 2, '#ffd94a'); px(x+11, y+2, 1, 2, '#ffd94a'); // gold pads
+    px(x+5, y+1, 5, 4, '#f2c9a0');                                 // face
+    px(x+8, y+2, 1, 1, '#222');                                    // eye
+    px(x+7, y+4, 2, 1, '#5a2e2e');                                 // mouth: open (always)
+    px(x+3, y+5, 9, 6, '#6b4f8a');                                 // henley
+    const gest = (frame>>4)%2;
+    px(x+1, y+(gest?5:7), 2, 2, '#f2c9a0');                        // the gesturing hand
+    px(x+3, y+11, 3, 4, '#33323f'); px(x+8, y+11, 3, 4, '#33323f');// slacks
+    px(x+3, y+15, 3, 1, '#111'); px(x+8, y+15, 3, 1, '#111');
+    px(x+14, y+8, 1, 8, '#8d99ae');                                // mic stand
+    px(x+14, y+3, 1, 5, '#8d99ae'); px(x+12, y+3, 2, 1, '#8d99ae');// boom arm
+    px(x+10, y+2, 2, 3, '#222');                                   // capsule at the mouth
+    if ((frame>>4)%2) px(x+14, y+7, 1, 1, '#d64550');              // REC. always REC.
+  } else if (c.id === 'contrarian'){
+    const blk='#12141d', tn='#1c1f2b', pale='#e8c39a';
+    px(x+3, y+0, 6, 2, '#2a2d3a');                                 // severe haircut
+    px(x+3, y+2, 6, 4, pale);                                      // face (indoor complexion)
+    px(x+3, y+2, 3, 1, '#2a2d3a');                                 // low brow
+    px(x+3, y+3, 1, 2, '#111');                                    // eye on the LEFT: faces against traffic
+    px(x+2, y+6, 8, 1, '#8d99ae');                                 // crew-neck tee at the neckline
+    px(x+1, y+7, 10, 6, blk);                                      // blazer
+    px(x+1, y+9, 10, 2, tn);                                       // crossed forearms (blazer sleeves)
+    px(x+1, y+9, 2, 2, pale); px(x+9, y+9, 2, 2, pale);            // hands
+    px(x+2, y+13, 3, 3, blk); px(x+7, y+13, 3, 3, blk);            // trousers
+    px(x+2, y+16, 3, 1, '#111'); px(x+7, y+16, 3, 1, '#111');
+  } else if (c.id === 'exited'){
+    const bob = Math.sin(frame*0.05)*2;
+    y = y - 3 + bob;                                               // floats. gravity is pre-exit.
+    px(x+4, y+0, 6, 2, '#8d6b3f');                                 // hair, grown out
+    px(x+4, y+2, 6, 4, '#f2c9a0');                                 // face
+    px(x+5, y+3, 1, 1, '#222'); px(x+8, y+3, 1, 1, '#222');        // BOTH eyes: faces camera. at peace.
+    px(x+6, y+5, 3, 1, '#7a4a3a');                                 // small flat smile
+    px(x+3, y+6, 8, 6, '#39c46d');                                 // aloha shirt
+    px(x+4, y+7, 1, 1, '#ffd94a'); px(x+8, y+8, 1, 1, '#ffd94a'); px(x+6, y+10, 1, 1, '#ffd94a'); // flowers
+    px(x+11, y+7, 2, 3, '#fff'); px(x+12, y+5, 1, 2, '#ff8c37');   // drink + tiny umbrella
+    px(x+3, y+12, 3, 3, '#e8e0c9'); px(x+8, y+12, 3, 3, '#e8e0c9');// linen shorts
+    px(x+3, y+15, 3, 1, '#8a5a2b'); px(x+8, y+15, 3, 1, '#8a5a2b');// sandals
+  }
+}
+
+function drawCameoBubble(c){
+  const x = c.x - cam; if (x < -40 || x > W + 40) return;
+  if (Math.abs(player.x - (c.x + 7)) > 60) return;
+  if (c.id === 'stealth' && frame % 90 > 85) return;               // can't talk while nonexistent
+  cx.font = 'bold 6px monospace';
+  const tw = cx.measureText(c.line).width;
+  const bx = clamp(x + 7 - tw/2 - 3, 2, W - tw - 8);
+  const by = GROUND_Y - c.h - 14;
+  px(bx, by - 10, tw + 6, 10, '#fff');
+  px(bx + 6, by, 4, 3, '#fff');
+  cx.fillStyle = '#111'; cx.fillText(c.line, Math.round(bx + 3), Math.round(by - 2.5));
+}
+
+// ------------------------- BACKGROUND -------------------------
+// BIOMES — per-zone palettes, keyed by zoneName(cam + W/2) so sky + ground flip
+// together (one coherent cut at each welcome sign). SOMA row = shipped v0.1 look.
+// v1.0: add 'CEREBRAL VALLEY' (foggy:1) when zoneName() gains that branch.
+const BIOMES = {
+'SOMA':          { sky:['#141433','#3a2a55','#7a4467','#1c1c2e'], far:'#231f3d', near:'#191631', win:'#ffd94a',
+                   star:'rgba(255,255,255,.5)',  fog:['rgba(220,225,235,.13)','rgba(230,235,245,.18)'],
+                   side:'#8a8f9e', road:'#33323f', stripe:'#f4c542' },
+'THE MISSION':   { sky:['#2b1b4d','#7a2a5e','#d96a3b','#24182c'], far:'#3a2044', near:'#2a1a3e', win:'#ff9d5c',
+                   star:'rgba(255,220,180,.4)',  fog:['rgba(255,180,120,.10)','rgba(255,200,150,.12)'],
+                   side:'#a08898', road:'#3a2b3c', stripe:'#ff8f5c', bunting:1 },
+'SAND HILL ROAD':{ sky:['#4a3160','#b8742c','#ffc45e','#2a2118'], far:'#4a3423', near:'#33241a', win:'#ffe9a0',
+                   star:'rgba(255,215,120,.55)', fog:['rgba(255,205,110,.10)','rgba(255,220,140,.12)'],
+                   side:'#c9b58a', road:'#40372a', stripe:'#ffd94a' },
+'THE CLOUD':     { sky:['#fbfcff','#e6ecf7','#b9c4de','#8f9fc6'], far:'', near:'', win:'',
+                   star:'rgba(160,180,220,.35)', fog:['rgba(255,255,255,.30)','rgba(255,255,255,.40)'],
+                   side:'#e8ecf5', road:'#c3cbe0', stripe:'', voidZone:1 }
+};
+const PICADO = ['#ff5d8f','#3dd6c3','#ffd94a','#b07fe8']; // Mission bunting flag cycle
+
+function drawBG(){
+  const B = BIOMES[zoneName(cam + W/2)];                       // zone by camera center
+  const grd = cx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, B.sky[0]); grd.addColorStop(0.55, B.sky[1]); grd.addColorStop(0.8, B.sky[2]);
+  grd.addColorStop(1, B.sky[3]);
+  cx.fillStyle = grd; cx.fillRect(0, 0, W, H);
+  // stars (SOMA) / warm specks (Mission) / gold motes (Sand Hill) / data specks (Cloud)
+  cx.fillStyle = B.star;
+  for (let i = 0; i < 24; i++){
+    const sx = (i * 137 + 40) % W, sy = (i * 61) % 90;
+    if ((frame + i * 13) % 120 < 100) cx.fillRect(sx, sy, 1, 1);
+  }
+  if (!B.voidZone){ // THE CLOUD: the city is gone
+  // far skyline (parallax .25)
+  const o1 = -(cam * 0.25) % 300;
+  cx.fillStyle = B.far;
+  for (let bx = o1 - 300; bx < W + 300; bx += 300){
+    cx.fillRect(bx + 10, 130, 34, 110);
+    // salesforce tower (rounded top-ish)
+    cx.fillRect(bx + 60, 92, 26, 150); cx.fillRect(bx + 64, 84, 18, 10);
+    cx.fillRect(bx + 100, 145, 40, 100);
+    // transamerica pyramid
+    for (let t = 0; t < 12; t++) cx.fillRect(bx + 160 + t, 100 + t * 4, 24 - t * 2, 4);
+    cx.fillRect(bx + 210, 135, 30, 110);
+    // sutro tower
+    cx.fillRect(bx + 262, 78, 3, 60); cx.fillRect(bx + 274, 78, 3, 60); cx.fillRect(bx + 260, 96, 19, 3);
+  }
+  // near skyline (parallax .5) with lit windows
+  const o2 = -(cam * 0.5) % 260;
+  for (let bx = o2 - 260; bx < W + 260; bx += 260){
+    cx.fillStyle = B.near;
+    cx.fillRect(bx, 160, 50, 80); cx.fillRect(bx + 70, 140, 44, 100); cx.fillRect(bx + 130, 172, 60, 70); cx.fillRect(bx + 205, 150, 40, 90);
+    cx.fillStyle = B.win;
+    for (let wy = 0; wy < 5; wy++) for (let wx = 0; wx < 3; wx++)
+      if ((bx * 7 + wx * 13 + wy * 29) % 5 < 2) cx.fillRect(bx + 74 + wx * 12, 146 + wy * 16, 4, 5);
+  }
+  }
+  if (B.bunting){ // THE MISSION: papel picado strung between the near buildings, parallax .5
+    const o3 = -(cam * 0.5) % 64;
+    for (let bx = o3 - 64; bx < W + 64; bx += 64){
+      cx.fillStyle = 'rgba(20,12,24,.8)'; cx.fillRect(bx, 88, 64, 1);                    // wire
+      for (let f = 0; f < 4; f++){ cx.fillStyle = PICADO[f];
+        cx.fillRect(bx + 6 + f*15, 89, 7, 5); cx.fillRect(bx + 8 + f*15, 94, 3, 2); }    // flag + cut-paper tail
+    }
+  }
+  // Karl the Fog (recolored per zone)
+  const fx = (frame * 0.2) % (W + 200) - 100;
+  cx.fillStyle = B.fog[0];
+  cx.fillRect(0, 110, W, 26);
+  cx.fillStyle = B.fog[1];
+  cx.fillRect(fx - 60, 104, 200, 20); cx.fillRect(fx + 180, 116, 160, 16);
+  if (B.foggy){ cx.fillStyle = B.fog[0]; cx.fillRect(0, 60, W, 20); cx.fillRect(0, 140, W, 34); } // Cerebral Valley only
+  // golden gate towers near the finale (world-anchored)
+  // anchor 6000 (was 6900): with cam clamped at LEVEL_W-W=7020, the old anchor needed
+  // cam>7435 to enter the screen — the bridge was unreachable dead code. 6000 sweeps it
+  // across the finale (cam 6350→7020 ≈ screen 600→−100), red against the white void.
+  const ggx = 6000 - cam * 0.85;
+  if (ggx > -300 && ggx < W + 100){
+    cx.fillStyle = '#c0402a';
+    cx.fillRect(ggx, 70, 10, 170); cx.fillRect(ggx - 6, 88, 22, 6); cx.fillRect(ggx - 6, 130, 22, 6);
+    cx.fillRect(ggx + 150, 70, 10, 170); cx.fillRect(ggx + 144, 88, 22, 6); cx.fillRect(ggx + 144, 130, 22, 6);
+    cx.strokeStyle = '#c0402a'; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(ggx - 80, 120); cx.quadraticCurveTo(ggx + 80, 190, ggx + 155, 74); cx.stroke();
+  }
+}
+
+function fmtMoney(k){ return k >= 1000 ? '$' + (k/1000).toFixed(2) + 'M' : '$' + k + 'K'; }
+function fmtTime(ms){ const s = Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+
+// ------------------------- DRAW -------------------------
+function draw(){
+  // hurt juice: 2-frame camera shake
+  if (shakeT > 0 && state === ST.PLAY){ cx.translate(frame % 2 ? 2 : -2, 0); shakeT--; }
+
+  drawBG();
+
+  if (state === ST.TITLE){ cx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(); return; }
+
+  const B = BIOMES[zoneName(cam + W/2)]; // same lookup as drawBG — sky and ground flip together
+
+  // signs
+  cx.font = 'bold 6px monospace';
+  for (const sg of signs){
+    const x = sg.x - cam;
+    if (x < -120 || x > W + 20) continue;
+    const wmax = Math.max(...sg.l.map(t => cx.measureText(t).width)) + 8;
+    px(x + 12, GROUND_Y - 26 - sg.l.length * 8, wmax, sg.l.length * 8 + 5, '#5d4a36');
+    px(x + 12 + wmax/2 - 2, GROUND_Y - 22, 4, 22, '#4a3a2a');
+    cx.fillStyle = '#ffe9b3';
+    sg.l.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 22 - sg.l.length * 8 + i * 8 + 6)));
+  }
+
+  // ground
+  for (const s of segs){
+    const x0 = Math.max(s[0], cam - 4) - cam, x1 = Math.min(s[1], cam + W + 4) - cam;
+    if (x1 < 0 || x0 > W) continue;
+    if (B.voidZone){
+      px(x0, GROUND_Y, x1 - x0, 6, B.side); px(x0, GROUND_Y + 6, x1 - x0, H - GROUND_Y, B.road);
+    } else {
+      px(x0, GROUND_Y, x1 - x0, 5, B.side);              // sidewalk
+      px(x0, GROUND_Y + 5, x1 - x0, H - GROUND_Y, B.road); // asphalt
+      cx.fillStyle = B.stripe;
+      for (let lx = Math.floor((cam + x0) / 40) * 40; lx < cam + x1; lx += 40){
+        const dx = lx - cam; if (dx > x0 && dx < x1 - 12) cx.fillRect(dx, GROUND_Y + 16, 12, 2); // road stripes
+      }
+    }
+  }
+
+  // platforms
+  for (const pl of plats){
+    const x = pl[0] - cam; if (x < -pl[2] || x > W) continue;
+    if (pl[0] > 5460){ // clouds
+      px(x, pl[1], pl[2], 8, '#f2f5fc'); px(x + 4, pl[1] - 4, pl[2] - 8, 5, '#fff');
+    } else { // crates
+      px(x, pl[1], pl[2], 12, '#8a5a2b'); cx.strokeStyle = '#5e3c1a'; cx.lineWidth = 1;
+      for (let bx2 = 0; bx2 < pl[2]; bx2 += 14) cx.strokeRect(x + bx2 + 0.5, pl[1] + 0.5, 13, 11);
+    }
+  }
+
+  // cameo sprites — background layer: everything gameplay draws on top of them
+  for (const c of cameos) drawCameoSprite(c);
+
+  // coins
+  for (const c of coins){
+    if (c.got) continue; const x = c.x - cam; if (x < -10 || x > W) continue;
+    const bob = Math.sin((frame + c.x) * 0.08) * 1.5;
+    px(x, c.y + bob, 8, 10, '#ffd94a'); px(x + 1, c.y + 1 + bob, 6, 8, '#ffc21a');
+    cx.fillStyle = '#7a5c00'; cx.font = 'bold 7px monospace'; cx.fillText('$', Math.round(x + 2), Math.round(c.y + 8 + bob));
+  }
+
+  // powerups
+  for (const pw of powers){
+    if (pw.got) continue; const x = pw.x - cam; if (x < -16 || x > W) continue;
+    const bob = Math.sin(frame * 0.1) * 2;
+    if (pw.t === 'coffee'){
+      px(x + 2, pw.y + bob, 9, 12, '#fff'); px(x + 3, pw.y + 2 + bob, 7, 6, '#6b4226');
+      px(x + 11, pw.y + 3 + bob, 3, 5, '#fff'); px(x + 4, pw.y - 3 + bob, 1, 3, '#bbb'); px(x + 7, pw.y - 4 + bob, 1, 4, '#bbb');
+    } else if (pw.t === 'yc'){
+      // DEMO DAY LETTER: gold envelope, red rocket stamp, no letter glyphs (de-branded)
+      px(x, pw.y + 3 + bob, 14, 9, '#e8b83a');                              // envelope body
+      px(x, pw.y + 3 + bob, 14, 2, '#c2952a');                              // flap fold
+      px(x + 1, pw.y + 4 + bob, 5, 2, '#c2952a'); px(x + 8, pw.y + 4 + bob, 5, 2, '#c2952a');
+      px(x + 6, pw.y + 6 + bob, 2, 2, '#c2952a');                           // flap point
+      px(x + 10, pw.y + 4 + bob, 4, 4, '#fff');                             // stamp
+      px(x + 11, pw.y + 4 + bob, 1, 2, '#d64550');                          // rocket body
+      px(x + 11, pw.y + 6 + bob, 2, 1, '#ff8c37');                          // flame
+      const sh = (frame >> 2) % 28;
+      if (sh < 10) px(x + 2 + sh, pw.y + 5 + bob, 1, 6, '#fff3c4');         // shine sweep
+    } else {
+      px(x, pw.y + bob, 12, 14, '#fff'); cx.fillStyle = '#888';
+      for (let i = 0; i < 4; i++) cx.fillRect(Math.round(x + 2), Math.round(pw.y + 3 + i * 3 + bob), 8, 1);
+      cx.fillStyle = '#1d9e50'; cx.font = 'bold 6px monospace'; cx.fillText('✓', Math.round(x + 3), Math.round(pw.y + 12 + bob));
+    }
+  }
+
+  // enemies
+  for (const e of enemies){ if (!e.dead && e.x - cam > -30 && e.x - cam < W + 30) drawEnemy(e); }
+
+  // bosses
+  for (const b of bosses){
+    if (b.dead) continue;
+    if (b.x - cam > -60 && b.x - cam < W + 60) drawBoss(b);
+    if (b.active && !b.dead){ // arena wall: a red velvet rope / server rack
+      const wx = b.wall - cam;
+      px(wx, GROUND_Y - 40, 6, 40, '#3a3f52');
+      for (let i = 0; i < 5; i++) px(wx + 1, GROUND_Y - 36 + i * 8, 4, 2, frame % 20 < 10 ? '#41f2ff' : '#20505a');
+    }
+  }
+
+  // IPO bell
+  if (bosses[1].dead){
+    const bx = 7430 - cam;
+    if (bx > -40 && bx < W + 40){
+      px(bx, GROUND_Y - 14, 26, 14, '#6b4f2a');
+      const gold = frame % 20 < 10 ? '#ffd94a' : '#ffea8a';
+      px(bx + 6, GROUND_Y - 34, 14, 16, gold); px(bx + 3, GROUND_Y - 20, 20, 4, gold);
+      px(bx + 11, GROUND_Y - 16, 4, 4, '#8a6d00');
+      cx.fillStyle = '#fff'; cx.font = 'bold 6px monospace'; cx.fillText('IPO', Math.round(bx + 6), Math.round(GROUND_Y - 24));
+      cx.fillText('→ RING IT', Math.round(bx - 8), Math.round(GROUND_Y - 44));
+    }
+  }
+
+  // shots
+  for (const s of shots){
+    const x = s.x - cam;
+    if (s.t === 'sheet'){
+      px(x, s.y, 12, 10, '#fff');
+      cx.fillStyle = '#999'; for (let i = 0; i < 3; i++) cx.fillRect(Math.round(x + 1), Math.round(s.y + 3 + i * 2), 10, 1);
+      cx.font = 'bold 6px monospace';
+      const tw = cx.measureText('TERMS').width;
+      cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(x - 2), Math.round(s.y - 10), tw + 4, 9);
+      cx.fillStyle = '#fff'; cx.fillText('TERMS', Math.round(x), Math.round(s.y - 3));
+    } else {
+      // pill drawn to fit the word (>= hitbox on all sides); collision AABB stays 26x9
+      cx.font = 'bold 6px monospace';
+      const tw = cx.measureText(s.label).width;
+      const pw2 = Math.max(s.w, tw + 6);
+      px(x + s.w/2 - pw2/2, s.y, pw2, s.h, '#d64550');
+      cx.fillStyle = '#fff'; cx.fillText(s.label, Math.round(x + s.w/2 - tw/2), Math.round(s.y + 7));
+    }
+  }
+
+  // player (flash when hurt / rainbow-ish when YC)
+  if (!(player.hurtT > 0 && frame % 6 < 3)){
+    drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
+    if (player.coffeeT > 0 && frame % 5 === 0) parts.push({x:player.x - 2 + Math.random()*4, y:player.y + 14, vx:-player.face, vy:-0.5, t:14, c:'#c58bff'});
+  }
+
+  // particles
+  for (const q of parts) px(q.x - cam, q.y, 2, 2, q.c);
+
+  // popups + HUD only during play (end screens keep the frame clean behind the card)
+  if (state === ST.PLAY){
+    cx.font = 'bold 7px monospace';
+    for (const q of popups){
+      cx.fillStyle = 'rgba(0,0,0,.55)';
+      const tw = cx.measureText(q.txt).width;
+      cx.fillRect(Math.round(q.x - cam - 2), Math.round(q.y - 8), tw + 4, 10);
+      cx.fillStyle = q.c; cx.fillText(q.txt, Math.round(q.x - cam), Math.round(q.y));
+    }
+    for (const c of cameos) drawCameoBubble(c); // proximity dialogue, never hidden behind entities
+    drawHUD();
+  }
+  cx.setTransform(1, 0, 0, 1, 0, 0); // undo hurt shake
+}
+
+function drawHUD(){
+  // raised
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(6, 6, 118, 30);
+  cx.fillStyle = '#ffd94a'; cx.font = 'bold 9px monospace';
+  cx.fillText('RAISED ' + fmtMoney(raised), 12, 18);
+  // runway hearts
+  cx.fillStyle = '#9fe8b5'; cx.font = 'bold 7px monospace'; cx.fillText('RUNWAY', 12, 30);
+  for (let i = 0; i < Math.max(maxHearts, 3); i++)
+    px(52 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
+  // zone + timer
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14);
+  cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
+  const zn = zoneName(player.x);
+  cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14);
+  cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 56, 16);
+  // active powers
+  cx.font = 'bold 7px monospace';
+  if (player.ycT > 0){ cx.fillStyle = '#ff8c37'; cx.fillText('DEMO DAY MODE ' + Math.ceil(player.ycT/60) + 's', 12, 44); }
+  else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
+}
+
+function drawTitle(){
+  // ground strip
+  px(0, GROUND_Y, W, 5, '#8a8f9e'); px(0, GROUND_Y + 5, W, H - GROUND_Y, '#33323f');
+  // s=3 live preview — walks in place, re-renders the chosen look every frame (it IS the preview)
+  drawFounder(cx, 56, GROUND_Y - 48, 3, 1, frame % 24 < 12 ? 1 : 0, false);
+  // EGG: THE REVERSE PITCH — ignore the founder for 60s and they pitch YOU, deck loops
+  // from slide one (a founder circling back and re-pitching IS the joke). textAlign is
+  // still 'left' here (required: measureText + left-anchored fillText, boss-bubble style).
+  if (idleT > 3600){
+    const PITCH = [
+      "hey. quick pitch while you're here.",
+      'FOUNDER MODE. pre-revenue. pre-you.',
+      'TAM: everyone with a keyboard.',
+      'traction: you read this far.',
+      'the ask: one (1) press of SPACE.',
+      "we'll circle back."
+    ];
+    const q = PITCH[Math.floor((idleT - 3600) / 240) % PITCH.length];
+    cx.font = 'bold 6px monospace';
+    const tw = cx.measureText(q).width;
+    const bx = clamp(74 - tw / 2 - 3, 2, W - tw - 8); // centered over the founder's head
+    px(bx, 160, tw + 6, 10, '#fff');
+    px(72, 170, 4, 3, '#fff');                        // tail, points at the founder below
+    cx.fillStyle = '#111';
+    cx.fillText(q, Math.round(bx + 3), Math.round(167.5));
+  }
+  // title
+  cx.textAlign = 'center';
+  cx.fillStyle = '#000'; cx.font = 'bold 30px monospace';
+  cx.fillText('FOUNDER MODE', W/2 + 2, 92 + 2);
+  cx.fillStyle = '#ffd94a'; cx.fillText('FOUNDER MODE', W/2, 92);
+  cx.fillStyle = '#7ce0ff'; cx.font = 'bold 9px monospace';
+  cx.fillText('the SF startup platformer', W/2, 108);
+  cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
+  cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 132);
+  // CTA: alpha pulse, never fully gone (a blink leaves screenshots CTA-less 1/3 of the time)
+  cx.globalAlpha = 0.65 + 0.35 * Math.sin(frame * 0.1);
+  cx.fillStyle = '#7cffa5'; cx.font = 'bold 12px monospace';
+  cx.fillText(('ontouchstart' in window) ? 'TAP TO START' : 'PRESS SPACE TO START', W/2, 168);
+  cx.globalAlpha = 1;
+  const ctrl = ('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies'
+                                          : '←→ / AD move · SPACE jump · stomp enemies · M mute';
+  cx.font = 'bold 8px monospace';
+  const ctw = cx.measureText(ctrl).width;
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(Math.round(W/2 - ctw/2 - 4), 175, Math.round(ctw + 8), 12);
+  cx.fillStyle = '#8d99ae'; cx.fillText(ctrl, W/2, 184);
+  // ---- founder picker (C/H/V keys · tap/click the chips) ----
+  cx.textAlign = 'left'; cx.font = 'bold 7px monospace';
+  const chipDefs = [
+    { y:192, c:'#ffd94a', txt:'[C] TONE '   + (look.s+1) + '/6' },
+    { y:206, c:'#7ce0ff', txt:'[H] HAIR: '  + HAIRS[look.h] },
+    { y:220, c:'#c58bff', txt:'[V] HOODIE: '+ HOODIES[look.v].name },
+  ];
+  for (const ch of chipDefs){
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(112, ch.y, 104, 12);
+    cx.fillStyle = ch.c; cx.fillText(ch.txt, 116, ch.y + 9);
+  }
+  cx.fillStyle = '#5d647a'; cx.font = 'bold 6px monospace';
+  cx.fillText('cosmetic. like most pivots.', 224, 229);
+  cx.textAlign = 'center';
+  cx.font = 'bold 8px monospace';
+  cx.fillStyle = '#5d647a';
+  cx.fillText('a dumb side project. do not raise a round about it.', W/2, 258);
+  cx.textAlign = 'left';
+}
+// ------------------------- END SCREENS + BADGE -------------------------
+const ui = document.getElementById('ui');
+const uicard = document.getElementById('uicard');
+// TODO(M2 deploy): confirm canonical domain before launch. HARDCODED on purpose —
+// location.href inside LinkedIn webviews can be a tracking redirector (ruling §2 amendments).
+const GAME_URL = 'https://foundermode.lol';
+
+// ---- EASTER EGG FLAIR (badge + share text) ----
+// ZERO CHURN: every enemy handled at win time. T2D3: win under 3:00 on the
+// SIMULATED clock (endTime is a playMs snapshot — backgrounding never helps or hurts).
+function badgeFlairs(won){
+  const f = [];
+  if (!won) return f;
+  if (enemies.every(e => e.dead)) f.push('ZERO CHURN');
+  if ((endTime || playMs) < 180000) f.push('T2D3');
+  return f;
+}
+
+function resumePlay(fromCheckpoint){
+  ui.style.display = 'none';
+  if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
+  reset(fromCheckpoint); state = ST.PLAY;
+}
+
+function makeBadge(won){
+  const bc = document.createElement('canvas');
+  bc.width = 1200; bc.height = 630;
+  const b = bc.getContext('2d');
+  b.imageSmoothingEnabled = false;
+  // bg
+  const g = b.createLinearGradient(0, 0, 0, 630);
+  g.addColorStop(0, '#141433'); g.addColorStop(1, '#2a1a3e');
+  b.fillStyle = g; b.fillRect(0, 0, 1200, 630);
+  // pixel border
+  b.fillStyle = won ? '#ffd94a' : '#d64550';
+  b.fillRect(0, 0, 1200, 12); b.fillRect(0, 618, 1200, 12); b.fillRect(0, 0, 12, 630); b.fillRect(1188, 0, 12, 630);
+  for (let i = 0; i < 30; i++){ b.fillRect(20 + i * 40, 24, 12, 12); b.fillRect(20 + i * 40, 594, 12, 12); }
+  // sprite
+  drawFounder(b, 80, 200, 14, 1, 0, won);
+  // text
+  b.textAlign = 'left';
+  b.fillStyle = won ? '#ffd94a' : '#ff5a5a';
+  b.font = 'bold 64px monospace';
+  b.fillText(won ? 'CERTIFIED UNICORN' : 'OUT OF RUNWAY', 320, 150);
+  b.fillStyle = '#fff'; b.font = 'bold 34px monospace';
+  b.fillText(won ? 'survived SF · defeated SYNERGY.AI' : 'SF claims another founder', 320, 205);
+  const t = fmtTime(endTime || playMs);
+  b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';
+  b.fillText('RAISED  ' + fmtMoney(raised), 320, 295);
+  b.fillStyle = '#7ce0ff';
+  b.fillText('TIME    ' + t, 320, 347);
+  b.fillStyle = '#c58bff';
+  if (won){
+    const bossesDown = bosses.filter(x => x.dead).length;
+    b.fillText('BOSSES  ' + bossesDown + '/2 defeated', 320, 399);
+  } else {
+    b.fillText('DIED IN  ' + zoneName(player.x), 320, 399); // loss badges differ by death point
+  }
+  const flairs = badgeFlairs(won); // egg rail: verified empty band between stats and the quote
+  if (flairs.length){
+    b.fillStyle = '#ff8c37'; b.font = 'bold 30px monospace';
+    b.fillText('FLAIR: ' + flairs.join('  ·  '), 320, 462);
+  }
+  b.fillStyle = '#cfd6e4';
+  const quote = won ? '"we\'re basically profitable" — you, probably' : '"it was a market timing issue" — you, on LinkedIn';
+  let qs = 36; // 36px target, full row below the sprite; shrink only if a future quote overflows
+  b.font = 'bold ' + qs + 'px monospace';
+  while (qs > 24 && b.measureText(quote).width > 1080){ qs -= 2; b.font = 'bold ' + qs + 'px monospace'; }
+  b.fillText(quote, 60, 495);
+  b.fillStyle = '#ffd94a'; b.font = 'bold 34px monospace';
+  b.fillText('FOUNDER MODE · ' + GAME_URL.replace('https://',''), 320, 565);
+  return bc;
+}
+
+function shareText(won){
+  const t = fmtTime(endTime || playMs);
+  const f = badgeFlairs(won);
+  return won
+    ? `I just beat FOUNDER MODE 🦄\n\nRaised ${fmtMoney(raised)}, stomped the churn gremlins, out-jumped a VC whose vest is load-bearing, and defeated SYNERGY.AI in ${t}.` +
+      (f.length ? `\n\nFlair earned: ${f.join(' · ')}.` : '') +
+      `\n\nCan you ring the IPO bell faster?\n\nPlay: ${GAME_URL}`
+    : `FOUNDER MODE just took me out. Raised ${fmtMoney(raised)} and died in ${zoneName(player.x)} 💀\n\nIt was a market timing issue.\n\nThink you can survive SF?\n\nPlay: ${GAME_URL}`;
+}
+
+function showEndUI(won){
+  // input hygiene: a held R must not wipe the badge; the d-pad must not sit on top of the buttons
+  keys['r'] = false; touch.L = touch.R = touch.J = false;
+  document.getElementById('touch').style.display = 'none';
+
+  const bc = makeBadge(won);
+  const url = bc.toDataURL('image/png');
+  const isTouch = 'ontouchstart' in window;
+  const fname = won ? 'founder-mode-unicorn.png' : 'founder-mode-rip.png';
+
+  // pre-generate the badge blob so it's ready inside click handlers (required on iOS)
+  let badgeBlob = null, badgeFile = null, blobUrl = null;
+  bc.toBlob(blob => { if (blob){ badgeBlob = blob; badgeFile = new File([blob], fname, {type:'image/png'}); blobUrl = URL.createObjectURL(blob); } }, 'image/png');
+  // feature-detect native file share (no UA sniffing) with a sync dummy file
+  let canShareFiles = false;
+  try { canShareFiles = !!(navigator.canShare && navigator.canShare({files:[new File([new Uint8Array(4)], 'b.png', {type:'image/png'})]})); } catch(err){}
+
+  const bShare = canShareFiles ? '<button id="bSh" class="alt">📤 SHARE BADGE</button>' : '';
+  const bSave  = '<button id="bDl">⬇ SAVE BADGE</button>';
+  const bCopy  = '<button id="bCp" class="alt">📋 COPY LINKEDIN POST</button>';
+  const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button>`;
+  // losers are the comedy's best distributors: PIVOT first, share buttons immediately second
+  const btns = won ? bShare + bSave + bCopy + bRetry : bRetry + bShare + bSave + bCopy;
+
+  uicard.innerHTML = `
+    <img src="${url}" style="width:min(560px,86vw); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
+    ${isTouch ? '<div style="color:#8d99ae; font-weight:bold; font-size:12px; margin-top:4px">press &amp; hold the badge to save it. yes, really.</div>' : ''}
+    <div style="margin-top:8px">${btns}</div>
+    <div id="cpMsg" style="color:#7cffa5; font-weight:bold; min-height:20px; margin-top:4px"></div>
+    ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:12px">or press R to run it back</div>'}`;
+  ui.style.display = 'flex';
+
+  if (canShareFiles) document.getElementById('bSh').onclick = () => {
+    const data = badgeFile && navigator.canShare({files:[badgeFile]})
+      ? {files:[badgeFile], text:shareText(won)} : {text:shareText(won)};
+    navigator.share(data).catch(()=>{});
+  };
+  document.getElementById('bDl').onclick = () => {
+    const a = document.createElement('a');
+    a.href = blobUrl || url; a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  document.getElementById('bCp').onclick = () => {
+    const msg = document.getElementById('cpMsg');
+    const text = shareText(won);
+    const ok = () => msg.textContent = 'post copied ✓ — now SAVE BADGE and attach it';
+    const manual = () => { // last resort: visible readonly textarea, still shippable
+      msg.textContent = 'copy blocked — select all + copy manually:';
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.readOnly = true;
+      ta.style.cssText = 'display:block; margin:6px auto 0; width:min(480px,80vw); height:88px; font:12px "Courier New",monospace;';
+      msg.appendChild(ta); ta.focus(); ta.select();
+    };
+    const legacy = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly',''); ta.style.cssText = 'position:fixed; left:-9999px';
+        document.body.appendChild(ta); ta.select();
+        const done = document.execCommand('copy'); ta.remove();
+        done ? ok() : manual();
+      } catch(err){ manual(); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      let rich = null; // desktop: try text + badge image in one clipboard write
+      if (!isTouch && navigator.clipboard.write && window.ClipboardItem && badgeBlob){
+        try { rich = navigator.clipboard.write([new ClipboardItem({'image/png':badgeBlob, 'text/plain':new Blob([text], {type:'text/plain'})})]); } catch(err){}
+      }
+      (rich || navigator.clipboard.writeText(text)).then(ok, () => navigator.clipboard.writeText(text).then(ok, legacy));
+    } else legacy(); // insecure contexts / webviews: navigator.clipboard is undefined
+  };
+  document.getElementById('bRe').onclick = () => resumePlay(!won);
+}
+
+// ------------------------- MAIN LOOP -------------------------
+// fixed timestep: 60 sim-steps/s regardless of display refresh (120Hz phones, throttled tabs)
+const STEP = 1000 / 60;
+let last = 0, acc = 0;
+function stepGame(){
+  if (state === ST.TITLE && (JUMP()) && frame > 30){
+    reset(false); state = ST.PLAY;
+  }
+  if (hitstopT > 0){ hitstopT--; return; } // hurt hitstop: freeze sim, keep drawing
+  update();
+}
+function loop(now){
+  acc += Math.min(now - (last || now), 100); last = now;
+  while (acc >= STEP){ stepGame(); acc -= STEP; }
+  draw();
+  requestAnimationFrame(loop);
+}
+reset(false);
+state = ST.TITLE;
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FOUNDER MODE — the SF startup platformer</title>
+<meta property="og:title" content="FOUNDER MODE — the SF startup platformer">
+<meta property="og:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Can you reach the IPO bell?">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:#0b0b14; overflow:hidden; touch-action:none; }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  canvas#game {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background:#0b0b14;
+  }
+  #ui { position:fixed; inset:0; pointer-events:none; display:none; align-items:center; justify-content:center; }
+  #ui .card { pointer-events:auto; text-align:center; font-family:"Courier New",monospace; }
+  #ui button {
+    font-family:"Courier New",monospace; font-weight:bold; font-size:16px;
+    background:#ffd94a; color:#1a1a2e; border:3px solid #1a1a2e; padding:10px 18px;
+    margin:6px; cursor:pointer; box-shadow:0 4px 0 #8a6d00;
+  }
+  #ui button:active { transform:translateY(3px); box-shadow:0 1px 0 #8a6d00; }
+  #ui button.alt { background:#7ce0ff; box-shadow:0 4px 0 #1a6b85; }
+  #ui button.alt:active { box-shadow:0 1px 0 #1a6b85; }
+  #touch { position:fixed; inset:0; pointer-events:none; display:none; }
+  #touch div {
+    position:absolute; bottom:18px; width:70px; height:70px; border-radius:14px;
+    background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35);
+    color:#fff; font:bold 26px "Courier New",monospace; text-align:center; line-height:66px;
+    pointer-events:auto; user-select:none; -webkit-user-select:none;
+  }
+  #tL{left:18px} #tR{left:104px} #tJ{right:18px; width:86px; height:86px; line-height:82px; border-radius:50%;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="480" height="270"></canvas></div>
+<div id="ui"><div class="card" id="uicard"></div></div>
+<div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div></div>
+<script>
+"use strict";
+/* ============================================================
+   FOUNDER MODE — a pixel platformer about surviving SF tech.
+   One file. No assets. No frameworks. Ship it.
+   ============================================================ */
+const W = 480, H = 270;
+const cv = document.getElementById('game');
+const cx = cv.getContext('2d');
+cx.imageSmoothingEnabled = false;
+
+// --- scale canvas to window, keep 16:9, integer-ish scale ---
+function fit() {
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  cv.style.width  = Math.floor(W * s) + 'px';
+  cv.style.height = Math.floor(H * s) + 'px';
+}
+window.addEventListener('resize', fit); fit();
+
+// ------------------------- INPUT -------------------------
+const keys = {};
+let anyKeyPressed = false;
+window.addEventListener('keydown', e => {
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === ' ') keys['space'] = true;
+  anyKeyPressed = true;
+  initAudio();
+  if (e.key.toLowerCase() === 'r' && (state === ST.DEAD || state === ST.WIN)){
+    ui.style.display = 'none'; reset(false); state = ST.PLAY;
+  }
+});
+window.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+  if (e.key === ' ') keys['space'] = false;
+});
+const L = () => keys['arrowleft'] || keys['a'] || touch.L;
+const R = () => keys['arrowright'] || keys['d'] || touch.R;
+const JUMP = () => keys['space'] || keys['arrowup'] || keys['w'] || touch.J;
+
+// touch controls
+const touch = { L:false, R:false, J:false };
+if ('ontouchstart' in window) {
+  document.getElementById('touch').style.display = 'block';
+  const bind = (id, k) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', e => { e.preventDefault(); touch[k] = true; anyKeyPressed = true; initAudio(); }, {passive:false});
+    el.addEventListener('touchend',   e => { e.preventDefault(); touch[k] = false; }, {passive:false});
+  };
+  bind('tL','L'); bind('tR','R'); bind('tJ','J');
+  cv.addEventListener('touchstart', e => { e.preventDefault(); anyKeyPressed = true; initAudio(); if (state!==ST.PLAY) touch.J = true; setTimeout(()=>touch.J=false,120); }, {passive:false});
+}
+
+// ------------------------- AUDIO -------------------------
+let AC = null, muted = false;
+function initAudio(){ if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } }
+function beep(freq, dur, type='square', vol=0.08, slide=0) {
+  if (!AC || muted) return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, AC.currentTime);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), AC.currentTime+dur);
+  g.gain.setValueAtTime(vol, AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime+dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(); o.stop(AC.currentTime+dur);
+}
+const sJump  = () => beep(300, .18, 'square', .06, 260);
+const sCoin  = () => { beep(880,.07,'square',.06); setTimeout(()=>beep(1320,.12,'square',.06),60); };
+const sStomp = () => beep(180, .12, 'triangle', .12, -120);
+const sHurt  = () => beep(160, .3, 'sawtooth', .09, -110);
+const sPow   = () => { [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.1,'square',.07),i*70)); };
+const sBoss  = () => beep(80, .5, 'sawtooth', .1, -30);
+const sWin   = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.08),i*130)); };
+window.addEventListener('keydown', e => { if (e.key.toLowerCase()==='m') muted = !muted; });
+
+// ------------------------- HELPERS -------------------------
+const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+const aabb = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+function px(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(Math.round(x),Math.round(y),w,h); }
+
+// ------------------------- LEVEL DATA -------------------------
+const GROUND_Y = 232;
+const LEVEL_W = 7500;
+
+// ground segments [x0, x1] — gaps between are pits
+const segs = [
+  [0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],
+  [3956,4600],[4644,5450],[5504,6300],[6352,7500]
+];
+
+// floating platforms [x, y, w]  (crates / scaffolding / clouds)
+const plats = [
+  [300,190,56],[420,152,56],[560,190,56],
+  [900,182,72],[1060,146,56],[1180,182,56],
+  [1650,178,64],
+  [2050,184,56],[2170,148,56],[2290,184,56],
+  [2550,170,88],
+  [3150,182,56],[3290,150,56],[3430,182,56],
+  [3700,168,72],
+  [4100,184,64],[4250,148,64],[4400,184,64],
+  [5600,178,72],[5750,142,64],[5900,178,72],[6050,142,64],[6180,178,64],
+  [6450,168,72]
+];
+
+// coins: rows {x,y,n}
+const coinRows = [
+  {x:310,y:172,n:3},{x:430,y:134,n:3},
+  {x:910,y:164,n:4},{x:1070,y:128,n:3},
+  {x:1660,y:160,n:4},
+  {x:2060,y:166,n:3},{x:2180,y:130,n:3},{x:2300,y:166,n:3},
+  {x:2560,y:152,n:5},
+  {x:3160,y:164,n:3},{x:3300,y:132,n:3},{x:3440,y:164,n:3},
+  {x:3710,y:150,n:4},
+  {x:4110,y:166,n:4},{x:4260,y:130,n:4},{x:4410,y:166,n:4},
+  {x:5610,y:160,n:4},{x:5760,y:124,n:4},{x:5910,y:160,n:4},{x:6060,y:124,n:4},
+  {x:6460,y:150,n:4},
+  {x:790,y:200,n:2},{x:1432,y:200,n:2},{x:2360,y:200,n:2},{x:2990,y:200,n:2},
+  {x:3910,y:200,n:2},{x:4608,y:200,n:2},{x:5460,y:200,n:2},{x:6310,y:200,n:2}
+];
+
+// enemies {x, t}  t: g=churn gremlin, m=standing meeting, s=scooter bro
+const enemyDefs = [
+  {x:520,t:'g'},{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
+  {x:1980,t:'m'},{x:2230,t:'m'},{x:2620,t:'m'},{x:2860,t:'m'},
+  {x:3200,t:'s'},{x:3480,t:'s'},{x:3760,t:'g'},{x:3850,t:'m'},
+  {x:4050,t:'s'},{x:4300,t:'g'},{x:4480,t:'m'},
+  {x:5620,t:'m'},{x:5880,t:'g'},{x:6100,t:'s'},{x:6420,t:'m'}
+];
+
+// powerups {x,y,t}  t: coffee | yc | sheet
+const powerDefs = [
+  {x:1085,y:130,t:'coffee'},
+  {x:2585,y:154,t:'sheet'},
+  {x:4270,y:132,t:'yc'},
+  {x:5775,y:126,t:'coffee'},
+  {x:6475,y:152,t:'sheet'}
+];
+
+// joke signs {x, lines[]}
+const signs = [
+  {x:70,  l:['SOMA','← nothing  glory →']},
+  {x:250, l:['$8 ARTISANAL','TOAST']},
+  {x:640, l:['CHURN GREMLINS','stomp on sight']},
+  {x:1500,l:['WEWORK','space available','(all of it)']},
+  {x:1930,l:['THE MISSION','beware: standing','meetings']},
+  {x:2720,l:['VALENCIA ST','4 coffee shops','0 profits']},
+  {x:3620,l:['SAND HILL ROAD','pitch or perish']},
+  {x:4560,l:['WARNING: VC AHEAD','know your CAC']},
+  {x:5540,l:['THE CLOUD','99.99% uptime*']},
+  {x:6560,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']}
+];
+
+function zoneName(x){
+  if (x < 1900) return 'SOMA';
+  if (x < 3600) return 'THE MISSION';
+  if (x < 5460) return 'SAND HILL ROAD';
+  return 'THE CLOUD';
+}
+const checkpoints = [20, 1930, 3660, 5540];
+
+// ------------------------- STATE -------------------------
+const ST = { TITLE:0, PLAY:1, WIN:2, DEAD:3 };
+let state = ST.TITLE;
+let frame = 0, startTime = 0, endTime = 0;
+
+let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
+
+function makeEnemy(d){
+  const base = { x:d.x, y:GROUND_Y-14, w:14, h:14, t:d.t, dir:-1, dead:false, vy:0, hopT:0 };
+  if (d.t==='m'){ base.w=16; base.h=18; base.y=GROUND_Y-18; }
+  if (d.t==='s'){ base.w=16; base.h=14; }
+  return base;
+}
+
+function reset(fromCheckpoint){
+  const startX = fromCheckpoint ? checkpoint : 20;
+  player = { x:startX, y:GROUND_Y-40, w:12, h:16, vx:0, vy:0, onGround:false, face:1,
+             coffeeT:0, ycT:0, hurtT:0, runFrame:0 };
+  cam = Math.max(0, startX - 100);
+  if (!fromCheckpoint){
+    coins = [];
+    coinRows.forEach(r => { for(let i=0;i<r.n;i++) coins.push({x:r.x+i*16, y:r.y, w:8, h:10, got:false}); });
+    enemies = enemyDefs.map(makeEnemy);
+    powers = powerDefs.map(p => ({...p, w:14, h:14, got:false}));
+    bosses = [
+      { id:'vc', x:5150, y:GROUND_Y-34, w:26, h:34, hp:3, maxhp:3, trigger:4720, wall:5330, active:false, dead:false,
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'CHAD CAPITAL',
+        quips:["WHAT'S YOUR MOAT?","COME BACK AT $1M ARR","IS THIS A FEATURE","OR A COMPANY?","I NEED 10X, KID"] },
+      { id:'ai', x:7080, y:GROUND_Y-44, w:32, h:44, hp:5, maxhp:5, trigger:6760, wall:7340, active:false, dead:false,
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'SYNERGY.AI',
+        quips:["I AM AGENTIC.","YOUR STARTUP IS A PROMPT","DEPLOYING SYNERGY...","I RAISED $2B ON A DECK","HUMANS ARE LEGACY CODE"] }
+    ];
+    shots = []; parts = []; popups = [];
+    raised = 0; hearts = 3; maxHearts = 3;
+    checkpoint = 20; bellDone = false;
+    startTime = performance.now();
+  }
+}
+// ------------------------- PHYSICS / UPDATE -------------------------
+const GRAV = 0.35, JUMPV = -6.6;
+
+function groundBelow(x, w){
+  // returns ground top y if over a segment, else null
+  for (const s of segs){
+    if (x + w > s[0] && x < s[1]) return GROUND_Y;
+  }
+  return null;
+}
+
+function collidePlats(p){
+  // one-way platforms: land only when falling onto top
+  if (p.vy < 0) return;
+  for (const pl of plats){
+    const [px0, py0, pw] = pl;
+    if (p.x + p.w > px0 && p.x < px0 + pw){
+      const prevBottom = p.y + p.h - p.vy;
+      if (prevBottom <= py0 + 4 && p.y + p.h >= py0){
+        p.y = py0 - p.h; p.vy = 0; p.onGround = true;
+      }
+    }
+  }
+}
+
+function hurtPlayer(){
+  if (player.hurtT > 0 || player.ycT > 0) return;
+  hearts--;
+  sHurt();
+  player.hurtT = 90;
+  player.vy = -4; player.vx = -player.face * 3;
+  addPop(player.x, player.y-10, '-1 RUNWAY', '#ff5a5a');
+  if (hearts <= 0){
+    endTime = performance.now();
+    state = ST.DEAD;
+    showEndUI(false);
+  }
+}
+
+function addPop(x,y,txt,c){ popups.push({x,y,txt,c,t:60}); }
+function addParts(x,y,c,n=8){
+  for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-0.5)*3,vy:-Math.random()*3-1,t:30+Math.random()*20,c});
+}
+
+function update(){
+  frame++;
+  if (state !== ST.PLAY) return;
+  const p = player;
+
+  // -------- player --------
+  const speed = p.coffeeT > 0 ? 2.5 : 1.7;
+  if (L()) { p.vx = -speed; p.face = -1; }
+  else if (R()) { p.vx = speed; p.face = 1; }
+  else p.vx *= 0.7;
+
+  if (JUMP() && p.onGround){ p.vy = JUMPV; p.onGround = false; sJump(); }
+  // variable jump height
+  if (!JUMP() && p.vy < -2.5) p.vy = -2.5;
+
+  p.vy += GRAV; if (p.vy > 8) p.vy = 8;
+  p.x += p.vx;
+  p.x = clamp(p.x, cam - 2, LEVEL_W - p.w);
+  p.y += p.vy;
+  p.onGround = false;
+
+  const g = groundBelow(p.x, p.w);
+  if (g !== null && p.y + p.h >= g && p.vy >= 0){ p.y = g - p.h; p.vy = 0; p.onGround = true; }
+  collidePlats(p);
+
+  // boss walls
+  for (const b of bosses){
+    if (b.active && !b.dead && p.x + p.w > b.wall) p.x = b.wall - p.w;
+  }
+
+  // fell in a pit
+  if (p.y > H + 30){
+    hearts--; sHurt();
+    addPop(cam+220, 120, '-1 RUNWAY (pivot failed)', '#ff5a5a');
+    if (hearts <= 0){ endTime = performance.now(); state = ST.DEAD; showEndUI(false); return; }
+    p.x = checkpoint; p.y = GROUND_Y - 40; p.vx = 0; p.vy = 0; p.hurtT = 90;
+    cam = Math.max(0, checkpoint - 100);
+  }
+
+  if (p.coffeeT > 0) p.coffeeT--;
+  if (p.ycT > 0) p.ycT--;
+  if (p.hurtT > 0) p.hurtT--;
+  if (Math.abs(p.vx) > 0.5 && p.onGround && frame % 6 === 0) p.runFrame ^= 1;
+
+  // checkpoints
+  for (const c of checkpoints) if (p.x > c && checkpoint < c) checkpoint = c;
+
+  // camera
+  const target = clamp(p.x - 180, 0, LEVEL_W - W);
+  cam += (target - cam) * 0.12;
+  if (cam < 0) cam = 0;
+
+  // -------- coins --------
+  for (const c of coins){
+    if (!c.got && aabb(p, c)){
+      c.got = true; raised += 5; sCoin();
+      addPop(c.x, c.y - 6, '+$5K', '#ffd94a');
+    }
+  }
+
+  // -------- powerups --------
+  for (const pw of powers){
+    if (!pw.got && aabb(p, pw)){
+      pw.got = true; sPow();
+      if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! speed x1.5', '#c58bff'); }
+      if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'YC ACCEPTED! INVINCIBLE', '#ff8c37'); }
+      if (pw.t === 'sheet'){ if (hearts < 5) hearts++; maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'TERM SHEET! +1 RUNWAY', '#7cffa5'); }
+    }
+  }
+
+  // -------- enemies --------
+  for (const e of enemies){
+    if (e.dead) continue;
+    const espd = e.t==='s' ? 1.1 : 0.45;
+    // gravity for enemies
+    e.vy = (e.vy||0) + GRAV; if (e.vy > 8) e.vy = 8;
+    e.y += e.vy;
+    const eg = groundBelow(e.x, e.w);
+    if (eg !== null && e.y + e.h >= eg && e.vy >= 0){ e.y = eg - e.h; e.vy = 0;
+      if (e.t==='m'){ e.hopT++; if (e.hopT > 70){ e.vy = -4.5; e.hopT = 0; } }
+    }
+    // turn at pit edges / patrol
+    const nextX = e.x + e.dir * espd;
+    if (groundBelow(nextX + (e.dir>0?e.w:0), 1) === null) e.dir *= -1;
+    else e.x = nextX;
+    if (e.t==='s' && Math.abs(p.x - e.x) < 140) e.dir = p.x < e.x ? -1 : 1;
+    if (e.x < 0) { e.x = 0; e.dir = 1; }
+
+    // collide with player
+    if (Math.abs(e.x - p.x) < 300 && aabb(p, e)){
+      if (p.ycT > 0){ e.dead = true; sStomp(); raised += 10; addPop(e.x, e.y-8, 'DISRUPTED! +$10K', '#ff8c37'); addParts(e.x+7, e.y+7, '#ff8c37'); }
+      else if (p.vy > 1 && p.y + p.h - e.y < 10){
+        e.dead = true; p.vy = -5; sStomp(); raised += 10;
+        const msgs = {g:'CHURN CRUSHED! +$10K', m:'MEETING CANCELED! +$10K', s:'SCOOTER YEETED! +$10K'};
+        addPop(e.x, e.y-8, msgs[e.t], '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
+      }
+      else hurtPlayer();
+    }
+  }
+
+  // -------- bosses --------
+  for (const b of bosses){
+    if (b.dead) continue;
+    if (!b.active && p.x > b.trigger){ b.active = true; sBoss(); b.quipT = 1; }
+    if (!b.active) continue;
+
+    // movement: pace toward player
+    const bspd = b.id==='ai' ? 0.8 : 0.6;
+    b.dir = p.x < b.x ? -1 : 1;
+    b.x += b.dir * bspd;
+    b.x = clamp(b.x, b.trigger + 30, b.wall - b.w - 4);
+    // occasional hop
+    b.vy = (b.vy||0) + GRAV;
+    b.y += b.vy;
+    if (b.y + b.h >= GROUND_Y){ b.y = GROUND_Y - b.h; b.vy = 0;
+      if (frame % 160 === 0) b.vy = b.id==='ai' ? -5.5 : -4.5;
+    }
+
+    // quips
+    b.quipT--;
+    if (b.quipT <= 0){ b.quip = (b.quip+1) % b.quips.length; b.quipT = 140; }
+
+    // attacks
+    b.atkT--;
+    if (b.atkT <= 0){
+      if (b.id === 'vc'){
+        // lob a term sheet arc
+        shots.push({x:b.x+b.w/2, y:b.y+6, vx:(p.x<b.x?-1:1)*(1.4+Math.random()), vy:-4.2, w:10, h:8, t:'sheet', label:'TERMS'});
+        b.atkT = 95;
+      } else {
+        const words = ['PIVOT','SYNERGY','GTM','AGENTIC','B2B'];
+        shots.push({x:b.x+(b.dir<0?-4:b.w-6), y:b.y+10+Math.random()*16, vx:b.dir*2.2, vy:0, w:26, h:9, t:'buzz',
+                    label: words[Math.floor(Math.random()*words.length)], wob:Math.random()*6.28});
+        b.atkT = 70;
+      }
+    }
+
+    // player vs boss
+    if (aabb(p, b)){
+      if (p.vy > 1 && p.y + p.h - b.y < 12){
+        b.hp--; p.vy = -5.5; sStomp();
+        addParts(b.x+b.w/2, b.y, '#fff', 12);
+        addPop(b.x, b.y-12, b.hp>0 ? 'HIT! ('+b.hp+' HP)' : 'DOWN ROUND!!', '#ffd94a');
+        if (b.hp <= 0){
+          b.dead = true;
+          const bonus = b.id==='ai' ? 500 : 250;
+          raised += bonus; sWin();
+          addPop(b.x, b.y-20, (b.id==='ai'?'SYNERGY.AI ACQUIRED (BY YOU)':'VC HUMBLED')+' +$'+bonus+'K', '#7cffa5');
+          addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
+        }
+      } else hurtPlayer();
+    }
+  }
+
+  // -------- shots --------
+  for (const s of shots){
+    if (s.t === 'sheet'){ s.vy += 0.18; }
+    if (s.t === 'buzz'){ s.wob += 0.15; s.y += Math.sin(s.wob) * 0.8; }
+    s.x += s.vx; s.y += s.vy;
+    if (aabb(p, s)){ s.gone = true; hurtPlayer(); }
+    if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
+  }
+  shots = shots.filter(s => !s.gone);
+
+  // -------- particles / popups --------
+  for (const q of parts){ q.x += q.vx; q.y += q.vy; q.vy += 0.15; q.t--; }
+  parts = parts.filter(q => q.t > 0);
+  for (const q of popups){ q.y -= 0.4; q.t--; }
+  popups = popups.filter(q => q.t > 0);
+
+  // -------- IPO bell (win) --------
+  const finalBoss = bosses[1];
+  if (finalBoss.dead && !bellDone && p.x > 7400){
+    bellDone = true;
+    endTime = performance.now();
+    raised += 1000;
+    state = ST.WIN; sWin();
+    showEndUI(true);
+  }
+}
+// ------------------------- SPRITES -------------------------
+function rp(ctx2, x, y, w, h, c, s){ ctx2.fillStyle = c; ctx2.fillRect(Math.round(x), Math.round(y), w*s, h*s); }
+
+// hoodie founder sprite (12x16 at s=1)
+function drawFounder(ctx2, x, y, s, face, runF, yc){
+  const hood = yc ? '#ff8c37' : '#7f8ea3';
+  const skin = '#f2c9a0', jean = '#3b5bdb', shoe = '#e8e8e8';
+  // hood + head
+  rp(ctx2, x+2*s, y,     8, 3, hood, s/ s * s); // hood top
+  ctx2.fillStyle = hood; ctx2.fillRect(Math.round(x+2*s), Math.round(y), 8*s, 3*s);
+  ctx2.fillStyle = skin; ctx2.fillRect(Math.round(x+3*s), Math.round(y+2*s), 6*s, 4*s);
+  // eyes
+  ctx2.fillStyle = '#222';
+  if (face >= 0) ctx2.fillRect(Math.round(x+7*s), Math.round(y+3*s), 1*s, 2*s);
+  else ctx2.fillRect(Math.round(x+4*s), Math.round(y+3*s), 1*s, 2*s);
+  // hoodie body
+  ctx2.fillStyle = hood; ctx2.fillRect(Math.round(x+1*s), Math.round(y+6*s), 10*s, 6*s);
+  // hoodie pocket + strings
+  ctx2.fillStyle = '#5f6e83'; ctx2.fillRect(Math.round(x+4*s), Math.round(y+9*s), 4*s, 3*s);
+  ctx2.fillStyle = '#fff'; ctx2.fillRect(Math.round(x+5*s), Math.round(y+6*s), 1*s, 3*s);
+  // jeans (run animation alternates legs)
+  ctx2.fillStyle = jean;
+  if (runF){ ctx2.fillRect(Math.round(x+2*s), Math.round(y+12*s), 3*s, 3*s); ctx2.fillRect(Math.round(x+7*s), Math.round(y+12*s), 3*s, 4*s); }
+  else     { ctx2.fillRect(Math.round(x+2*s), Math.round(y+12*s), 3*s, 4*s); ctx2.fillRect(Math.round(x+7*s), Math.round(y+12*s), 3*s, 3*s); }
+  // shoes
+  ctx2.fillStyle = shoe; ctx2.fillRect(Math.round(x+2*s), Math.round(y+15*s), 3*s, 1*s); ctx2.fillRect(Math.round(x+7*s), Math.round(y+15*s), 3*s, 1*s);
+}
+
+function drawEnemy(e){
+  const x = e.x - cam, y = e.y;
+  if (e.t === 'g'){ // churn gremlin
+    px(x, y+3, 14, 11, '#d64550');
+    px(x+2, y, 3, 4, '#d64550'); px(x+9, y, 3, 4, '#d64550'); // ears
+    px(x+3, y+6, 3, 3, '#fff'); px(x+8, y+6, 3, 3, '#fff');
+    px(x+4, y+7, 1, 2, '#111'); px(x+9, y+7, 1, 2, '#111');
+    px(x+4, y+11, 6, 1, '#7a1220');
+  } else if (e.t === 'm'){ // standing meeting (evil calendar invite)
+    px(x, y, 16, 14, '#f4f4f4');
+    px(x, y, 16, 4, '#d64550');
+    cx.fillStyle = '#333'; cx.font = 'bold 5px monospace';
+    cx.fillText('MTG', Math.round(x+3), Math.round(y+11));
+    px(x+2, y+14, 3, 4, '#333'); px(x+11, y+14, 3, 4, '#333'); // legs
+    px(x+3, y+1, 2, 2, '#fff'); px(x+11, y+1, 2, 2, '#fff');   // eyes in header
+  } else { // scooter bro
+    px(x+3, y, 6, 4, '#39c46d');           // helmet
+    px(x+4, y+3, 4, 3, '#f2c9a0');         // face
+    px(x+3, y+6, 7, 5, '#2b2d42');         // body
+    px(x, y+11, 16, 1, '#aaa');            // deck
+    px(x+1, y+12, 2, 2, '#eee'); px(x+13, y+12, 2, 2, '#eee'); // wheels
+  }
+}
+
+function drawBoss(b){
+  const x = b.x - cam, y = b.y;
+  if (b.id === 'vc'){
+    // Chad Capital: navy vest, blue shirt, khakis
+    px(x+7, y, 12, 8, '#f2c9a0');           // head
+    px(x+7, y, 12, 2, '#b98a4e');           // hair (swoop)
+    px(x+9, y+3, 2, 2, '#222'); px(x+15, y+3, 2, 2, '#222');
+    px(x+4, y+8, 18, 14, '#8ab6d6');        // shirt
+    px(x+6, y+8, 14, 14, '#1d3557');        // VEST
+    px(x+11, y+8, 4, 14, '#8ab6d6');        // vest zipper gap
+    cx.fillStyle = '#fff'; cx.font = 'bold 4px monospace';
+    cx.fillText('VEST', Math.round(x+7), Math.round(y+14));
+    px(x+5, y+22, 7, 10, '#c9b18c'); px(x+14, y+22, 7, 10, '#c9b18c'); // khakis
+    px(x+5, y+32, 7, 2, '#6b4f2a'); px(x+14, y+32, 7, 2, '#6b4f2a');
+  } else {
+    // SYNERGY.AI robot
+    px(x, y+6, 32, 30, '#23263a');
+    px(x+4, y, 24, 10, '#2e3350');                        // head
+    px(x+15, y-6, 2, 6, '#888'); px(x+14, y-8, 4, 3, '#ff5a5a'); // antenna
+    const glow = frame % 30 < 15 ? '#41f2ff' : '#1fb6c9';
+    px(x+8, y+3, 6, 4, glow); px(x+18, y+3, 6, 4, glow);  // eyes
+    cx.fillStyle = glow; cx.font = 'bold 7px monospace';
+    cx.fillText('AI', Math.round(x+11), Math.round(y+22));
+    px(x+4, y+26, 24, 2, '#41f2ff');
+    px(x+2, y+36, 10, 8, '#181a29'); px(x+20, y+36, 10, 8, '#181a29'); // treads
+  }
+  // hp pips
+  for (let i=0;i<b.maxhp;i++) px(x + i*7, y - 12, 5, 4, i < b.hp ? '#ff5a5a' : '#3a3a3a');
+  // quip bubble
+  if (b.active && !b.dead){
+    const q = b.quips[b.quip];
+    cx.font = 'bold 6px monospace';
+    const tw = cx.measureText(q).width;
+    const bx = clamp(x + b.w/2 - tw/2 - 3, 2, W - tw - 8);
+    px(bx, y - 26, tw + 6, 10, '#fff');
+    px(bx + 6, y - 16, 4, 3, '#fff');
+    cx.fillStyle = '#111'; cx.fillText(q, Math.round(bx + 3), Math.round(y - 18.5));
+  }
+}
+
+// ------------------------- BACKGROUND -------------------------
+function drawBG(){
+  // dusk sky
+  const grd = cx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, '#141433'); grd.addColorStop(0.55, '#3a2a55'); grd.addColorStop(0.8, '#7a4467');
+  grd.addColorStop(1, '#1c1c2e');
+  cx.fillStyle = grd; cx.fillRect(0, 0, W, H);
+  // stars
+  cx.fillStyle = 'rgba(255,255,255,.5)';
+  for (let i = 0; i < 24; i++){
+    const sx = (i * 137 + 40) % W, sy = (i * 61) % 90;
+    if ((frame + i * 13) % 120 < 100) cx.fillRect(sx, sy, 1, 1);
+  }
+  // far skyline (parallax .25)
+  const o1 = -(cam * 0.25) % 300;
+  cx.fillStyle = '#231f3d';
+  for (let bx = o1 - 300; bx < W + 300; bx += 300){
+    cx.fillRect(bx + 10, 130, 34, 110);
+    // salesforce tower (rounded top-ish)
+    cx.fillRect(bx + 60, 92, 26, 150); cx.fillRect(bx + 64, 84, 18, 10);
+    cx.fillRect(bx + 100, 145, 40, 100);
+    // transamerica pyramid
+    for (let t = 0; t < 12; t++) cx.fillRect(bx + 160 + t, 100 + t * 4, 24 - t * 2, 4);
+    cx.fillRect(bx + 210, 135, 30, 110);
+    // sutro tower
+    cx.fillRect(bx + 262, 78, 3, 60); cx.fillRect(bx + 274, 78, 3, 60); cx.fillRect(bx + 260, 96, 19, 3);
+  }
+  // near skyline (parallax .5) with lit windows
+  const o2 = -(cam * 0.5) % 260;
+  for (let bx = o2 - 260; bx < W + 260; bx += 260){
+    cx.fillStyle = '#191631';
+    cx.fillRect(bx, 160, 50, 80); cx.fillRect(bx + 70, 140, 44, 100); cx.fillRect(bx + 130, 172, 60, 70); cx.fillRect(bx + 205, 150, 40, 90);
+    cx.fillStyle = '#ffd94a';
+    for (let wy = 0; wy < 5; wy++) for (let wx = 0; wx < 3; wx++)
+      if ((bx * 7 + wx * 13 + wy * 29) % 5 < 2) cx.fillRect(bx + 74 + wx * 12, 146 + wy * 16, 4, 5);
+  }
+  // Karl the Fog
+  const fx = (frame * 0.2) % (W + 200) - 100;
+  cx.fillStyle = 'rgba(220,225,235,.13)';
+  cx.fillRect(0, 110, W, 26);
+  cx.fillStyle = 'rgba(230,235,245,.18)';
+  cx.fillRect(fx - 60, 104, 200, 20); cx.fillRect(fx + 180, 116, 160, 16);
+  // golden gate towers near the finale (world-anchored)
+  const ggx = 6900 - cam * 0.85;
+  if (ggx > -300 && ggx < W + 100){
+    cx.fillStyle = '#c0402a';
+    cx.fillRect(ggx, 70, 10, 170); cx.fillRect(ggx - 6, 88, 22, 6); cx.fillRect(ggx - 6, 130, 22, 6);
+    cx.fillRect(ggx + 150, 70, 10, 170); cx.fillRect(ggx + 144, 88, 22, 6); cx.fillRect(ggx + 144, 130, 22, 6);
+    cx.strokeStyle = '#c0402a'; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(ggx - 80, 120); cx.quadraticCurveTo(ggx + 80, 190, ggx + 155, 74); cx.stroke();
+  }
+}
+
+function fmtMoney(k){ return k >= 1000 ? '$' + (k/1000).toFixed(2) + 'M' : '$' + k + 'K'; }
+function fmtTime(ms){ const s = Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+
+// ------------------------- DRAW -------------------------
+function draw(){
+  drawBG();
+
+  if (state === ST.TITLE){ drawTitle(); return; }
+
+  const inCloud = zoneName(player.x) === 'THE CLOUD';
+
+  // signs
+  cx.font = 'bold 6px monospace';
+  for (const sg of signs){
+    const x = sg.x - cam;
+    if (x < -120 || x > W + 20) continue;
+    const wmax = Math.max(...sg.l.map(t => cx.measureText(t).width)) + 8;
+    px(x + 12, GROUND_Y - 26 - sg.l.length * 8, wmax, sg.l.length * 8 + 5, '#5d4a36');
+    px(x + 12 + wmax/2 - 2, GROUND_Y - 22, 4, 22, '#4a3a2a');
+    cx.fillStyle = '#ffe9b3';
+    sg.l.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 22 - sg.l.length * 8 + i * 8 + 6)));
+  }
+
+  // ground
+  for (const s of segs){
+    const x0 = Math.max(s[0], cam - 4) - cam, x1 = Math.min(s[1], cam + W + 4) - cam;
+    if (x1 < 0 || x0 > W) continue;
+    if (inCloud && s[0] >= 5504){
+      px(x0, GROUND_Y, x1 - x0, 6, '#e8ecf5'); px(x0, GROUND_Y + 6, x1 - x0, H - GROUND_Y, '#c3cbe0');
+    } else {
+      px(x0, GROUND_Y, x1 - x0, 5, '#8a8f9e');            // sidewalk
+      px(x0, GROUND_Y + 5, x1 - x0, H - GROUND_Y, '#33323f'); // asphalt
+      cx.fillStyle = '#f4c542';
+      for (let lx = Math.floor((cam + x0) / 40) * 40; lx < cam + x1; lx += 40){
+        const dx = lx - cam; if (dx > x0 && dx < x1 - 12) cx.fillRect(dx, GROUND_Y + 16, 12, 2); // road stripes
+      }
+    }
+  }
+
+  // platforms
+  for (const pl of plats){
+    const x = pl[0] - cam; if (x < -pl[2] || x > W) continue;
+    if (pl[0] > 5460){ // clouds
+      px(x, pl[1], pl[2], 8, '#f2f5fc'); px(x + 4, pl[1] - 4, pl[2] - 8, 5, '#fff');
+    } else { // crates
+      px(x, pl[1], pl[2], 12, '#8a5a2b'); cx.strokeStyle = '#5e3c1a'; cx.lineWidth = 1;
+      for (let bx2 = 0; bx2 < pl[2]; bx2 += 14) cx.strokeRect(x + bx2 + 0.5, pl[1] + 0.5, 13, 11);
+    }
+  }
+
+  // coins
+  for (const c of coins){
+    if (c.got) continue; const x = c.x - cam; if (x < -10 || x > W) continue;
+    const bob = Math.sin((frame + c.x) * 0.08) * 1.5;
+    px(x, c.y + bob, 8, 10, '#ffd94a'); px(x + 1, c.y + 1 + bob, 6, 8, '#ffc21a');
+    cx.fillStyle = '#7a5c00'; cx.font = 'bold 7px monospace'; cx.fillText('$', Math.round(x + 2), Math.round(c.y + 8 + bob));
+  }
+
+  // powerups
+  for (const pw of powers){
+    if (pw.got) continue; const x = pw.x - cam; if (x < -16 || x > W) continue;
+    const bob = Math.sin(frame * 0.1) * 2;
+    if (pw.t === 'coffee'){
+      px(x + 2, pw.y + bob, 9, 12, '#fff'); px(x + 3, pw.y + 2 + bob, 7, 6, '#6b4226');
+      px(x + 11, pw.y + 3 + bob, 3, 5, '#fff'); px(x + 4, pw.y - 3 + bob, 1, 3, '#bbb'); px(x + 7, pw.y - 4 + bob, 1, 4, '#bbb');
+    } else if (pw.t === 'yc'){
+      px(x, pw.y + bob, 14, 14, '#ff6600'); cx.fillStyle = '#fff'; cx.font = 'bold 9px monospace'; cx.fillText('Y', Math.round(x + 4), Math.round(pw.y + 11 + bob));
+    } else {
+      px(x, pw.y + bob, 12, 14, '#fff'); cx.fillStyle = '#888';
+      for (let i = 0; i < 4; i++) cx.fillRect(Math.round(x + 2), Math.round(pw.y + 3 + i * 3 + bob), 8, 1);
+      cx.fillStyle = '#1d9e50'; cx.font = 'bold 6px monospace'; cx.fillText('✓', Math.round(x + 3), Math.round(pw.y + 12 + bob));
+    }
+  }
+
+  // enemies
+  for (const e of enemies){ if (!e.dead && e.x - cam > -30 && e.x - cam < W + 30) drawEnemy(e); }
+
+  // bosses
+  for (const b of bosses){
+    if (b.dead) continue;
+    if (b.x - cam > -60 && b.x - cam < W + 60) drawBoss(b);
+    if (b.active && !b.dead){ // arena wall: a red velvet rope / server rack
+      const wx = b.wall - cam;
+      px(wx, GROUND_Y - 40, 6, 40, '#3a3f52');
+      for (let i = 0; i < 5; i++) px(wx + 1, GROUND_Y - 36 + i * 8, 4, 2, frame % 20 < 10 ? '#41f2ff' : '#20505a');
+    }
+  }
+
+  // IPO bell
+  if (bosses[1].dead){
+    const bx = 7430 - cam;
+    if (bx > -40 && bx < W + 40){
+      px(bx, GROUND_Y - 14, 26, 14, '#6b4f2a');
+      const gold = frame % 20 < 10 ? '#ffd94a' : '#ffea8a';
+      px(bx + 6, GROUND_Y - 34, 14, 16, gold); px(bx + 3, GROUND_Y - 20, 20, 4, gold);
+      px(bx + 11, GROUND_Y - 16, 4, 4, '#8a6d00');
+      cx.fillStyle = '#fff'; cx.font = 'bold 6px monospace'; cx.fillText('IPO', Math.round(bx + 6), Math.round(GROUND_Y - 24));
+      cx.fillText('→ RING IT', Math.round(bx - 8), Math.round(GROUND_Y - 44));
+    }
+  }
+
+  // shots
+  for (const s of shots){
+    const x = s.x - cam;
+    if (s.t === 'sheet'){
+      px(x, s.y, 10, 8, '#fff'); cx.fillStyle = '#c33'; cx.font = 'bold 4px monospace'; cx.fillText('TERMS', Math.round(x), Math.round(s.y - 2));
+      cx.fillStyle = '#999'; for (let i = 0; i < 3; i++) cx.fillRect(Math.round(x + 1), Math.round(s.y + 2 + i * 2), 8, 1);
+    } else {
+      px(x, s.y, s.w, s.h, '#d64550');
+      cx.fillStyle = '#fff'; cx.font = 'bold 6px monospace'; cx.fillText(s.label, Math.round(x + 2), Math.round(s.y + 7));
+    }
+  }
+
+  // player (flash when hurt / rainbow-ish when YC)
+  if (!(player.hurtT > 0 && frame % 6 < 3)){
+    drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
+    if (player.coffeeT > 0 && frame % 5 === 0) parts.push({x:player.x - 2 + Math.random()*4, y:player.y + 14, vx:-player.face, vy:-0.5, t:14, c:'#c58bff'});
+  }
+
+  // particles
+  for (const q of parts) px(q.x - cam, q.y, 2, 2, q.c);
+
+  // popups
+  cx.font = 'bold 7px monospace';
+  for (const q of popups){
+    cx.fillStyle = 'rgba(0,0,0,.55)';
+    const tw = cx.measureText(q.txt).width;
+    cx.fillRect(Math.round(q.x - cam - 2), Math.round(q.y - 8), tw + 4, 10);
+    cx.fillStyle = q.c; cx.fillText(q.txt, Math.round(q.x - cam), Math.round(q.y));
+  }
+
+  drawHUD();
+}
+
+function drawHUD(){
+  // raised
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(6, 6, 118, 30);
+  cx.fillStyle = '#ffd94a'; cx.font = 'bold 9px monospace';
+  cx.fillText('RAISED ' + fmtMoney(raised), 12, 18);
+  // runway hearts
+  cx.fillStyle = '#9fe8b5'; cx.font = 'bold 7px monospace'; cx.fillText('RUNWAY', 12, 30);
+  for (let i = 0; i < Math.max(maxHearts, 3); i++)
+    px(52 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
+  // zone + timer
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14);
+  cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
+  const zn = zoneName(player.x);
+  cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14);
+  cx.fillStyle = '#fff'; cx.fillText(fmtTime(performance.now() - startTime), W - 56, 16);
+  // active powers
+  cx.font = 'bold 7px monospace';
+  if (player.ycT > 0){ cx.fillStyle = '#ff8c37'; cx.fillText('YC MODE ' + Math.ceil(player.ycT/60) + 's', 12, 44); }
+  else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
+}
+
+function drawTitle(){
+  // ground strip
+  px(0, GROUND_Y, W, 5, '#8a8f9e'); px(0, GROUND_Y + 5, W, H - GROUND_Y, '#33323f');
+  drawFounder(cx, 90, GROUND_Y - 16, 1, 1, frame % 24 < 12 ? 1 : 0, false);
+  // title
+  cx.textAlign = 'center';
+  cx.fillStyle = '#000'; cx.font = 'bold 30px monospace';
+  cx.fillText('FOUNDER MODE', W/2 + 2, 92 + 2);
+  cx.fillStyle = '#ffd94a'; cx.fillText('FOUNDER MODE', W/2, 92);
+  cx.fillStyle = '#7ce0ff'; cx.font = 'bold 9px monospace';
+  cx.fillText('the SF startup platformer', W/2, 108);
+  cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
+  cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 132);
+  if (frame % 60 < 40){
+    cx.fillStyle = '#7cffa5'; cx.font = 'bold 12px monospace';
+    cx.fillText(('ontouchstart' in window) ? 'TAP TO START' : 'PRESS SPACE TO START', W/2, 168);
+  }
+  cx.fillStyle = '#8d99ae'; cx.font = 'bold 7px monospace';
+  cx.fillText('←→ / AD move · SPACE jump · stomp enemies · M mute', W/2, 190);
+  cx.fillStyle = '#5d647a';
+  cx.fillText('a dumb side project. do not raise a round about it.', W/2, 258);
+  cx.textAlign = 'left';
+}
+// ------------------------- END SCREENS + BADGE -------------------------
+const ui = document.getElementById('ui');
+const uicard = document.getElementById('uicard');
+
+function makeBadge(won){
+  const bc = document.createElement('canvas');
+  bc.width = 1200; bc.height = 630;
+  const b = bc.getContext('2d');
+  b.imageSmoothingEnabled = false;
+  // bg
+  const g = b.createLinearGradient(0, 0, 0, 630);
+  g.addColorStop(0, '#141433'); g.addColorStop(1, '#2a1a3e');
+  b.fillStyle = g; b.fillRect(0, 0, 1200, 630);
+  // pixel border
+  b.fillStyle = won ? '#ffd94a' : '#d64550';
+  b.fillRect(0, 0, 1200, 12); b.fillRect(0, 618, 1200, 12); b.fillRect(0, 0, 12, 630); b.fillRect(1188, 0, 12, 630);
+  for (let i = 0; i < 30; i++){ b.fillRect(20 + i * 40, 24, 12, 12); b.fillRect(20 + i * 40, 594, 12, 12); }
+  // sprite
+  drawFounder(b, 80, 200, 14, 1, 0, won);
+  // text
+  b.textAlign = 'left';
+  b.fillStyle = won ? '#ffd94a' : '#ff5a5a';
+  b.font = 'bold 64px monospace';
+  b.fillText(won ? 'CERTIFIED UNICORN' : 'OUT OF RUNWAY', 320, 150);
+  b.fillStyle = '#fff'; b.font = 'bold 34px monospace';
+  b.fillText(won ? 'survived SF · defeated SYNERGY.AI' : 'SF claims another founder', 320, 205);
+  const t = fmtTime((endTime || performance.now()) - startTime);
+  b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';
+  b.fillText('RAISED  ' + fmtMoney(raised), 320, 300);
+  b.fillStyle = '#7ce0ff';
+  b.fillText('TIME    ' + t, 320, 360);
+  b.fillStyle = '#c58bff';
+  const bossesDown = bosses.filter(x => x.dead).length;
+  b.fillText('BOSSES  ' + bossesDown + '/2 defeated', 320, 420);
+  b.fillStyle = '#8d99ae'; b.font = 'bold 26px monospace';
+  b.fillText(won ? '"we\'re basically profitable" — you, probably' : '"it was a market timing issue" — you, on LinkedIn', 320, 500);
+  b.fillStyle = '#ffd94a'; b.font = 'bold 28px monospace';
+  b.fillText('FOUNDER MODE · the SF startup platformer', 320, 560);
+  return bc;
+}
+
+function shareText(won){
+  const t = fmtTime((endTime || performance.now()) - startTime);
+  return won
+    ? `I just beat FOUNDER MODE 🦄\n\nRaised ${fmtMoney(raised)}, stomped the churn gremlins, out-jumped a VC in a Patagonia vest, and defeated SYNERGY.AI in ${t}.\n\nCan you ring the IPO bell faster?`
+    : `FOUNDER MODE just took me out. Raised ${fmtMoney(raised)} and still ran out of runway 💀\n\nIt was a market timing issue.\n\nThink you can survive SF?`;
+}
+
+function showEndUI(won){
+  const bc = makeBadge(won);
+  const url = bc.toDataURL('image/png');
+  uicard.innerHTML = `
+    <img src="${url}" style="width:min(560px,86vw); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
+    <div style="margin-top:8px">
+      <button id="bDl">⬇ SAVE BADGE</button>
+      <button id="bCp" class="alt">📋 COPY LINKEDIN POST</button>
+      <button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button>
+    </div>
+    <div id="cpMsg" style="color:#7cffa5; font-weight:bold; height:20px; margin-top:4px"></div>`;
+  ui.style.display = 'flex';
+  document.getElementById('bDl').onclick = () => {
+    const a = document.createElement('a');
+    a.href = url; a.download = won ? 'founder-mode-unicorn.png' : 'founder-mode-rip.png';
+    a.click();
+  };
+  document.getElementById('bCp').onclick = () => {
+    const msg = document.getElementById('cpMsg');
+    navigator.clipboard.writeText(shareText(won)).then(
+      () => msg.textContent = 'copied! paste it on LinkedIn with your badge ✓',
+      () => msg.textContent = 'copy blocked by browser — screenshot the badge instead'
+    );
+  };
+  document.getElementById('bRe').onclick = () => {
+    ui.style.display = 'none';
+    reset(false); state = ST.PLAY;
+  };
+}
+
+// ------------------------- MAIN LOOP -------------------------
+let lastRestart = 0;
+function loop(){
+  if (state === ST.TITLE && (JUMP()) && frame > 30){
+    reset(false); state = ST.PLAY;
+  }
+  if ((state === ST.DEAD || state === ST.WIN) && keys['r'] && performance.now() - lastRestart > 500){
+    lastRestart = performance.now();
+    ui.style.display = 'none';
+    reset(false); state = ST.PLAY;
+  }
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+reset(false);
+state = ST.TITLE;
+loop();
+</script>
+</body>
+</html>
