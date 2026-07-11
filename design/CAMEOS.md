@@ -47,29 +47,7 @@ Was employee #4 somewhere enormous. Passed on everything you've heard of since.
 
 ---
 
-## TIER 2 — YOUR CALL: thin-veil parodies (DO NOT SHIP BY DEFAULT)
-
-Fully designed so the decision is yours, not blocked on design. Each carries an **identifiability risk note** — the more identifiable, the more real the right-of-publicity exposure. None appear on badges or in share text even if enabled. Enable via a single flag: `const RISKY_CAMEOS = false`.
-
-### R1. "PETER TEAL" — the monopoly philosopher
-- **Concept:** stands at the END of Sand Hill Road, past Chad's arena — above even the VCs. Offers the game's most subversive easter egg: the **TEAL FELLOWSHIP** — walk into his glowing door and your run ENDS immediately with a special badge: `DROPPED OUT — "the fellowship was real" — raised $100K, kept your soul?`. Mechanically it's a third mid-game ending. It's also the funniest possible LinkedIn badge.
-- **Sprite (12×18):** navy blazer, no smile pixels at all, standing beside a doorway of pure white.
-- **Risk note:** name is a one-letter color-swap of a living public figure + a signature program reference = **highly identifiable. Real right-of-publicity exposure.** The *mechanic* (a drop-out fellowship door) could ship safely renamed: `THE FELLOWSHIP — quit now, keep the story` with the composite CONTRARIAN beside it. **Recommended: ship the mechanic, skip the name.**
-
-### R2. "BARRY GAN" — the demo-day hype uncle
-- **Concept:** at the Cerebral Valley DEMO DAY sign, cheering every founder who runs past. Speech bubble cycles: `YOU CAN JUST BUILD` · `LFG` · `SF IS BACK` (paraphrased vibes, not verbatim quotes).
-- **Sprite (12×16):** crisp tee, baseball cap, double thumbs-up (2×2px fists raised).
-- **Risk note:** rhyme-name of a living accelerator CEO = identifiable; the catchphrase-adjacent lines increase it. The composite ACCELERATOR DAD (#2 above) delivers ~90% of this joke at ~0% of the risk. **Recommended: composite instead.**
-
-### R3. "MELON TUSK" — the rocket guy
-- **Concept:** background only — a tiny rocket launches from behind the Sand Hill skyline every ~45s (6px flame streak, parallax layer). A sign: `ROCKET GUY'S LAUNCHPAD` / `"acquiring the fog next"`.
-- **Sprite:** none (he's never seen — only the rocket). This is the safest thin-veil because the *person never appears*.
-- **Risk note:** "Melon Tusk" is an internet-established parody name and no likeness is depicted — **lowest risk of the tier**, but the name still points at one person. A no-name rocket gag is 100% safe and 95% as funny.
-
-### R4. "SAM WALTMAN" — the AGI whisperer
-- **Concept:** stands outside the SYNERGY.AI campus holding a tiny sign: `it knows me` — implying he's either SYNERGY.AI's creator or its first believer. Gray tee (the research's own example of the safe archetype was "an unnamed AI CEO in a gray tee" — naming him un-safes it).
-- **Sprite (12×16):** gray tee `#8d99ae`, backpack, mild expression.
-- **Risk note:** the research report *specifically* used this person as the example of what NOT to do with a name. Unnamed gray-tee believer NPC = fine and already canon-adjacent to SYNERGY.AI's lore. **Recommended: ship him unnamed** — the joke ("it knows me") works better anonymous anyway.
+*Thin-veil variants were evaluated and rejected; see private notes.*
 
 ---
 
