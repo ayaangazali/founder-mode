@@ -323,3 +323,57 @@ Unattended overnight pass. All three game tests green after every commit; canon 
   boss HP canon, enemy density threatens the >80%-badge invariant for seconds of yield). §2.1's own
   hard invariant is "finishable ≤6 min" (upper bound) and T2D3 expects sub-3:00 wins to exist. The
   sanctioned lengthener is M5's +1,700px Cerebral Valley zone, traction-gated.
+
+## 2026-07-11 — [SESSION 2: M5 GATE-JUMP + READABILITY + GITHUB] — repo root
+
+Owner decisions this session: traction gate MANUALLY OPENED for M5 (option B of the morning
+report's run-length ruling); signs judged unreadable at small window sizes; repo pushed to
+GitHub (private).
+
+### Readability (main: 2ba1eec, and folded into the M5 sign re-lay)
+- Canvas snaps to integer scale above 1x — fractional scales smeared the pixel fonts.
+- Sign face 6px→8px, line-height 10 — every board re-laid and screenshot-verified clear of
+  platform text-band collisions. VERSION NOTE (speedrun contract): sign geometry is visual
+  only; no hitboxes exist on signs.
+
+### M5 — CEREBRAL VALLEY lands on main (world 7500→9200px)
+- SPEEDRUN CONTRACT VERSION NOTE: run LENGTH changed (+1700px, +1 mid-boss). Physics
+  constants (GRAV 0.35 / JUMPV -6.6 / speeds) untouched. All previous times are a
+  different category now.
+- Per design/level-cerebral-valley.js: shift rule (+1700 for x≥3956) on segs/plats/coins/
+  enemies/powerups/bosses/checkpoints; CV zone data pasted verbatim (stack-1 base nudged
+  4050→4070 to clear the zone sign; step-gap rule still met). zoneName 5 zones;
+  checkpoints [20,1930,3970,5750,7240] (spec list — boss-door checkpoints from item 12
+  superseded by the v1.0 spec; worst death-walkback ≈16s, within §2.2's ≤90s law).
+- THE PLATFORM mid-boss (4 HP, OMNICORP CLOUD DevRel mecha): drops SDK crates at the
+  player's x that land and become one-way platforms for 8s ('DEPRECATION NOTICE' on
+  expiry) — the crates are the ladder to its head. No hop (it is huge), bspd 0.35,
+  same stomp/i-frame/pogo rules as the other bosses. Kill: 'DEPRECATED! +$350K'.
+- THOUGHT LEADER 't' (sine flyer, THREAD bombs every 150f within 220px, unstompable in
+  its 36f posting window — halo glows) and COMPLIANCE PHANTOM 'c' (terrain-ignoring
+  0.3-speed drifter, 0.72 alpha). Stomps: RATIO'D! / EXEMPTED! +$15K. Both count for
+  ZERO CHURN.
+- ROBOTAXI: neutral rideable moving platform, patrol 4960-5300 at 0.7, stops 2s every
+  220f ('UNPLANNED STOP (safe)' if ridden); riding does not tick burn rate.
+- CV biome row (fog-purple, GPU-green windows, foggy:1 heavy Karl) per design-biomes §2.
+- Golden Gate anchor 7700, NOT the spec's 8600 — the spec predates the war-room
+  unreachable-anchor finding; 8600 needs cam>9435 vs the new 8720 clamp (dead code
+  again). 7700 = war-room fix + shift.
+- Sign re-lay notes: HF-0 MONASTERY → Cerebral Valley 4640 (its BIBLE §8 canon home);
+  FOUNDERS ETC. → 7380 (The Cloud approach); CHAD CAPITAL HQ → 7032 (post-arena);
+  A17Z/SEQUOIADENDRON/ANGEL/VC-AHEAD along 5880-6350; DEVREL herald board deliberately
+  overhangs the arena pit (post on solid ground at 5317).
+- v1.0 powerups from BIBLE §6: MATCHA (+15% jump 10s, zen particles, HUD MATCHA'D),
+  ENTERPRISE CONTRACT (+$100K, speed ×0.85 8s, HUD ENTERPRISE PROCESS), RUG TOKEN
+  (-$5K, the glint is slightly wrong). Placed 2248/6270/{2900,5060,7520}.
+- Badge: BOSSES n/3. Market lever aims re-pointed (aihype → bosses[2]; layoffs scooters
+  → 5850/6130 on the new Sand Hill).
+- MASTER-PLAN §1.7 items NOT included in this pass: multiple endings, SERIES B MODE,
+  LARPer/tokenmaxxer/run-club bestiary, coffee-chat snare (each is its own milestone).
+- playtest.js gains the Platform leg (5410 trigger check + crates>0); fullrun bot
+  learned: never hop at flyers, abort pit-creep when a ground enemy closes.
+
+### GitHub
+- Private repo github.com/ayaangazali/founder-mode; main + testing + tags pushed.
+  TIER 2 strip landed before any push (FINAL-REVIEW §4.4 satisfied); canon greps clean
+  at every pushed commit.

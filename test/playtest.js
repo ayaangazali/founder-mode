@@ -25,30 +25,37 @@ const { chromium } = require('playwright');
   const s1 = await page.evaluate(() => ({ x: Math.round(player.x), hearts, raised, state, zone: zoneName(player.x) }));
   console.log('after running:', JSON.stringify(s1));
 
-  // teleport to VC boss arena
-  await page.evaluate(() => { player.x = 4730; player.y = 100; cam = 4630; });
+  // teleport to THE PLATFORM arena (Cerebral Valley mid-boss)
+  await page.evaluate(() => { player.x = 5410; player.y = 100; cam = 5310; });
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: 'shot3b_platformboss.png' });
+  const s2b = await page.evaluate(() => ({ platformActive: bosses[0].active, platformHp: bosses[0].hp, crates: crates.length }));
+  console.log('platform boss:', JSON.stringify(s2b));
+
+  // cheat-kill the platform, teleport to VC boss arena
+  await page.evaluate(() => { bosses[0].hp = 0; bosses[0].dead = true; player.x = 6450; player.y = 100; cam = 6350; hearts = 3; });
   await page.waitForTimeout(1200);
   await page.screenshot({ path: 'shot3_vcboss.png' });
-  const s2 = await page.evaluate(() => ({ vcActive: bosses[0].active, vcHp: bosses[0].hp, shots: shots.length }));
+  const s2 = await page.evaluate(() => ({ vcActive: bosses[1].active, vcHp: bosses[1].hp, shots: shots.length }));
   console.log('vc boss:', JSON.stringify(s2));
 
   // cheat-kill vc boss, teleport to final boss
-  await page.evaluate(() => { bosses[0].hp = 0; bosses[0].dead = true; player.x = 6790; player.y = 100; cam = 6700; player.ycT = 0; hearts = 3; });
+  await page.evaluate(() => { bosses[1].hp = 0; bosses[1].dead = true; player.x = 8490; player.y = 100; cam = 8390; player.ycT = 0; hearts = 3; });
   await page.waitForTimeout(1200);
   await page.screenshot({ path: 'shot4_aiboss.png' });
-  const s3 = await page.evaluate(() => ({ aiActive: bosses[1].active, aiHp: bosses[1].hp, shots: shots.length }));
+  const s3 = await page.evaluate(() => ({ aiActive: bosses[2].active, aiHp: bosses[2].hp, shots: shots.length }));
   console.log('ai boss:', JSON.stringify(s3));
 
   // kill final boss, walk to bell
-  await page.evaluate(() => { bosses[1].hp = 1; });
+  await page.evaluate(() => { bosses[2].hp = 1; });
   // stomp: place player above boss falling
-  await page.evaluate(() => { player.x = bosses[1].x + 8; player.y = bosses[1].y - 30; player.vy = 3; });
+  await page.evaluate(() => { player.x = bosses[2].x + 8; player.y = bosses[2].y - 30; player.vy = 3; });
   await page.waitForTimeout(600);
-  const s4 = await page.evaluate(() => ({ aiDead: bosses[1].dead, raised }));
+  const s4 = await page.evaluate(() => ({ aiDead: bosses[2].dead, raised }));
   console.log('after stomp:', JSON.stringify(s4));
 
   await page.keyboard.up('ArrowRight');
-  await page.evaluate(() => { player.x = 7380; player.y = 180; });
+  await page.evaluate(() => { player.x = 9080; player.y = 180; });
   await page.keyboard.down('ArrowRight');
   await page.waitForTimeout(1500);
   await page.keyboard.up('ArrowRight');

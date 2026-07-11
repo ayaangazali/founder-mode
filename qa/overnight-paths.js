@@ -39,10 +39,10 @@ async function start(page){
   {
     const { ctx, page, errors } = await fresh(browser);
     await start(page);
-    // stage the honest late-game state: Chad already beaten (his wall would
-    // otherwise reclaim a cheat-teleported player on respawn — unreachable live)
-    await page.evaluate(() => { bosses[0].dead = true; raised = 400; player.x = 6800; checkpoint = 6740;
-                                hearts = 1; player.hurtT = 0; enemies.push(makeEnemy({x: 6810, t: 'g'})); });
+    // stage the honest late-game state: Platform + Chad already beaten (their walls
+    // would otherwise reclaim a cheat-teleported player on respawn — unreachable live)
+    await page.evaluate(() => { bosses[0].dead = true; bosses[1].dead = true; raised = 400; player.x = 8300;
+                                checkpoint = 7240; hearts = 1; player.hurtT = 0; enemies.push(makeEnemy({x: 8310, t: 'g'})); });
     await page.waitForTimeout(1200);
     const dead = await page.evaluate(() => ({ state, ui: document.getElementById('ui').style.display }));
     check('death → OUT OF RUNWAY end screen', dead.state === 3 && dead.ui === 'flex');
@@ -50,7 +50,7 @@ async function start(page){
     await page.waitForTimeout(350);
     const r = await page.evaluate(() => ({ x: player.x, hearts, raised, state,
                                            aiBack: !bosses[1].dead && !bosses[1].active }));
-    check('PIVOT respawns at checkpoint 6740 with 3 hearts', r.state === 1 && Math.abs(r.x - 6740) < 5 && r.hearts === 3, `x=${Math.round(r.x)}`);
+    check('PIVOT respawns at checkpoint 7240 with 3 hearts', r.state === 1 && Math.abs(r.x - 7240) < 5 && r.hearts === 3, `x=${Math.round(r.x)}`);
     check('BRIDGE ROUND haircut −25% (400→300)', r.raised === 300, `raised=${r.raised}`);
     // R from DEAD = checkpoint retry too (haircut asserted against the exact
     // raised value frozen on the death screen — stray stomps don't matter)
@@ -64,7 +64,7 @@ async function start(page){
     // legitimate stomp (+$10K), so the haircut check accepts exp or exp+10
     const exp = Math.floor(atDeath.raised * 0.75);
     check('R from DEAD retries from checkpoint with haircut',
-          atDeath.state === 3 && r2.state === 1 && Math.abs(r2.x - 6740) < 5
+          atDeath.state === 3 && r2.state === 1 && Math.abs(r2.x - 7240) < 5
           && (r2.raised === exp || r2.raised === exp + 10),
           `x=${Math.round(r2.x)} raised ${atDeath.raised}→${r2.raised}`);
     check('no page errors (death/retry block)', errors.length === 0, errors.join(' | '));
@@ -75,7 +75,7 @@ async function start(page){
   {
     const { ctx, page, errors } = await fresh(browser);
     await start(page);
-    await page.evaluate(() => { bosses.forEach(b => { b.dead = true; }); raised = 500; player.x = 7395; });
+    await page.evaluate(() => { bosses.forEach(b => { b.dead = true; }); raised = 500; player.x = 9095; });
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(700); await page.keyboard.up('ArrowRight');
     const w = await page.evaluate(() => ({ state, bellDone, raised }));
     check('bell → WIN state + $1M bell bonus', w.state === 2 && w.bellDone && w.raised === 1500, `raised=${w.raised}`);
@@ -95,7 +95,7 @@ async function start(page){
     const flairBoth = await page.evaluate(() => {
       enemies.forEach(e => e.dead = true);
       bosses.forEach(b => { b.dead = true; });
-      playMs = 150000; endTime = 0; player.x = 7395;
+      playMs = 150000; endTime = 0; player.x = 9095;
       return true;
     });
     void flairBoth;
@@ -112,7 +112,7 @@ async function start(page){
     await page.evaluate(() => { // slow win with one survivor → NO flairs
       enemies.forEach((e, i) => e.dead = i !== 0);
       bosses.forEach(b => { b.dead = true; });
-      playMs = 200000; endTime = 0; player.x = 7395;
+      playMs = 200000; endTime = 0; player.x = 9095;
     });
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(700); await page.keyboard.up('ArrowRight');
     const f2 = await page.evaluate(() => badgeFlairs(true));

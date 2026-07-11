@@ -21,16 +21,20 @@ const QUIET = process.argv.includes('--quiet');
 const SHOTDIR = path.resolve(__dirname, '../qa/overnight');
 const TAG = CASUAL ? 'casual' : 'clean';
 
-// world knowledge mirrored from LEVEL DATA (the bot's map, not access)
+// world knowledge mirrored from LEVEL DATA (the bot's map, not access) — v1.0 world
+// (adjacent CV/Sand-Hill segs merged at 5656: no pit there, no false lip stops)
 const SEGS = [[0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],
-              [3956,4600],[4644,5450],[5504,6300],[6352,7500]];
+              [3956,4420],[4480,4900],[4948,5320],[5372,6300],
+              [6344,7150],[7204,8000],[8052,9200]];
 const TICK = CASUAL ? 130 : 50;
-const MAX_RECOVERIES = 3;
+const MAX_RECOVERIES = CASUAL ? 6 : 4; // tourists die — that's what checkpoints are for
+                                       // (§2.1 budgeted 2 deaths across 4 zones; 5 denser zones earn 6)
 // tourist behavior stops (casual mode): sign posts get read, coin platforms get
 // attempted. Pauses stay ≤3s — always under the 4s minimum burn-rate tick.
-const SIGN_STOPS = [70, 250, 640, 1080, 1500, 1930, 2200, 2720, 3050, 3620, 3760,
-                    4020, 4200, 4320, 4460, 4560, 5540, 5880, 6000, 6560, 6700];
-const COIN_DETOURS = [420, 1060, 2170, 2550, 3290, 3700, 4250, 5750, 6050];
+const SIGN_STOPS = [70, 250, 640, 1040, 1500, 1930, 2120, 2720, 3050, 3958, 4180,
+                    4450, 4640, 5062, 5270, 5690, 5880, 6000, 6180, 6350, 7032,
+                    7210, 7380, 7490, 7690, 8260, 8400];
+const COIN_DETOURS = [420, 1060, 2170, 2550, 3260, 4164, 4680, 5114, 5928, 7460, 7750];
 
 async function snap(page, name){
   if (QUIET) return;
@@ -66,7 +70,7 @@ const lipDist = x => {                      // distance from player x to the cur
     bosses: bosses.map(b => ({ id: b.id, x: b.x, w: b.w, hp: b.hp,
                                active: b.active, dead: b.dead, trigger: b.trigger, wall: b.wall })),
     near: enemies.filter(e => !e.dead && e.x > player.x - 24 && e.x < player.x + 110)
-                 .map(e => ({ x: e.x, t: e.t })),
+                 .map(e => ({ x: e.x, y: e.y, t: e.t })),
     shotsNear: shots.filter(s2 => Math.abs(s2.x - player.x) < 70).length,
     bellDone,
   }));
@@ -162,15 +166,16 @@ const lipDist = x => {                      // distance from player x to the cur
       await setRight(false);
       let creeps = 0;
       while (creeps++ < 60){
-        const c = await page.evaluate(() => ({ x: player.x, og: player.onGround, state }));
+        const c = await page.evaluate(() => ({ x: player.x, og: player.onGround, state,
+          danger: enemies.some(e => !e.dead && e.t !== 't' && e.y > 185 && Math.abs(e.x - player.x) < 50) }));
         if (c.state !== 1) break;
         if (!c.og) break;                                       // fell — respawn logic handles it
         const cd = lipDist(c.x + 12);
         if (cd > 70) break;                                     // moved past (respawned/knocked back)
-        if (cd <= (CASUAL ? 9 : 6)){
-          await setRight(true);
-          await jump(380);                                      // full arc, right held
-          await page.waitForTimeout(450);                       // ride it out
+        if (cd <= (CASUAL ? 9 : 6) || c.danger){                // lip reached — or something is
+          await setRight(true);                                 // closing in: jump NOW, a wet landing
+          await jump(380);                                      // costs a heart, a corpse costs a run
+          await page.waitForTimeout(450);
           break;
         }
         await page.keyboard.down('ArrowRight'); await page.waitForTimeout(28); await page.keyboard.up('ArrowRight');
@@ -203,8 +208,13 @@ const lipDist = x => {                      // distance from player x to the cur
 
     await setRight(true);
     const now = Date.now();
-    const enemyAhead = s.near.some(e => e.x > s.x - 4 && e.x - s.x < (CASUAL ? 46 : 85));
-    if (s.og && enemyAhead && d > 90 && now - lastJump > 300){
+    // hop only at GROUND-level threats; thought leaders hover above head height —
+    // the correct play is to keep walking underneath them, never to jump into them.
+    // And if a flyer IS overhead, don't hop at all: walk through and let the
+    // i-frames absorb the gremlin — a heart is cheaper than the flyer sandwich.
+    const flyerOverhead = s.near.some(e => e.t === 't' && Math.abs(e.x - s.x) < 60);
+    const enemyAhead = s.near.some(e => e.t !== 't' && e.y > 185 && e.x > s.x - 4 && e.x - s.x < (CASUAL ? 46 : 85));
+    if (s.og && enemyAhead && !flyerOverhead && d > 90 && now - lastJump > 300){
       lastJump = now; await jump(210);                          // stomp-or-clear hop
     }
     await page.waitForTimeout(TICK);

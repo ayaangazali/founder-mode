@@ -200,26 +200,39 @@ function px(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(Math.round(x),Math.round(y),
 
 // ------------------------- LEVEL DATA -------------------------
 const GROUND_Y = 232;
-const LEVEL_W = 7500;
+// v1.0 WORLD STRETCH (design/level-cerebral-valley.js): CEREBRAL VALLEY inserted at
+// the x=3956 pit; every original x >= 3956 shifted +1700. Traction gate opened by
+// owner decision 2026-07-11. Physics constants untouched; level LENGTH is a
+// speedrun-contract change — version note appended to qa/CHANGELOG.md.
+const LEVEL_W = 9200;
 
-// ground segments [x0, x1] — gaps between are pits
+// ground segments [x0, x1] — gaps between are pits (all pits <= 60px, validated)
 const segs = [
   [0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],
-  [3956,4600],[4644,5450],[5504,6300],[6352,7500]
+  [3956,4420],[4480,4900],[4948,5320],[5372,5656],      // CEREBRAL VALLEY
+  [5656,6300],[6344,7150],[7204,8000],[8052,9200]
 ];
 
 // floating platforms [x, y, w]  (crates / scaffolding / clouds)
+// §E reachability fixes applied (level-cerebral-valley.js): 3290→3260 and the
+// shifted 4250→5918 close 84/86px gaps to 54; the two y:168 plats drop to 174
+// (rise 64 > 62px jump apex). "100% coins" is now actually possible.
+// CV stack-1 base nudged 4050→4070 to clear the zone sign (step gaps stay <=48).
 const plats = [
   [300,190,56],[420,152,56],[560,190,56],
   [900,182,72],[1060,146,56],[1180,182,56],
   [1650,178,64],
   [2050,184,56],[2170,148,56],[2290,184,56],
   [2550,170,88],
-  [3150,182,56],[3290,150,56],[3430,182,56],
-  [3700,168,72],
-  [4100,184,64],[4250,148,64],[4400,184,64],
-  [5600,178,72],[5750,142,64],[5900,178,72],[6050,142,64],[6180,178,64],
-  [6450,168,72]
+  [3150,182,56],[3260,150,56],[3430,182,56],
+  [3700,174,72],
+  [4070,184,56],[4154,150,56],[4258,116,64],            // CV stack 1: hacker-house climb
+  [4560,180,72],[4680,146,64],[4792,180,64],            // CV stack 2: over the phantom
+  [5000,180,56],[5104,146,56],[5208,180,72],            // CV stack 3: robotaxi route
+  [5420,180,64],                                        // CV boss-arena approach perch
+  [5800,184,64],[5918,148,64],[6100,184,64],
+  [7300,178,72],[7450,142,64],[7600,178,72],[7750,142,64],[7880,178,64],
+  [8150,174,72]
 ];
 
 // coins: rows {x,y,n}
@@ -229,83 +242,113 @@ const coinRows = [
   {x:1660,y:160,n:4},
   {x:2060,y:166,n:3},{x:2180,y:130,n:3},{x:2300,y:166,n:3},
   {x:2560,y:152,n:5},
-  {x:3160,y:164,n:3},{x:3300,y:132,n:3},{x:3440,y:164,n:3},
-  {x:3710,y:150,n:4},
-  {x:4110,y:166,n:4},{x:4260,y:130,n:4},{x:4410,y:166,n:4},
-  {x:5610,y:160,n:4},{x:5760,y:124,n:4},{x:5910,y:160,n:4},{x:6060,y:124,n:4},
-  {x:6460,y:150,n:4},
+  {x:3160,y:164,n:3},{x:3270,y:132,n:3},{x:3440,y:164,n:3},
+  {x:3710,y:156,n:4},
+  {x:4080,y:166,n:3},{x:4164,y:132,n:3},{x:4268,y:98,n:4},   // CV climbs
+  {x:4570,y:162,n:4},{x:4690,y:128,n:3},
+  {x:5010,y:162,n:3},{x:5114,y:128,n:4},{x:5430,y:162,n:4},
+  {x:5810,y:166,n:4},{x:5928,y:130,n:4},{x:6110,y:166,n:4},
+  {x:7310,y:160,n:4},{x:7460,y:124,n:4},{x:7610,y:160,n:4},{x:7760,y:124,n:4},
+  {x:8160,y:156,n:4},
   {x:790,y:200,n:2},{x:1432,y:200,n:2},{x:2360,y:200,n:2},{x:2990,y:200,n:2},
-  {x:3910,y:200,n:2},{x:4608,y:200,n:2},{x:5460,y:200,n:2},{x:6310,y:200,n:2}
+  {x:3910,y:200,n:2},
+  {x:4430,y:200,n:2},{x:4910,y:200,n:2},{x:5330,y:200,n:2},  // CV pit bait
+  {x:6308,y:200,n:2},{x:7160,y:200,n:2},{x:8010,y:200,n:2}
 ];
 
-// enemies {x, t}  t: g=churn gremlin, m=standing meeting, s=scooter bro
+// enemies {x, t}  t: g=churn gremlin, m=standing meeting, s=scooter bro,
+//                 t=thought leader (sine flyer), c=compliance phantom (drifter)
 const enemyDefs = [
   {x:520,t:'g'},{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
   {x:1980,t:'m'},{x:2230,t:'m'},{x:2620,t:'m'},{x:2860,t:'m'},
   {x:3200,t:'s'},{x:3480,t:'s'},{x:3760,t:'g'},{x:3850,t:'m'},
-  {x:4050,t:'s'},{x:4300,t:'g'},{x:4480,t:'m'},
-  {x:5620,t:'m'},{x:5880,t:'g'},{x:6100,t:'s'},{x:6420,t:'m'}
+  {x:4100,t:'g'},{x:4250,t:'t'},{x:4500,t:'c'},              // CEREBRAL VALLEY
+  {x:4750,t:'t'},{x:4880,t:'m'},{x:5050,t:'c'},{x:5200,t:'t'},
+  {x:5750,t:'s'},{x:6000,t:'g'},{x:6180,t:'m'},
+  {x:7320,t:'m'},{x:7580,t:'g'},{x:7800,t:'s'},{x:8120,t:'m'}
 ];
 
-// powerups {x,y,t}  t: coffee | yc | sheet
+// powerups {x,y,t}  t: coffee | yc | sheet | matcha | contract | rug
 const powerDefs = [
   {x:1085,y:130,t:'coffee'},
+  {x:2248,y:126,t:'matcha'},                                 // v1.0: the calm counter-meta
   {x:2585,y:154,t:'sheet'},
-  {x:4270,y:132,t:'yc'},
-  {x:5775,y:126,t:'coffee'},
-  {x:6475,y:152,t:'sheet'}
+  {x:2900,y:200,t:'rug'},                                    // v1.0 trap: glints slightly wrong
+  {x:4715,y:122,t:'coffee'},                                 // CEREBRAL VALLEY
+  {x:5060,y:126,t:'rug'},
+  {x:5245,y:150,t:'sheet'},
+  {x:5970,y:132,t:'yc'},
+  {x:6270,y:196,t:'contract'},                               // v1.0: big logo, heavy process
+  {x:7475,y:126,t:'coffee'},
+  {x:7520,y:196,t:'rug'},
+  {x:8175,y:152,t:'sheet'}
 ];
 
-// joke signs {x, lines[]}
-// v0.2 set from MASTER-PLAN §1.6 landed. Shifts (all on verified segs, screenshot-
-// checked): HIRING 1150→1080 and CAFÉ 2320→2200 — crate platforms at [1180,182] /
-// [2290,184] sat on the 3-line text band at every ±40 position, so these take the
-// nearest clean ground instead. MIND THE GAPS moved 6000→5880 so NOW ENTERING keeps
-// its §1.6-verified 6000 (both fit seg [5504,6300]).
+// joke signs {x, lines[]} — re-laid for the v1.0 world + the 8px readable font
+// (wider boards). Every placement screenshot-checked: anchors on segs, boards
+// clear of crate platforms in the text band, no signs inside boss arenas.
+// HF-0 MONASTERY moved to its canon home (Cerebral Valley, BIBLE §8); FOUNDERS
+// ETC. and A17Z re-homed around the Chad arena; DEVREL herald hangs its board
+// over the arena pit on purpose (post on solid ground).
 const signs = [
   {x:70,  l:['SOMA','← nothing  glory →']},
   {x:250, l:['$8 ARTISANAL','TOAST']},
   {x:640, l:['CHURN GREMLINS','stomp on sight']},
-  {x:1080,l:['HIRING: 10X ENGINEER','pay: exposure','(to churn gremlins)']},
+  {x:1040,l:['HIRING: 10X ENGINEER','pay: exposure','(to churn gremlins)']},
   {x:1500,l:['COWORKING','space available','(all of it)']},
   {x:1930,l:['THE MISSION','beware: standing','meetings']},
-  {x:2200,l:['CAFÉ SEMICOLON','laptops allowed','working discouraged']},
+  {x:2120,l:['CAFÉ SEMICOLON','laptops allowed','working discouraged']},
   {x:2720,l:['VALENCIA ST','4 coffee shops','0 profits']},
-  {x:3050,l:['PIVOT AHEAD','(the road, and you)']},
-  {x:3620,l:['SAND HILL ROAD','pitch or perish']},
-  // fund district (BIBLE §8): parody morphs, invented marks — canon rule 3
-  {x:3760,l:['A17Z','"software eats,','we invoice"']},
-  {x:4020,l:['SEQUOIADENDRON','est. before','your parents']},
-  {x:4200,l:['ANGEL CROSSING','they can smell','your cap table']},
-  {x:4320,l:['FOUNDERS ETC.','a fort.','actually a fort.']},
-  {x:4460,l:['HF-0 MONASTERY','ship or pray','(both)']},
-  {x:4560,l:['WARNING: VC AHEAD','know your CAC']},
-  {x:4700,l:['CHAD CAPITAL HQ','"we invest in people"','(who look like chad)']},
-  {x:5540,l:['THE CLOUD','99.99% uptime*']},
-  {x:5880,l:['MIND THE GAPS',"(that's the 0.01%)"]},
-  {x:6000,l:['NOW ENTERING','THE CLOUD','*not actual uptime']},
-  {x:6560,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']},
-  {x:6700,l:['SYNERGY.AI CAMPUS','humans welcome','(as training data)']}
+  {x:3050,l:['PIVOT AHEAD','(the road,','and you)']},
+  // ---- CEREBRAL VALLEY (design/level-cerebral-valley.js CV_SIGNS) ----
+  {x:3958,l:['CEREBRAL VALLEY','11 founders/house','1 GPU']},
+  {x:4180,l:['DEMO DAY 5PM','pitch: 2 min','trauma: lifetime']},
+  {x:4450,l:['HACKER HOUSE','rent: $2400/bunk','equity accepted']},
+  {x:4640,l:['HF-0 MONASTERY','ship or pray','(both)']},
+  {x:5062,l:['GPU FOR SALE','never used','(waitlist: 14mo)']},
+  {x:5270,l:['WARNING:','DEVREL AHEAD','OMNICORP CLOUD']},
+  // ---- SAND HILL ROAD (fund district, BIBLE §8) ----
+  {x:5690,l:['SAND HILL ROAD','pitch or perish']},
+  {x:5880,l:['A17Z','"software eats,','we invoice"']},
+  {x:6000,l:['SEQUOIADENDRON','est. before','your parents']},
+  {x:6180,l:['ANGEL CROSSING','they can smell','your cap table']},
+  {x:6350,l:['WARNING: VC AHEAD','know your CAC']},
+  {x:7032,l:['CHAD CAPITAL HQ','"we invest in people"','(who look like chad)']},
+  // ---- THE CLOUD ----
+  {x:7210,l:['THE CLOUD','99.99% uptime*']},
+  {x:7380,l:['FOUNDERS ETC.','a fort.','actually a fort.']},
+  {x:7490,l:['MIND THE GAPS',"(that's the 0.01%)"]},
+  {x:7690,l:['NOW ENTERING','THE CLOUD','*not actual uptime']},
+  {x:8260,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']},
+  {x:8400,l:['SYNERGY.AI CAMPUS','humans welcome','(as training data)']}
 ];
 
 // cameo NPCs {x, id, h, line} — background only: no collision, no update, no state.
 // composite ARCHETYPES, never identifiable people (canon rule 3; shipping tier of design-cameos.md)
+// post-shift: contrarian 3990→5960 (Sand Hill fund row, clear of the new signs),
+// exited 6135→7835 (still The Cloud); podcast stays 3560 (now Mission-end — fine).
 const cameos = [
   {x:455,  id:'shipper',    h:16, line:"IT'S 2AM. GREAT TIME TO SHIP."},
   {x:1740, id:'stealth',    h:16, line:"WE'RE IN STEALTH. TELL EVERYONE."},
   {x:2470, id:'eacc',       h:15, line:"THE FUTURE WON'T POST ITSELF."},
   {x:3560, id:'podcast',    h:16, line:"GREAT QUESTION. SEE EPISODE 400."},
-  {x:3990, id:'contrarian', h:17, line:"EVERYONE AGREES WITH ME. TROUBLING."},
-  {x:6135, id:'exited',     h:16, line:"I EXITED. I'M FINE. ASK ME IF I'M FINE."}
+  {x:5960, id:'contrarian', h:17, line:"EVERYONE AGREES WITH ME. TROUBLING."},
+  {x:7835, id:'exited',     h:16, line:"I EXITED. I'M FINE. ASK ME IF I'M FINE."}
 ];
 
 function zoneName(x){
   if (x < 1900) return 'SOMA';
-  if (x < 3600) return 'THE MISSION';
-  if (x < 5460) return 'SAND HILL ROAD';
+  if (x < 3900) return 'THE MISSION';
+  if (x < 5656) return 'CEREBRAL VALLEY';
+  if (x < 7160) return 'SAND HILL ROAD';
   return 'THE CLOUD';
 }
-const checkpoints = [20, 1930, 3660, 4700, 5350, 6740];
+const checkpoints = [20, 1930, 3970, 5750, 7240]; // one per zone start (5 zones)
+
+// ROBOTAXI — neutral rideable moving platform (CV seg 3). NOT an enemy: it cannot
+// hurt you; you can, canonically, trust it more than the scooter bro.
+const ROBOTAXI = { x0:4960, x1:5300, w:30, top:GROUND_Y-14, speed:0.7, stopEvery:220, stopFor:120 };
+let taxi = { x:4960, dir:1, stopT:0, moveT:0 };
 
 // ------------------- DAILY SEED + MARKET CONDITIONS (ROADMAP §7) -------------------
 // The calendar date is the ONLY wall-clock read in the game (a daily seed is date-
@@ -345,6 +388,7 @@ let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (back
 let hitstopT = 0, shakeT = 0, prevJump = false;
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
+let crates = [];   // v1.0: SDK crates dropped by THE PLATFORM — fall, land, become 8s platforms
 
 let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
 
@@ -352,13 +396,16 @@ function makeEnemy(d){
   const base = { x:d.x, y:GROUND_Y-14, w:14, h:14, t:d.t, dir:-1, dead:false, vy:0, hopT:0 };
   if (d.t==='m'){ base.w=16; base.h=18; base.y=GROUND_Y-18; }
   if (d.t==='s'){ base.w=16; base.h=14; }
+  if (d.t==='t'){ base.w=16; base.h=14; base.y=GROUND_Y-58; base.baseY=GROUND_Y-58; base.x0=d.x; } // flyer
+  if (d.t==='c'){ base.w=14; base.h=16; base.y=GROUND_Y-40; }                                      // drifter
   return base;
 }
 
 function reset(fromCheckpoint){
   const startX = fromCheckpoint ? checkpoint : 20;
   player = { x:startX, y:GROUND_Y-40, w:12, h:16, vx:0, vy:0, onGround:false, face:1,
-             coffeeT:0, ycT:0, hurtT:0, bounceT:0, jbuf:0, pogo:false, runFrame:0 };
+             coffeeT:0, ycT:0, hurtT:0, bounceT:0, jbuf:0, pogo:false, runFrame:0,
+             matchaT:0, slowT:0 };  // v1.0 powerups: zen jump / enterprise process
   cam = Math.max(0, startX - 100);
   if (!fromCheckpoint){
     coins = [];
@@ -366,21 +413,27 @@ function reset(fromCheckpoint){
     enemies = enemyDefs.map(makeEnemy);
     powers = powerDefs.map(p => ({...p, w:14, h:14, got:false}));
     bosses = [
-      { id:'vc', x:5150, y:GROUND_Y-34, w:26, h:34, hp:3, maxhp:3, trigger:4720, wall:5330, active:false, dead:false,
+      // world order: THE PLATFORM (Cerebral Valley mid-boss) → CHAD → SYNERGY.AI
+      { id:'platform', x:5560, y:GROUND_Y-48, w:40, h:48, hp:4, maxhp:4, trigger:5390, wall:5640, active:false, dead:false,
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'THE PLATFORM',
+        quips:['BUILD ON US','WE LOVE STARTUPS','FREE CREDITS*','THE API CHANGED THIS MORNING','YOUR CATEGORY IS OUR KEYNOTE'] },
+      { id:'vc', x:6850, y:GROUND_Y-34, w:26, h:34, hp:3, maxhp:3, trigger:6420, wall:7030, active:false, dead:false,
         dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'CHAD CAPITAL',
         quips:["WHAT'S YOUR MOAT?","COME BACK AT $1M ARR","A FEATURE, NOT A COMPANY.","LOVE IT. PASSING.","MY VEST IS LOAD-BEARING","I NEED 10X, KID",
                // v0.2 additions (MASTER-PLAN §1.4) + the fund-district tie-in (BIBLE §8)
                "SEND ME A DECK","WHO ELSE IS IN?","MY LPs ARE NERVOUS","IS THERE AI IN THIS?","I'M ALSO IN A17Z'S NEW FUND"] },
-      { id:'ai', x:7080, y:GROUND_Y-44, w:32, h:44, hp:5, maxhp:5, trigger:6760, wall:7340, active:false, dead:false,
+      { id:'ai', x:8780, y:GROUND_Y-44, w:32, h:44, hp:5, maxhp:5, trigger:8460, wall:9040, active:false, dead:false,
         dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'SYNERGY.AI',
         quips:["I AM AGENTIC.","YOUR STARTUP IS A PROMPT","DEPLOYING SYNERGY...","I RAISED $2B ON A DECK","HUMANS ARE LEGACY CODE",
                // v0.2 additions (MASTER-PLAN §1.4)
                "I AM AI-NATIVE. YOU ARE AI-NAIVE.","YOUR MOAT IS MY FEATURE","GENERATING SLOP...","I PIVOTED 14 TIMES TODAY","THIS CONVERSATION IS TRAINING DATA"] }
     ];
     bosses.forEach(b => { b.x0 = b.x; b.y0 = b.y; });
+    crates = [];                                            // SDK crates (Platform boss)
+    taxi = { x:ROBOTAXI.x0, dir:1, stopT:0, moveT:0 };      // robotaxi back to depot
     // daily market conditions — each pulls one existing lever (ROADMAP §7)
-    if (MK === 'aihype'){ bosses[1].hp = bosses[1].maxhp = 6; }
-    if (MK === 'layoffs'){ enemies.push(makeEnemy({x:4150,t:'s'}), makeEnemy({x:4430,t:'s'})); }
+    if (MK === 'aihype'){ bosses[2].hp = bosses[2].maxhp = 6; }
+    if (MK === 'layoffs'){ enemies.push(makeEnemy({x:5850,t:'s'}), makeEnemy({x:6130,t:'s'})); }
     if (MK === 'conf'){ let mi = 0; for (const e of enemies) if (e.t === 'm' && mi++ % 2) e.dead = true; }
     shots = []; parts = []; popups = [];
     raised = 0; hearts = MK === 'bull' ? 4 : 3; maxHearts = hearts;
@@ -390,7 +443,7 @@ function reset(fromCheckpoint){
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
-    shots.length = 0;
+    shots.length = 0; crates.length = 0;
     for (const b of bosses){
       if (!b.dead){ // live boss back to its trigger state; dead bosses stay dead
         b.active = false; b.x = b.x0; b.y = b.y0; b.vy = 0;
@@ -415,15 +468,19 @@ function groundBelow(x, w){
 function collidePlats(p){
   // one-way platforms: land only when falling onto top
   if (p.vy < 0) return;
-  for (const pl of plats){
-    const [px0, py0, pw] = pl;
+  const land = (px0, py0, pw) => {
     if (p.x + p.w > px0 && p.x < px0 + pw){
       const prevBottom = p.y + p.h - p.vy;
       if (prevBottom <= py0 + 4 && p.y + p.h >= py0){
         p.y = py0 - p.h; p.vy = 0; p.onGround = true;
+        return true;
       }
     }
-  }
+    return false;
+  };
+  for (const pl of plats) land(pl[0], pl[1], pl[2]);
+  for (const c of crates) if (c.landed) land(c.x, c.y, 16);          // SDK lock-in is load-bearing
+  if (land(taxi.x, ROBOTAXI.top, ROBOTAXI.w)) p.onTaxi = true;       // rideable robotaxi roof
 }
 
 function hurtPlayer(){
@@ -453,8 +510,23 @@ function update(){
   playMs += 1000 / 60; // simulated play clock — the only clock the HUD/badge trust
   const p = player;
 
+  // -------- robotaxi (neutral moving platform; stops dead mid-route, lovingly) --------
+  taxi.dx = 0;
+  if (taxi.stopT > 0){ taxi.stopT--; }
+  else {
+    taxi.dx = taxi.dir * ROBOTAXI.speed;
+    taxi.x += taxi.dx;
+    if (taxi.x <= ROBOTAXI.x0){ taxi.x = ROBOTAXI.x0; taxi.dir = 1; }
+    if (taxi.x >= ROBOTAXI.x1 - ROBOTAXI.w){ taxi.x = ROBOTAXI.x1 - ROBOTAXI.w; taxi.dir = -1; }
+    if (++taxi.moveT >= ROBOTAXI.stopEvery){
+      taxi.moveT = 0; taxi.stopT = ROBOTAXI.stopFor;
+      if (p.onTaxi) addPop(taxi.x, ROBOTAXI.top - 24, 'UNPLANNED STOP (safe)', '#8d99ae');
+    }
+  }
+
   // -------- player --------
-  const speed = p.coffeeT > 0 ? 2.5 : 1.7;
+  // cold brew boosts, enterprise process drags (×0.85, big logo heavy process)
+  const speed = (p.coffeeT > 0 ? 2.5 : 1.7) * (p.slowT > 0 ? 0.85 : 1);
   if (L()) { p.vx = -speed; p.face = -1; }
   else if (R()) { p.vx = speed; p.face = 1; }
   else p.vx *= 0.7;
@@ -464,7 +536,7 @@ function update(){
   if (jNow && !prevJump){ p.jbuf = 6; p.pogo = false; } // a fresh press re-arms the stomp
   else if (p.jbuf > 0) p.jbuf--;
   prevJump = jNow;
-  if (p.jbuf > 0 && p.onGround){ p.vy = JUMPV; p.onGround = false; p.jbuf = 0; sJump(); }
+  if (p.jbuf > 0 && p.onGround){ p.vy = p.matchaT > 0 ? JUMPV * 1.15 : JUMPV; p.onGround = false; p.jbuf = 0; sJump(); } // matcha: zen +15% jump
   // variable jump height (stomp reward-bounces exempt from the jump-cut)
   if (!jNow && p.vy < -2.5 && !(p.bounceT > 0)) p.vy = -2.5;
 
@@ -477,7 +549,9 @@ function update(){
   // narrower centered foot sensor (no 1px-toe mid-air stands); prev-frame-above guard (no pit-wall snap-up)
   const g = groundBelow(p.x + 3, p.w - 6);
   if (g !== null && p.y + p.h >= g && p.vy >= 0 && p.y + p.h - p.vy <= g + 4){ p.y = g - p.h; p.vy = 0; p.onGround = true; }
+  p.onTaxi = false;
   collidePlats(p);
+  if (p.onTaxi) p.x += taxi.dx; // the roof carries you (the Bay's one trustworthy citizen)
   if (p.onGround) p.pogo = false; // touching ground also re-arms the stomp
 
   // boss walls
@@ -498,10 +572,13 @@ function update(){
   if (p.ycT > 0) p.ycT--;
   if (p.hurtT > 0) p.hurtT--;
   if (p.bounceT > 0) p.bounceT--;
+  if (p.matchaT > 0){ p.matchaT--; if (frame % 6 === 0) parts.push({x:p.x + Math.random()*10, y:p.y + 12, vx:0, vy:-0.4, t:16, c:'#39c46d'}); }
+  if (p.slowT > 0) p.slowT--;
 
   // burn rate: standing still burns runway (ROADMAP §3 — the theme lives in the loop;
   // AUDIT WEEK shortens the tick). Frame-counted: backgrounded tabs don't burn.
-  if (Math.abs(p.vx) < 0.3 && p.onGround) p.burnT = (p.burnT || 0) + 1; else p.burnT = 0;
+  // Riding the robotaxi is commuting, not idling — no burn on the roof.
+  if (Math.abs(p.vx) < 0.3 && p.onGround && !p.onTaxi) p.burnT = (p.burnT || 0) + 1; else p.burnT = 0;
   if (p.burnT > 60 * 3 && frame % 10 === 0)
     parts.push({x:p.x + 4 + Math.random()*4, y:p.y + 2, vx:0, vy:-0.6, t:20, c:'#8d99ae'}); // smoke warning
   if (p.burnT >= BURN_FRAMES){
@@ -533,6 +610,9 @@ function update(){
       pw.got = true; sPow();
       if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! VELOCITY +47%', '#c58bff'); }
       if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! INVINCIBLE', '#ff8c37'); }
+      if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! INNER PEACE +15% JUMP', '#39c46d'); }
+      if (pw.t === 'contract'){ raised += 100; p.slowT = 60*8; addPop(pw.x, pw.y-8, 'ENTERPRISE CONTRACT! +$100K', '#7ce0ff'); addPop(pw.x, pw.y-18, '(procurement has questions)', '#8d99ae'); }
+      if (pw.t === 'rug'){ raised = Math.max(0, raised - 5); addPop(pw.x, pw.y-8, 'RUGGED. -$5K', '#d64550'); }
       if (pw.t === 'sheet'){
         if (MK === 'downround'){ addPop(pw.x, pw.y-8, 'TERM SHEET! +0 RUNWAY (down round)', '#7cffa5'); }
         else { if (hearts < 5) hearts++; maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'TERM SHEET! +1 RUNWAY', '#7cffa5'); }
@@ -543,6 +623,24 @@ function update(){
   // -------- enemies --------
   for (const e of enemies){
     if (e.dead) continue;
+    if (e.t === 't'){
+      // THOUGHT LEADER: sine hover, no gravity; patrols ±50 of home; drops THREAD bombs.
+      // Achieved product-market fit as a person. Can't be stomped while posting.
+      e.x += e.dir * 0.3;
+      if (e.x > e.x0 + 50) e.dir = -1; else if (e.x < e.x0 - 50) e.dir = 1;
+      e.y = e.baseY + Math.sin((frame + e.x0) * 0.03) * 10;
+      if (Math.abs(e.x - p.x) < 220 && (frame + e.x0) % 150 === 0)
+        shots.push({x:e.x + 1, y:e.y + e.h, vx:0, vy:0.4, w:14, h:9, t:'thread'});
+      // falls through to player collision below
+    } else if (e.t === 'c'){
+      // COMPLIANCE PHANTOM: ignores terrain entirely; drifts toward you, slowly.
+      // It is not angry. It just needs a moment of your RUNWAY.
+      if (Math.abs(e.x - p.x) < 320){
+        e.x += (p.x > e.x ? 1 : -1) * 0.3;
+        e.y += (p.y > e.y ? 1 : -1) * 0.2;
+      }
+      e.y = clamp(e.y, 120, GROUND_Y - e.h);
+    } else {
     const espd = e.t==='s' ? 1.1 : 0.45;
     // gravity for enemies
     e.vy = (e.vy||0) + GRAV; if (e.vy > 8) e.vy = 8;
@@ -557,15 +655,20 @@ function update(){
     else e.x = nextX;
     if (e.t==='s' && Math.abs(p.x - e.x) < 140) e.dir = p.x < e.x ? -1 : 1;
     if (e.x < 0) { e.x = 0; e.dir = 1; }
+    }
 
     // collide with player
     if (Math.abs(e.x - p.x) < 300 && aabb(p, e)){
       if (p.ycT > 0){ e.dead = true; sStomp(); raised += 10; addPop(e.x, e.y-8, 'DISRUPTED! +$10K', '#ff8c37'); addParts(e.x+7, e.y+7, '#ff8c37');
         if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
       }
-      else if (p.vy > 1 && p.y + p.h - e.y < 10){
-        e.dead = true; p.vy = -5; p.bounceT = 12; sStomp(); raised += 10;
-        const msgs = {g:'CHURN CRUSHED! +$10K', m:'MEETING CANCELED! +$10K', s:'THESIS DECLINED! +$10K'};
+      else if (p.vy > 1 && p.y + p.h - e.y < 10 && !(e.t === 't' && (frame + e.x0) % 140 < 36)){
+        // (a thought leader mid-post has i-frames — the glow warns you)
+        e.dead = true; p.vy = -5; p.bounceT = 12; sStomp();
+        const reward = (e.t === 't' || e.t === 'c') ? 15 : 10;
+        raised += reward;
+        const msgs = {g:'CHURN CRUSHED! +$10K', m:'MEETING CANCELED! +$10K', s:'THESIS DECLINED! +$10K',
+                      t:"RATIO'D! +$15K", c:'EXEMPTED! +$15K'};
         addPop(e.x, e.y-8, msgs[e.t], '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
         if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
       }
@@ -579,16 +682,15 @@ function update(){
     if (!b.active && p.x > b.trigger){ b.active = true; sBoss(); b.quipT = 1; }
     if (!b.active) continue;
 
-    // movement: pace toward player
-    const bspd = b.id==='ai' ? 0.8 : 0.6;
+    // movement: pace toward player (THE PLATFORM is slow and huge — and never hops)
+    const bspd = b.id==='ai' ? 0.8 : b.id==='platform' ? 0.35 : 0.6;
     b.dir = p.x < b.x ? -1 : 1;
     b.x += b.dir * bspd;
     b.x = clamp(b.x, b.trigger + 30, b.wall - b.w - 4);
-    // occasional hop
     b.vy = (b.vy||0) + GRAV;
     b.y += b.vy;
     if (b.y + b.h >= GROUND_Y){ b.y = GROUND_Y - b.h; b.vy = 0;
-      if (frame % 160 === 0) b.vy = b.id==='ai' ? -5.5 : -4.5;
+      if (frame % 160 === 0 && b.id !== 'platform') b.vy = b.id==='ai' ? -5.5 : -4.5;
     }
 
     // quips
@@ -605,6 +707,11 @@ function update(){
         // lob a term sheet arc
         shots.push({x:b.x+b.w/2, y:b.y+6, vx:(p.x<b.x?-1:1)*(1.4+Math.random()), vy:-4.2, w:12, h:10, t:'sheet', label:'TERMS'});
         b.atkT = 95;
+      } else if (b.id === 'platform'){
+        // drop an SDK crate at the player — its attacks literally build lock-in
+        // around you (and the crates are the ladder to its head)
+        crates.push({ x: clamp(p.x - 2, b.trigger + 24, b.wall - 24), y: 40, vy: 0, landed: false, t: 480 });
+        b.atkT = 140;
       } else {
         // v0.2 pool (MASTER-PLAN §1.4) — pill is drawn to measured text, AABB stays 26x9
         const words = ['PIVOT','SYNERGY','GTM','AGENTIC','B2B','SLOP','AI-NATIVE','ROADMAP','ALIGNMENT','WEB-SCALE'];
@@ -631,9 +738,10 @@ function update(){
           if (b.hp <= 0){
             b.dead = true;
             shots.length = 0; // no posthumous term sheets
-            const bonus = b.id==='ai' ? 500 : 250;
+            const bonus = b.id==='ai' ? 500 : b.id==='platform' ? 350 : 250;
+            const line = b.id==='ai' ? 'SYNERGY.AI ACQUIRED (BY YOU)' : b.id==='platform' ? 'DEPRECATED!' : 'VC HUMBLED';
             raised += bonus; sWin();
-            addPop(b.x-40, b.y-20, (b.id==='ai'?'SYNERGY.AI ACQUIRED (BY YOU)':'VC HUMBLED')+' +$'+bonus+'K', '#7cffa5');
+            addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
             addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
           }
         }
@@ -646,11 +754,25 @@ function update(){
   for (const s of shots){
     if (s.t === 'sheet'){ s.vy += 0.18; }
     if (s.t === 'buzz'){ s.wob += 0.15; s.y += Math.sin(s.wob) * 0.8; }
+    if (s.t === 'thread'){ s.vy += 0.12; if (s.y + s.h >= GROUND_Y) s.gone = true; } // THREAD hits the floor, ends
     s.x += s.vx; s.y += s.vy;
     if (aabb(p, s)){ s.gone = true; hurtPlayer(); if (state !== ST.PLAY) return; }
     if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
   }
   shots = shots.filter(s => !s.gone);
+
+  // -------- SDK crates (Platform boss) — fall, land, platform for 8s, deprecate --------
+  for (const c of crates){
+    if (!c.landed){
+      c.vy += GRAV; if (c.vy > 8) c.vy = 8;
+      c.y += c.vy;
+      if (c.y + 12 >= GROUND_Y){ c.y = GROUND_Y - 12; c.landed = true; }
+    } else if (--c.t <= 0){
+      c.gone = true;
+      addPop(c.x - 8, c.y - 10, 'DEPRECATION NOTICE', '#8d99ae');
+    }
+  }
+  crates = crates.filter(c => !c.gone);
 
   // -------- particles / popups --------
   for (const q of parts){ q.x += q.vx; q.y += q.vy; q.vy += 0.15; q.t--; }
@@ -659,8 +781,8 @@ function update(){
   popups = popups.filter(q => q.t > 0);
 
   // -------- IPO bell (win) --------
-  const finalBoss = bosses[1];
-  if (state === ST.PLAY && finalBoss.dead && !bellDone && p.x > 7400){
+  const finalBoss = bosses[2];
+  if (state === ST.PLAY && finalBoss.dead && !bellDone && p.x > 9100){
     bellDone = true;
     endTime = playMs;
     raised += 1000;
@@ -776,6 +898,30 @@ function drawEnemy(e){
     cx.fillText('MTG', Math.round(x+3), Math.round(y+11));
     px(x+2, y+14, 3, 4, '#333'); px(x+11, y+14, 3, 4, '#333'); // legs
     px(x+3, y+1, 2, 2, '#fff'); px(x+11, y+1, 2, 2, '#fff');   // eyes in header
+  } else if (e.t === 't'){ // THOUGHT LEADER — hovering personal brand (sprites.js §2)
+    const posting = (frame + e.x0) % 140 < 36;
+    const halo = posting && (frame>>2)%2 ? '#fff2b0' : '#ffe27a';
+    px(x+4, y-4, 8, 1, halo); px(x+3, y-3, 1, 1, halo); px(x+12, y-3, 1, 1, halo); // halo ring
+    px(x+5, y, 6, 5, '#f2c9a0');                                   // head
+    px(x+5, y, 6, 1, '#4a3626');                                   // fade haircut
+    px(x+9, y+2, 1, 1, '#111');                                    // eye (locked on phone)
+    px(x+4, y+5, 8, 6, '#2b2d42');                                 // quarter-zip
+    px(x+7, y+5, 2, 3, '#454b66');                                 // zip
+    px(x+11, y+6, 3, 4, '#0e1020'); px(x+11, y+6, 3, 1, '#41f2ff');// phone, always
+    const jf = (frame>>2)%2;
+    px(x+5, y+11, 2, jf?2:1, '#fff'); px(x+9, y+11, 2, jf?1:2, '#fff'); // ring-light hover glow
+  } else if (e.t === 'c'){ // COMPLIANCE PHANTOM — a regulation you haven't met yet (sprites.js §3)
+    const a = cx.globalAlpha; cx.globalAlpha = 0.72;
+    const wob = Math.sin(frame*0.08)*1.5;
+    px(x+2, y+wob, 10, 11, '#cfd8ea');
+    px(x+1, y+2+wob, 12, 7, '#cfd8ea');
+    const ph = (frame>>3)%2;
+    for (let i=0;i<3;i++) px(x+2+i*4+(ph?1:0), y+11+wob, 3, 2, '#cfd8ea');  // wavy hem
+    px(x+4, y+4+wob, 2, 3, '#5a6a8a'); px(x+8, y+4+wob, 2, 3, '#5a6a8a');  // hollow eyes
+    px(x+5, y+8+wob, 4, 1, '#5a6a8a');                                     // mild concern
+    px(x+6, y+9+wob, 2, 4, '#d64550');                                     // the tie
+    px(x+11, y+6+wob, 3, 5, '#aab4c4');                                    // clipboard
+    cx.globalAlpha = a;
   } else { // scooter bro
     px(x+3, y, 6, 4, '#39c46d');           // helmet
     px(x+4, y+3, 4, 3, '#f2c9a0');         // face
@@ -788,7 +934,30 @@ function drawEnemy(e){
 function drawBoss(b){
   const x = b.x - cam, y = b.y;
   if (!(b.hitT > 0 && frame % 4 < 2)){ // flash while in i-frames
-  if (b.id === 'vc'){
+  if (b.id === 'platform'){
+    // THE PLATFORM — OMNICORP CLOUD DevRel mecha (sprites.js §5, s=1)
+    const blink = (frame % 90) > 84;
+    const sway = Math.sin(frame*0.05)*2;
+    for (let i=0;i<3;i++){                                       // cable arms = APIs
+      px(x-6+sway*(i/3), y+10+i*7, 4, 4, '#9fb0cc');
+      px(x+42-sway*(i/3), y+10+i*7, 4, 4, '#9fb0cc');
+    }
+    px(x-7+sway, y+31, 6, 5, '#1f6feb'); px(x+41-sway, y+31, 6, 5, '#1f6feb'); // connector hands
+    px(x, y+10, 40, 26, '#dfe6f2');                              // torso
+    px(x, y+10, 40, 3, '#9fb0cc'); px(x+2, y+33, 36, 3, '#9fb0cc');
+    px(x+19, y+13, 2, 8, '#1f6feb');                             // lanyard (it IS DevRel)
+    px(x+16, y+21, 8, 6, '#fff');                                // badge
+    px(x+8, y, 24, 12, '#1b1e2c');                               // screen head
+    px(x+10, y+2, 20, 8, blink ? '#0e1020' : '#12325a');
+    if (!blink){
+      px(x+14, y+4, 3, 2, '#41f2ff'); px(x+23, y+4, 3, 2, '#41f2ff');
+      px(x+15, y+8, 10, 1, '#41f2ff');                           // the smile. constant.
+    }
+    for (let i=0;i<4;i++) px(x+4+i*3, y+15, 2, 2, (frame>>3)%4===i ? '#7cffa5' : '#3a4152'); // status LEDs
+    px(x+2, y+36, 14, 8, '#1b1e2c'); px(x+24, y+36, 14, 8, '#1b1e2c'); // treads
+    const to = (frame>>2)%4;
+    for (let i=0;i<3;i++){ px(x+3+((i*4+to)%12), y+42, 2, 1, '#4a5162'); px(x+25+((i*4+to)%12), y+42, 2, 1, '#4a5162'); }
+  } else if (b.id === 'vc'){
     // Chad Capital: navy vest, blue shirt, khakis
     px(x+7, y, 12, 8, '#f2c9a0');           // head
     px(x+7, y, 12, 2, '#b98a4e');           // hair (swoop)
@@ -935,6 +1104,9 @@ const BIOMES = {
 'SAND HILL ROAD':{ sky:['#4a3160','#b8742c','#ffc45e','#2a2118'], far:'#4a3423', near:'#33241a', win:'#ffe9a0',
                    star:'rgba(255,215,120,.55)', fog:['rgba(255,205,110,.10)','rgba(255,220,140,.12)'],
                    side:'#c9b58a', road:'#40372a', stripe:'#ffd94a' },
+'CEREBRAL VALLEY':{ sky:['#241a3f','#4a3a6e','#8a6aa0','#2a2440'], far:'#2e2450', near:'#201a38', win:'#7dffa0',
+                   star:'rgba(200,180,255,.45)', fog:['rgba(205,190,235,.25)','rgba(220,205,245,.30)'],
+                   side:'#9a92b5', road:'#2e2a44', stripe:'#9dffb0', foggy:1 }, // GPU-green windows; heavy Karl
 'THE CLOUD':     { sky:['#fbfcff','#e6ecf7','#b9c4de','#8f9fc6'], far:'', near:'', win:'',
                    star:'rgba(160,180,220,.35)', fog:['rgba(255,255,255,.30)','rgba(255,255,255,.40)'],
                    side:'#e8ecf5', road:'#c3cbe0', stripe:'', voidZone:1 }
@@ -994,10 +1166,11 @@ function drawBG(){
   cx.fillRect(fx - 60, 104, 200, 20); cx.fillRect(fx + 180, 116, 160, 16);
   if (B.foggy){ cx.fillStyle = B.fog[0]; cx.fillRect(0, 60, W, 20); cx.fillRect(0, 140, W, 34); } // Cerebral Valley only
   // golden gate towers near the finale (world-anchored)
-  // anchor 6000 (was 6900): with cam clamped at LEVEL_W-W=7020, the old anchor needed
-  // cam>7435 to enter the screen — the bridge was unreachable dead code. 6000 sweeps it
-  // across the finale (cam 6350→7020 ≈ screen 600→−100), red against the white void.
-  const ggx = 6000 - cam * 0.85;
+  // anchor 7700 = the war-room's 6000 fix + the +1700 world shift. (The level file's
+  // CODE_UPDATES said 8600 — that predates the war-room finding and would need
+  // cam>9435 with cam now clamped at 8720: unreachable dead code again. 7700 keeps
+  // the bridge sweeping across the finale, red against the void.)
+  const ggx = 7700 - cam * 0.85;
   if (ggx > -300 && ggx < W + 100){
     cx.fillStyle = '#c0402a';
     cx.fillRect(ggx, 70, 10, 170); cx.fillRect(ggx - 6, 88, 22, 6); cx.fillRect(ggx - 6, 130, 22, 6);
@@ -1021,16 +1194,17 @@ function draw(){
 
   const B = BIOMES[zoneName(cam + W/2)]; // same lookup as drawBG — sky and ground flip together
 
-  // signs
-  cx.font = 'bold 6px monospace';
+  // signs — 8px face (was 6px): readable at 1x-2x window scales without leaving
+  // the pixel grid; boards auto-fit the wider text
+  cx.font = 'bold 8px monospace';
   for (const sg of signs){
     const x = sg.x - cam;
-    if (x < -120 || x > W + 20) continue;
+    if (x < -160 || x > W + 20) continue;
     const wmax = Math.max(...sg.l.map(t => cx.measureText(t).width)) + 8;
-    px(x + 12, GROUND_Y - 26 - sg.l.length * 8, wmax, sg.l.length * 8 + 5, '#5d4a36');
+    px(x + 12, GROUND_Y - 26 - sg.l.length * 10, wmax, sg.l.length * 10 + 5, '#5d4a36');
     px(x + 12 + wmax/2 - 2, GROUND_Y - 22, 4, 22, '#4a3a2a');
     cx.fillStyle = '#ffe9b3';
-    sg.l.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 22 - sg.l.length * 8 + i * 8 + 6)));
+    sg.l.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 22 - sg.l.length * 10 + i * 10 + 8)));
   }
 
   // ground
@@ -1058,7 +1232,7 @@ function draw(){
   // platforms
   for (const pl of plats){
     const x = pl[0] - cam; if (x < -pl[2] || x > W) continue;
-    if (pl[0] > 5460){ // clouds
+    if (pl[0] > 7160){ // clouds
       px(x, pl[1], pl[2], 8, '#f2f5fc'); px(x + 4, pl[1] - 4, pl[2] - 8, 5, '#fff');
     } else { // crates
       px(x, pl[1], pl[2], 12, '#8a5a2b'); cx.strokeStyle = '#5e3c1a'; cx.lineWidth = 1;
@@ -1068,6 +1242,35 @@ function draw(){
 
   // cameo sprites — background layer: everything gameplay draws on top of them
   for (const c of cameos) drawCameoSprite(c);
+
+  // robotaxi — neutral rideable platform (sprites.js §4, s=1)
+  {
+    const tx = taxi.x - cam;
+    if (tx > -40 && tx < W + 40){
+      const ty = ROBOTAXI.top, stopped = taxi.stopT > 0;
+      px(tx+12, ty-4, 6, 3, '#1b1e2c');                            // sensor dome
+      px(tx+13+((frame>>3)%2)*2, ty-4, 2, 1, '#41f2ff');           // spinning highlight
+      px(tx+14, ty-1, 2, 1, '#1b1e2c');                            // mast
+      px(tx, ty+2, 30, 8, '#f4f6fb');                              // body
+      px(tx+2, ty, 26, 4, '#f4f6fb');                              // cabin
+      px(tx+4, ty+1, 8, 3, '#9fd7e8'); px(tx+14, ty+1, 8, 3, '#9fd7e8'); // windows (empty. always.)
+      px(tx, ty+8, 30, 2, '#c9d2e4');                              // skirt
+      px(tx+4, ty+10, 5, 4, '#1b1e2c'); px(tx+21, ty+10, 5, 4, '#1b1e2c'); // wheels
+      px(tx+5, ty+11, 3, 2, '#4a5162'); px(tx+22, ty+11, 3, 2, '#4a5162');
+      if (stopped && (frame>>4)%2){ px(tx+1, ty+4, 2, 2, '#ff8c37'); px(tx+27, ty+4, 2, 2, '#ff8c37'); } // hazards
+    }
+  }
+
+  // SDK crates — falling lock-in / temporary platforms (sprites.js §5)
+  for (const c of crates){
+    const x = c.x - cam; if (x < -20 || x > W + 20) continue;
+    px(x, c.y, 16, 12, '#8a5a2b');
+    px(x+1, c.y+1, 14, 10, '#a06a34');
+    px(x+1, c.y+5, 14, 1, '#8a5a2b');                              // strap
+    px(x+3, c.y+3, 10, 6, '#fff');                                 // label
+    cx.fillStyle = '#111'; cx.font = 'bold 5px monospace'; cx.fillText('SDK', Math.round(x+4), Math.round(c.y+8));
+    if (c.landed && c.t < 90 && (frame>>3)%2) px(x+13, c.y+1, 2, 2, '#ffd94a'); // about to deprecate
+  }
 
   // coins
   for (const c of coins){
@@ -1095,6 +1298,25 @@ function draw(){
       px(x + 11, pw.y + 6 + bob, 2, 1, '#ff8c37');                          // flame
       const sh = (frame >> 2) % 28;
       if (sh < 10) px(x + 2 + sh, pw.y + 5 + bob, 1, 6, '#fff3c4');         // shine sweep
+    } else if (pw.t === 'matcha'){
+      // MATCHA: the calm counter-meta — glass, green tea, zen glow
+      px(x + 2, pw.y + 2 + bob, 9, 10, '#e8f5ec');                          // glass
+      px(x + 3, pw.y + 4 + bob, 7, 7, '#5da06b');                           // the matcha
+      px(x + 3, pw.y + 4 + bob, 7, 1, '#8fd1a0');                           // foam line
+      if ((frame >> 3) % 2) px(x + 5, pw.y - 2 + bob, 1, 2, '#9fe8b5');     // zen wisp
+      px(x + 11, pw.y + 5 + bob, 2, 1, '#c9b18c');                          // bamboo whisk handle
+    } else if (pw.t === 'contract'){
+      // ENTERPRISE CONTRACT: big logo, heavy process
+      px(x, pw.y + bob, 13, 15, '#fff');
+      px(x + 1, pw.y + 1 + bob, 4, 4, '#1f6feb');                           // the big logo
+      cx.fillStyle = '#888';
+      for (let i = 0; i < 5; i++) cx.fillRect(Math.round(x + 2), Math.round(pw.y + 7 + i * 2 + bob), 9, 1);
+      px(x + 8, pw.y + 12 + bob, 4, 2, '#c9a227');                          // the signature line, gilded
+    } else if (pw.t === 'rug'){
+      // RUG TOKEN: looks like a coin. glints slightly wrong.
+      px(x, pw.y + bob, 8, 10, '#ffd94a'); px(x + 1, pw.y + 1 + bob, 6, 8, '#e0b81a');
+      cx.fillStyle = '#7a5c00'; cx.font = 'bold 7px monospace'; cx.fillText('$', Math.round(x + 2), Math.round(pw.y + 8 + bob));
+      if ((frame >> 2) % 6 < 2) px(x + 5, pw.y + 1 + bob, 2, 2, '#c58bff'); // the wrong glint
     } else {
       px(x, pw.y + bob, 12, 14, '#fff'); cx.fillStyle = '#888';
       for (let i = 0; i < 4; i++) cx.fillRect(Math.round(x + 2), Math.round(pw.y + 3 + i * 3 + bob), 8, 1);
@@ -1117,8 +1339,8 @@ function draw(){
   }
 
   // IPO bell
-  if (bosses[1].dead){
-    const bx = 7430 - cam;
+  if (bosses[2].dead){
+    const bx = 9130 - cam;
     if (bx > -40 && bx < W + 40){
       px(bx, GROUND_Y - 14, 26, 14, '#6b4f2a');
       const gold = frame % 20 < 10 ? '#ffd94a' : '#ffea8a';
@@ -1139,6 +1361,12 @@ function draw(){
       const tw = cx.measureText('TERMS').width;
       cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(x - 2), Math.round(s.y - 10), tw + 4, 9);
       cx.fillStyle = '#fff'; cx.fillText('TERMS', Math.round(x), Math.round(s.y - 3));
+    } else if (s.t === 'thread'){
+      // THREAD bomb: white card, red header (sprites.js §2)
+      px(x, s.y, 14, 9, '#fff');
+      px(x, s.y, 14, 2, '#d64550');
+      cx.fillStyle = '#111'; cx.font = 'bold 5px monospace';
+      cx.fillText('1/9', Math.round(x + 3), Math.round(s.y + 7));
     } else {
       // pill drawn to fit the word (>= hitbox on all sides); collision AABB stays 26x9
       cx.font = 'bold 6px monospace';
@@ -1193,6 +1421,8 @@ function drawHUD(){
   cx.font = 'bold 7px monospace';
   if (player.ycT > 0){ cx.fillStyle = '#ff8c37'; cx.fillText('DEMO DAY MODE ' + Math.ceil(player.ycT/60) + 's', 12, 44); }
   else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
+  else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', 12, 44); }
+  else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
 }
 
 function drawTitle(){
@@ -1319,7 +1549,7 @@ function makeBadge(won){
   b.fillStyle = '#c58bff';
   if (won){
     const bossesDown = bosses.filter(x => x.dead).length;
-    b.fillText('BOSSES  ' + bossesDown + '/2 defeated', 320, 399);
+    b.fillText('BOSSES  ' + bossesDown + '/3 defeated', 320, 399);
   } else {
     b.fillText('DIED IN  ' + zoneName(player.x), 320, 399); // loss badges differ by death point
   }
