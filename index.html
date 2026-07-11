@@ -298,6 +298,37 @@ function zoneName(x){
 }
 const checkpoints = [20, 1930, 3660, 4700, 5350, 6740];
 
+// ------------------- DAILY SEED + MARKET CONDITIONS (ROADMAP §7) -------------------
+// The calendar date is the ONLY wall-clock read in the game (a daily seed is date-
+// derived by definition); every timer below still runs on frames / playMs.
+function mulberry32(a){
+  return function(){ a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const _today = new Date();
+const SEED_N = Math.round((Date.UTC(_today.getFullYear(), _today.getMonth(), _today.getDate())
+                          - Date.UTC(2026, 0, 1)) / 86400000) + 1;  // seed #1 = 2026-01-01
+const dailyRng = mulberry32(SEED_N);
+// the 10 market conditions (MASTER-PLAN §1.6, exact strings) + the lever each pulls
+const MARKETS = [
+  { s:'AI HYPE CYCLE: PEAK — SYNERGY.AI +1 HP',                                  k:'aihype' },
+  { s:'RATES HIGH — coins worth -20%',                                           k:'rateshigh' },
+  { s:'RATES CUT — coins worth +20%',                                            k:'ratescut' },
+  { s:'MEGACORP LAYOFFS — +2 scooter bros on Sand Hill',                         k:'layoffs' },
+  { s:'HYPE→PRAGMATISM — bosses quip 2x faster, hit same',                       k:'pragma' },
+  { s:'FOG THICK TODAY — Karl covers the pits (visual only, good luck)',         k:'fog' },
+  { s:"EVERYONE'S AT A CONFERENCE — half the meetings are remote (despawned)",   k:'conf' },
+  { s:'DOWN ROUND SEASON — term sheets grant no runway (still spawn board members)', k:'downround' },
+  { s:'BULL MARKET — start with +1 RUNWAY',                                      k:'bull' },
+  { s:'AUDIT WEEK — burn rate ticks 2s faster',                                  k:'audit' },
+];
+const MARKET = MARKETS[Math.floor(dailyRng() * MARKETS.length)];
+const MK = MARKET.k;
+const COIN_VALUE = MK === 'rateshigh' ? 4 : MK === 'ratescut' ? 6 : 5;
+const BURN_FRAMES = MK === 'audit' ? 60 * 4 : 60 * 6; // burn tick, frames (AUDIT WEEK: 2s faster)
+
 // ------------------------- STATE -------------------------
 const ST = { TITLE:0, PLAY:1, WIN:2, DEAD:3 };
 let state = ST.TITLE;
@@ -338,8 +369,12 @@ function reset(fromCheckpoint){
                "I AM AI-NATIVE. YOU ARE AI-NAIVE.","YOUR MOAT IS MY FEATURE","GENERATING SLOP...","I PIVOTED 14 TIMES TODAY","THIS CONVERSATION IS TRAINING DATA"] }
     ];
     bosses.forEach(b => { b.x0 = b.x; b.y0 = b.y; });
+    // daily market conditions — each pulls one existing lever (ROADMAP §7)
+    if (MK === 'aihype'){ bosses[1].hp = bosses[1].maxhp = 6; }
+    if (MK === 'layoffs'){ enemies.push(makeEnemy({x:4150,t:'s'}), makeEnemy({x:4430,t:'s'})); }
+    if (MK === 'conf'){ let mi = 0; for (const e of enemies) if (e.t === 'm' && mi++ % 2) e.dead = true; }
     shots = []; parts = []; popups = [];
-    raised = 0; hearts = 3; maxHearts = 3;
+    raised = 0; hearts = MK === 'bull' ? 4 : 3; maxHearts = hearts;
     checkpoint = 20; bellDone = false;
     playMs = 0; endTime = 0;
     quoteRoll = Math.random();
@@ -454,6 +489,17 @@ function update(){
   if (p.ycT > 0) p.ycT--;
   if (p.hurtT > 0) p.hurtT--;
   if (p.bounceT > 0) p.bounceT--;
+
+  // burn rate: standing still burns runway (ROADMAP §3 — the theme lives in the loop;
+  // AUDIT WEEK shortens the tick). Frame-counted: backgrounded tabs don't burn.
+  if (Math.abs(p.vx) < 0.3 && p.onGround) p.burnT = (p.burnT || 0) + 1; else p.burnT = 0;
+  if (p.burnT > 60 * 3 && frame % 10 === 0)
+    parts.push({x:p.x + 4 + Math.random()*4, y:p.y + 2, vx:0, vy:-0.6, t:20, c:'#8d99ae'}); // smoke warning
+  if (p.burnT >= BURN_FRAMES){
+    p.burnT = 0;
+    addPop(p.x, p.y - 14, 'BURN RATE', '#ff5a5a');
+    hurtPlayer(); if (state !== ST.PLAY) return;
+  }
   if (Math.abs(p.vx) > 0.5 && p.onGround && frame % 6 === 0) p.runFrame ^= 1;
 
   // checkpoints
@@ -467,8 +513,8 @@ function update(){
   // -------- coins --------
   for (const c of coins){
     if (!c.got && aabb(p, c)){
-      c.got = true; raised += 5; sCoin();
-      addPop(c.x, c.y - 6, '+$5K', '#ffd94a');
+      c.got = true; raised += COIN_VALUE; sCoin(); // rate environment sets the coin (ROADMAP §7)
+      addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K', '#ffd94a');
     }
   }
 
@@ -478,7 +524,10 @@ function update(){
       pw.got = true; sPow();
       if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! VELOCITY +47%', '#c58bff'); }
       if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! INVINCIBLE', '#ff8c37'); }
-      if (pw.t === 'sheet'){ if (hearts < 5) hearts++; maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'TERM SHEET! +1 RUNWAY', '#7cffa5'); }
+      if (pw.t === 'sheet'){
+        if (MK === 'downround'){ addPop(pw.x, pw.y-8, 'TERM SHEET! +0 RUNWAY (down round)', '#7cffa5'); }
+        else { if (hearts < 5) hearts++; maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'TERM SHEET! +1 RUNWAY', '#7cffa5'); }
+      }
     }
   }
 
@@ -535,7 +584,7 @@ function update(){
 
     // quips
     b.quipT--;
-    if (b.quipT <= 0){ b.quip = (b.quip+1) % b.quips.length; b.quipT = 140; }
+    if (b.quipT <= 0){ b.quip = (b.quip+1) % b.quips.length; b.quipT = MK === 'pragma' ? 70 : 140; } // quip 2x faster, hit same
 
     // boss i-frames tick
     if (b.hitT > 0) b.hitT--;
@@ -991,6 +1040,12 @@ function draw(){
     }
   }
 
+  // FOG THICK TODAY: Karl sits on the street and the pits disappear (visual only)
+  if (MK === 'fog' && state === ST.PLAY){
+    cx.fillStyle = 'rgba(226,232,242,.5)';  cx.fillRect(0, GROUND_Y - 8, W, 22);
+    cx.fillStyle = 'rgba(226,232,242,.75)'; cx.fillRect(0, GROUND_Y + 2, W, H - GROUND_Y);
+  }
+
   // platforms
   for (const pl of plats){
     const x = pl[0] - cam; if (x < -pl[2] || x > W) continue;
@@ -1166,6 +1221,11 @@ function drawTitle(){
   cx.fillText('the SF startup platformer', W/2, 108);
   cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
   cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 132);
+  // daily market conditions ticker (ROADMAP §7) — same run for everyone today
+  cx.fillStyle = '#ffd94a'; cx.font = 'bold 7px monospace';
+  cx.fillText(MARKET.s, W/2, 147);
+  cx.fillStyle = '#8d99ae'; cx.font = 'bold 6px monospace';
+  cx.fillText('daily seed #' + SEED_N, W/2, 156);
   // CTA: alpha pulse, never fully gone (a blink leaves screenshots CTA-less 1/3 of the time)
   cx.globalAlpha = 0.65 + 0.35 * Math.sin(frame * 0.1);
   cx.fillStyle = '#7cffa5'; cx.font = 'bold 12px monospace';
