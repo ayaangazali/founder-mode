@@ -256,3 +256,70 @@ state touched; idleT and badgeFlairs are top-level and probe-reachable per harne
     (atomic teleport+freeze; the scooter at 6100 otherwise knocks the player out of bubble range).
     Proof shots: proof-zone-{soma,mission,sandhill,cloud,goldengate}.png, proof-title-soma.png,
     proof-cameo-{shipper,stealth,eacc,podcast,contrarian,exited}-{a,b}.png.
+
+## 2026-07-11 — [OVERNIGHT M0-M3 + ACCEPTANCE GATE] (GOAL.md phases 0-6) — repo root
+
+Unattended overnight pass. All three game tests green after every commit; canon greps clean throughout.
+
+### Phase 0 — baseline (a53284c, e52af3d, tag v0.2-rc1)
+- **Restored the war-room build.** The kit's index.html was byte-identical to index.v0.1.bak.html
+  (md5 9a0933ea…) — the copy step had clobbered the QA-hardened build with the pristine original, and
+  the canon greps FAILED at baseline (WEWORK sign, YC ACCEPTED/YC MODE strings, Patagonia share text).
+  Real war-room build recovered from ~/Downloads/founder-mode-kit/index.html (65,312 bytes: fixed
+  timestep, playMs, checkpoints, customization, biomes, cameos, eggs; greps clean) and committed as
+  e52af3d. v0.2-rc1 tag placed there.
+- Local test env: `npm install playwright` + chromium headless shell (none was installed).
+
+### Phase 1 — public sanitize (209aead)
+- design/CAMEOS.md TIER 2 section stripped per FINAL-REVIEW §4.4; replaced with the approved one-line
+  pointer. Tier-1 composites + preamble + recommendation untouched (recommendation still references
+  R1/R3/R4 by id — ids now resolve only in private notes; no real-adjacent names remain in the file).
+
+### Phase 2 — v0.2 copy deck (2033e2a, 36b0329, 372e682, 6c6e34d)
+- Seven §1.6 signs. Placement deviations, screenshot-verified: HIRING 1150→1080 and CAFÉ 2320→2200
+  (crate platforms at [1180,182]/[2290,184] covered the 3-line text band at every ±40 offset — the ±40
+  rule assumed sign/cameo occupants, not platforms); MIND THE GAPS 6000→5880 so NOW ENTERING THE CLOUD
+  keeps its verified 6000 (item-32 acceptance "renders on seg [5504,6300]" still holds at 5880).
+- Fund-district row (BIBLE §8): A17Z 3760 · SEQUOIADENDRON 4020 · FOUNDERS ETC. 4320 · HF-0 MONASTERY
+  4460 (≥120px apart, pre-arena, on segs).
+- Chad +5 quips (4× §1.4 + I'M ALSO IN A17Z'S NEW FUND from BIBLE §8); SYNERGY.AI +5 quips (§1.4);
+  buzzword pool → 10 words. Pill-vs-hitbox re-proven for every word (max pill 38.4px vs 26x9 AABB,
+  centered — item 31 behavior intact).
+- Badge one-liners rotate from the §1.6 win/loss pools, `quoteRoll` seeded once per fresh run (stable
+  across respawns/re-renders); DIED IN {zone} stat line untouched (zone stays, quote rotates). All 8
+  quotes fit the shrink guard at ≥32px.
+
+### Phase 3 — daily seed + market conditions (a0a9ad6)
+- Date-derived SEED_N (#1 = 2026-01-01) + mulberry32; one of the ten §1.6 modifiers (exact strings) on
+  the title ticker + `daily seed #N` line. Levers: AI +1 HP · coins ±20% (COIN_VALUE, popup follows) ·
+  +2 Sand Hill scooters · quips 70f · visual pit fog · half the meetings pre-despawned · term sheets
+  +0 runway on DOWN ROUND days · BULL 4 starting hearts · AUDIT burn tick 4s.
+- **Burn rate added** (ROADMAP §3 spec, 4 lines + smoke warning): it is the lever AUDIT WEEK needs and
+  the fixers had not landed it. 6s stand-still = BURN RATE −1 heart, frame-counted (blur can't burn).
+  The calendar date is now the game's only wall-clock read; every timer stays on playMs.
+- New probe qa/verify-daily-seed.js (8 checks): same-date determinism (seed/modifier/spawn layout),
+  cross-date variance, coin-lever movement, zero page errors.
+
+### Phase 4 — deploy scaffolding, files only (8aad727)
+- api/og.jsx = ROADMAP §8 verbatim; og:image/twitter:card tags from BUILD-GUIDE Step 4 pointing at
+  og.png (1200×630 confirmed) on the GAME_URL placeholder root; @vercel/og pinned in package.json
+  (playwright → devDependencies). No vercel.json: zero-config already covers static root + api/.
+  Nothing deployed.
+
+### Acceptance gate — playable proof (b1a0805, tag playable-rc1)
+- test/fullrun.js: human-input bot (keyboard + real buttons only; reads state, never writes). Clean
+  profile: 3/3 consecutive title→UNICORN passes, badge TIME 1:19–1:35, zero page errors (~1 mid-run
+  death each, recovered via the real PIVOT). Tourist profile (--casual: 16 sign stops, 7 coin detours,
+  arena hesitation, sloppier mash): 2:31 with one deliberate Chad death proving checkpoint 4700 +
+  BRIDGE ROUND 106→79.
+- qa/overnight-paths.js (23 checks) + qa/overnight-mobile.js (15 checks) + 24 evidence screenshots in
+  qa/overnight/. file:// and local-http loads both clean.
+- Probe-expectation inversions (item 33 discipline): none required — the only pre-existing probe in
+  the kit is qa/verify-daily-seed.js (the war-room probe suite lives in the fixers' environment and
+  never shipped with the kit).
+- Run-length finding, flagged for a human: fast competent floor ≈ 1:19 (walk floor 73.5s = 7500px at
+  contract speed 1.7); best tourist proxy 2:31. Under the requested 3–6 band; no permitted lever
+  closes it (ruling 2.4 forbids i-frame escalation without casual-win-rate re-measurement, §1.4 fixes
+  boss HP canon, enemy density threatens the >80%-badge invariant for seconds of yield). §2.1's own
+  hard invariant is "finishable ≤6 min" (upper bound) and T2D3 expects sub-3:00 wins to exist. The
+  sanctioned lengthener is M5's +1,700px Cerebral Valley zone, traction-gated.
