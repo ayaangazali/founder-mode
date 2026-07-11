@@ -27,11 +27,11 @@ const SEGS = [[0,780],[822,1420],[1468,2350],[2402,2980],[3036,3900],
               [3956,4420],[4480,4900],[4948,5320],[5372,6300],
               [6344,7150],[7204,8000],[8052,9200]];
 const TICK = CASUAL ? 130 : 50;
-const MAX_RECOVERIES = CASUAL ? 6 : 4; // tourists die — that's what checkpoints are for
+const MAX_RECOVERIES = CASUAL ? 8 : 4; // tourists die — that's what checkpoints are for
                                        // (§2.1 budgeted 2 deaths across 4 zones; 5 denser zones earn 6)
 // tourist behavior stops (casual mode): sign posts get read, coin platforms get
 // attempted. Pauses stay ≤3s — always under the 4s minimum burn-rate tick.
-const SIGN_STOPS = [70, 250, 640, 1040, 1500, 1930, 2120, 2720, 3050, 3958, 4180,
+const SIGN_STOPS = [70, 250, 640, 1040, 1500, 1930, 2120, 2720, 3050, 3958, 4340,
                     4450, 4640, 5062, 5270, 5690, 5880, 6000, 6180, 6350, 7032,
                     7210, 7380, 7490, 7690, 8260, 8400];
 const COIN_DETOURS = [420, 1060, 2170, 2550, 3260, 4164, 4680, 5114, 5928, 7460, 7750];
@@ -112,8 +112,13 @@ const lipDist = x => {                      // distance from player x to the cur
       await page.click('#bRe');
       await page.waitForTimeout(350);
       const r = await sense();
-      if (planned) respawnInfo = { x: Math.round(r.x), hearts: r.hearts, raised: r.raised,
-                                   haircutOk: r.raised === Math.floor(preRetry * 0.75) };
+      if (planned){
+        // respawn drops from y-40: landing on the enemy camping your corpse is a
+        // legitimate stomp (+$10K on top of the exact 75% haircut)
+        const exp = Math.floor(preRetry * 0.75);
+        respawnInfo = { x: Math.round(r.x), hearts: r.hearts, raised: r.raised,
+                        haircutOk: r.raised === exp || r.raised === exp + 10 };
+      }
       continue;
     }
 
@@ -185,8 +190,11 @@ const lipDist = x => {                      // distance from player x to the cur
       continue;
     }
 
-    // tourist stops: read the sign / try the coin platform overhead
-    if (CASUAL && s.og){
+    // tourist stops: read the sign / try the coin platform overhead.
+    // NEVER stop with a thought leader in drift range — THREAD bombs can't hit a
+    // walker (they drop at your feet and you've left), but they execute loiterers.
+    const flyerInDriftRange = s.near.some(e => e.t === 't');
+    if (CASUAL && s.og && !flyerInDriftRange){
       const sign = SIGN_STOPS.find(sx => !signsRead.has(sx) && Math.abs(s.x - sx) < 26);
       if (sign !== undefined && !s.near.length){
         signsRead.add(sign);

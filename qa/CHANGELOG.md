@@ -377,3 +377,10 @@ GitHub (private).
 - Private repo github.com/ayaangazali/founder-mode; main + testing + tags pushed.
   TIER 2 strip landed before any push (FINAL-REVIEW §4.4 satisfied); canon greps clean
   at every pushed commit.
+
+### Final timings (post-M5, measured by the bots)
+- Skilled clean run: 02:08 (was 1:19 pre-M5). Tourist profile: **04:58 PASS** — 5 unplanned deaths
+  recovered via PIVOT + the scripted Chad death, 21 sign stops, 7 coin detours, all 3 bosses,
+  zero page errors. The 3–6 minute §2.1 band is now met; morning-report item (e) is RESOLVED
+  by option B. CV difficulty pass: phantom 4500→4620, DEMO DAY sign 4180→4340 (tourist-bot
+  telemetry; sanctioned levers only).

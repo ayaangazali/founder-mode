@@ -262,7 +262,10 @@ const enemyDefs = [
   {x:520,t:'g'},{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
   {x:1980,t:'m'},{x:2230,t:'m'},{x:2620,t:'m'},{x:2860,t:'m'},
   {x:3200,t:'s'},{x:3480,t:'s'},{x:3760,t:'g'},{x:3850,t:'m'},
-  {x:4100,t:'g'},{x:4250,t:'t'},{x:4500,t:'c'},              // CEREBRAL VALLEY
+  // CEREBRAL VALLEY — first phantom starts at 4620 (under stack 2, its speced
+  // patrol), not 4500: a terrain-ignoring drifter parked 20px past the pit lip
+  // camped the landing zone and chain-killed slow players (tourist-bot verified)
+  {x:4100,t:'g'},{x:4250,t:'t'},{x:4620,t:'c'},
   {x:4750,t:'t'},{x:4880,t:'m'},{x:5050,t:'c'},{x:5200,t:'t'},
   {x:5750,t:'s'},{x:6000,t:'g'},{x:6180,t:'m'},
   {x:7320,t:'m'},{x:7580,t:'g'},{x:7800,t:'s'},{x:8120,t:'m'}
@@ -302,7 +305,7 @@ const signs = [
   {x:3050,l:['PIVOT AHEAD','(the road,','and you)']},
   // ---- CEREBRAL VALLEY (design/level-cerebral-valley.js CV_SIGNS) ----
   {x:3958,l:['CEREBRAL VALLEY','11 founders/house','1 GPU']},
-  {x:4180,l:['DEMO DAY 5PM','pitch: 2 min','trauma: lifetime']},
+  {x:4340,l:['DEMO DAY 5PM','pitch: 2 min','trauma: lifetime']}, // 4180 sat inside the thought leader's patrol — sign-readers got THREAD-bombed
   {x:4450,l:['HACKER HOUSE','rent: $2400/bunk','equity accepted']},
   {x:4640,l:['HF-0 MONASTERY','ship or pray','(both)']},
   {x:5062,l:['GPU FOR SALE','never used','(waitlist: 14mo)']},
