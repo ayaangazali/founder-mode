@@ -248,18 +248,35 @@ const powerDefs = [
 ];
 
 // joke signs {x, lines[]}
+// v0.2 set from MASTER-PLAN §1.6 landed. Shifts (all on verified segs, screenshot-
+// checked): HIRING 1150→1080 and CAFÉ 2320→2200 — crate platforms at [1180,182] /
+// [2290,184] sat on the 3-line text band at every ±40 position, so these take the
+// nearest clean ground instead. MIND THE GAPS moved 6000→5880 so NOW ENTERING keeps
+// its §1.6-verified 6000 (both fit seg [5504,6300]).
 const signs = [
   {x:70,  l:['SOMA','← nothing  glory →']},
   {x:250, l:['$8 ARTISANAL','TOAST']},
   {x:640, l:['CHURN GREMLINS','stomp on sight']},
+  {x:1080,l:['HIRING: 10X ENGINEER','pay: exposure','(to churn gremlins)']},
   {x:1500,l:['COWORKING','space available','(all of it)']},
   {x:1930,l:['THE MISSION','beware: standing','meetings']},
+  {x:2200,l:['CAFÉ SEMICOLON','laptops allowed','working discouraged']},
   {x:2720,l:['VALENCIA ST','4 coffee shops','0 profits']},
+  {x:3050,l:['PIVOT AHEAD','(the road, and you)']},
   {x:3620,l:['SAND HILL ROAD','pitch or perish']},
+  // fund district (BIBLE §8): parody morphs, invented marks — canon rule 3
+  {x:3760,l:['A17Z','"software eats,','we invoice"']},
+  {x:4020,l:['SEQUOIADENDRON','est. before','your parents']},
+  {x:4200,l:['ANGEL CROSSING','they can smell','your cap table']},
+  {x:4320,l:['FOUNDERS ETC.','a fort.','actually a fort.']},
+  {x:4460,l:['HF-0 MONASTERY','ship or pray','(both)']},
   {x:4560,l:['WARNING: VC AHEAD','know your CAC']},
+  {x:4700,l:['CHAD CAPITAL HQ','"we invest in people"','(who look like chad)']},
   {x:5540,l:['THE CLOUD','99.99% uptime*']},
-  {x:6000,l:['MIND THE GAPS',"(that's the 0.01%)"]},
-  {x:6560,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']}
+  {x:5880,l:['MIND THE GAPS',"(that's the 0.01%)"]},
+  {x:6000,l:['NOW ENTERING','THE CLOUD','*not actual uptime']},
+  {x:6560,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']},
+  {x:6700,l:['SYNERGY.AI CAMPUS','humans welcome','(as training data)']}
 ];
 
 // cameo NPCs {x, id, h, line} — background only: no collision, no update, no state.
@@ -287,6 +304,7 @@ let state = ST.TITLE;
 let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (backgrounded tabs don't count)
 let hitstopT = 0, shakeT = 0, prevJump = false;
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
+let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
 
 let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
 
@@ -310,16 +328,21 @@ function reset(fromCheckpoint){
     bosses = [
       { id:'vc', x:5150, y:GROUND_Y-34, w:26, h:34, hp:3, maxhp:3, trigger:4720, wall:5330, active:false, dead:false,
         dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'CHAD CAPITAL',
-        quips:["WHAT'S YOUR MOAT?","COME BACK AT $1M ARR","A FEATURE, NOT A COMPANY.","LOVE IT. PASSING.","MY VEST IS LOAD-BEARING","I NEED 10X, KID"] },
+        quips:["WHAT'S YOUR MOAT?","COME BACK AT $1M ARR","A FEATURE, NOT A COMPANY.","LOVE IT. PASSING.","MY VEST IS LOAD-BEARING","I NEED 10X, KID",
+               // v0.2 additions (MASTER-PLAN §1.4) + the fund-district tie-in (BIBLE §8)
+               "SEND ME A DECK","WHO ELSE IS IN?","MY LPs ARE NERVOUS","IS THERE AI IN THIS?","I'M ALSO IN A17Z'S NEW FUND"] },
       { id:'ai', x:7080, y:GROUND_Y-44, w:32, h:44, hp:5, maxhp:5, trigger:6760, wall:7340, active:false, dead:false,
         dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'SYNERGY.AI',
-        quips:["I AM AGENTIC.","YOUR STARTUP IS A PROMPT","DEPLOYING SYNERGY...","I RAISED $2B ON A DECK","HUMANS ARE LEGACY CODE"] }
+        quips:["I AM AGENTIC.","YOUR STARTUP IS A PROMPT","DEPLOYING SYNERGY...","I RAISED $2B ON A DECK","HUMANS ARE LEGACY CODE",
+               // v0.2 additions (MASTER-PLAN §1.4)
+               "I AM AI-NATIVE. YOU ARE AI-NAIVE.","YOUR MOAT IS MY FEATURE","GENERATING SLOP...","I PIVOTED 14 TIMES TODAY","THIS CONVERSATION IS TRAINING DATA"] }
     ];
     bosses.forEach(b => { b.x0 = b.x; b.y0 = b.y; });
     shots = []; parts = []; popups = [];
     raised = 0; hearts = 3; maxHearts = 3;
     checkpoint = 20; bellDone = false;
     playMs = 0; endTime = 0;
+    quoteRoll = Math.random();
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
@@ -525,7 +548,8 @@ function update(){
         shots.push({x:b.x+b.w/2, y:b.y+6, vx:(p.x<b.x?-1:1)*(1.4+Math.random()), vy:-4.2, w:12, h:10, t:'sheet', label:'TERMS'});
         b.atkT = 95;
       } else {
-        const words = ['PIVOT','SYNERGY','GTM','AGENTIC','B2B'];
+        // v0.2 pool (MASTER-PLAN §1.4) — pill is drawn to measured text, AABB stays 26x9
+        const words = ['PIVOT','SYNERGY','GTM','AGENTIC','B2B','SLOP','AI-NATIVE','ROADMAP','ALIGNMENT','WEB-SCALE'];
         const sx = b.x+(b.dir<0?-4:b.w-6);
         // staggered spawn band, skip if a live buzz is crowding the muzzle (de-collision, ruling 2.5)
         if (!shots.some(s2 => s2.t==='buzz' && Math.abs(s2.x - sx) < 30))
@@ -1236,7 +1260,22 @@ function makeBadge(won){
     b.fillText('FLAIR: ' + flairs.join('  ·  '), 320, 462);
   }
   b.fillStyle = '#cfd6e4';
-  const quote = won ? '"we\'re basically profitable" — you, probably' : '"it was a market timing issue" — you, on LinkedIn';
+  // v0.2 rotating one-liner pools (MASTER-PLAN §1.6) — quote rotates per run;
+  // the loss badge's zone line (DIED IN {zone}, above) stays regardless
+  const WIN_QUOTES = [
+    '"we\'re basically profitable" — you, probably',
+    '"this was the plan all along" — you, revising history',
+    '"I never doubted us" — you, who doubted us',
+    '"staying humble" — your LinkedIn post about it',
+  ];
+  const LOSS_QUOTES = [
+    '"it was a market timing issue" — you, on LinkedIn',
+    '"we learned so much" — you, learning nothing',
+    '"the market wasn\'t ready" — the market, ready',
+    '"pivoting to consulting" — 40% of your batch',
+  ];
+  const pool = won ? WIN_QUOTES : LOSS_QUOTES;
+  const quote = pool[Math.floor(quoteRoll * pool.length) % pool.length];
   let qs = 36; // 36px target, full row below the sprite; shrink only if a future quote overflows
   b.font = 'bold ' + qs + 'px monospace';
   while (qs > 24 && b.measureText(quote).width > 1080){ qs -= 2; b.font = 'bold ' + qs + 'px monospace'; }
