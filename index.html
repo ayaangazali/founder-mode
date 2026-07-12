@@ -388,6 +388,41 @@ const signs = [
   {x:8400,l:['SYNERGY.AI CAMPUS','humans welcome','(as training data)']}
 ];
 
+// -------- BILLBOARDS (docs/BILLBOARDS-FINAL.md — owner's locked 19) --------
+// Real names for anyone who said yes (partner:true = confirmed yes, tracked in
+// PARTNERS.md); the rest are affectionate-and-true descriptions pending a yes.
+// NEVER on the badge/obituary/share text (qa/billboards-probe.js gates it).
+// Anchored parallax: drawn at (x - cam) * 0.5 so each board stays in its named
+// zone (the spec's raw `x - cam*0.5` form pushes late boards past the camera's
+// reachable range). Heights alternate 66/108 so dense rows read as a stacked
+// 101 skyline instead of overlapping. Nudges vs the spec list: PARTNERS.md.
+const BILLBOARDS = [
+  // ── SOMA (devtools) ──
+  {x:300,  y:66,  name:'SUPERSET',   tagline:'run 100 coding agents in parallel',   bg:'#0d1117', fg:'#20a7c9', partner:false},
+  {x:700,  y:108, name:'VERCEL',     tagline:'deploys before you finish the sen—',  bg:'#000000', fg:'#ffffff', partner:false},
+  {x:1150, y:66,  name:'SUPABASE',   tagline:'the backend your agent controls',     bg:'#1c1c1c', fg:'#3ecf8e', partner:false},
+  {x:1650, y:108, name:'WARP',       tagline:'the terminal that finishes your bash',bg:'#0a0a0a', fg:'#01a2ff', partner:false},
+  // ── THE MISSION (AI hype) ──
+  {x:2250, y:66,  name:'REPLIT',     tagline:'vibe-code your way to prod',          bg:'#0e1525', fg:'#f5960a', partner:false},
+  {x:2800, y:108, name:'RESEND',     tagline:'email that actually lands',           bg:'#000000', fg:'#ffffff', partner:false},
+  {x:3350, y:66,  name:'EXA',        tagline:'search, but it gets the vibe',        bg:'#1a1a2e', fg:'#8b5cf6', partner:false},
+  // ── CEREBRAL VALLEY (agents) — clear of THE PLATFORM arena 5390-5640 ──
+  {x:4150, y:108, name:'FIRECRAWL',  tagline:'now hiring: 3 AI agents, $1M',        bg:'#0a0a0a', fg:'#ff6b35', partner:false},
+  {x:4650, y:66,  name:'BROWSER USE',tagline:'your agent, now with a browser',      bg:'#111111', fg:'#7cffa5', partner:false},
+  {x:5100, y:108, name:'MANUFACT',   tagline:'USB-C for AI (it just works)',        bg:'#0f0f17', fg:'#41f2ff', partner:false},
+  // ── SAND HILL ROAD (GTM + money) — clear of CHAD arena 6420-7030 ──
+  {x:5760, y:66,  name:'CLEAN',      tagline:'warm outbound. no cold slop.',        bg:'#0a0a0a', fg:'#4ade80', partner:true},
+  {x:6060, y:108, name:'GOJIBERRY',  tagline:'GTM agents that actually close',      bg:'#1a1a2e', fg:'#e94f8a', partner:false},
+  {x:6360, y:66,  name:'INSFORGE',   tagline:'the agent-native AWS',                bg:'#0d1117', fg:'#58a6ff', partner:false},
+  {x:7130, y:108, name:'CALLIX',     tagline:'GTM agents that dial for you',        bg:'#0a0a0a', fg:'#4ade80', partner:false},
+  // ── THE CLOUD (infra + agents) — clear of SYNERGY.AI arena 8460-9040 ──
+  {x:7390, y:66,  name:'SUPERMEMORY',tagline:'your AI finally remembers you',       bg:'#141433', fg:'#c58bff', partner:false},
+  {x:7650, y:108, name:'HYPERSPELL', tagline:'memory layer for your agents',        bg:'#141433', fg:'#a78bfa', partner:false},
+  {x:7910, y:66,  name:'AGENTMAIL',  tagline:"an inbox your agent can't ignore",    bg:'#0a0a0a', fg:'#ffd94a', partner:false},
+  {x:8160, y:108, name:'KINECT',     tagline:'the AI-native commerce stack',        bg:'#0f0f17', fg:'#00e0c6', partner:false},
+  {x:8400, y:66,  name:'DEEL',       tagline:'hire anyone, anywhere, instantly',    bg:'#1b1b3a', fg:'#7c6bff', partner:false},
+];
+
 // cameo NPCs {x, id, h, line} — background only: no collision, no update, no state.
 // composite ARCHETYPES, never identifiable people (canon rule 3; shipping tier of design-cameos.md)
 // post-shift: contrarian 3990→5960 (Sand Hill fund row, clear of the new signs),
@@ -766,6 +801,7 @@ function reset(fromCheckpoint){
     corgiHired = false;
     chat = null; chatStill = 0; for (const cc of CHATS) cc.done = false;
     interview = null; accDone = false;
+    for (const bb of BILLBOARDS) bb.spotted = false;  // partner shout-outs re-arm per run
     slops = []; slopN = 0;
     room = { active: false, t: 0, px: 0, cans: [], done: false };
     cmoT = 0; cmoDone = false;
@@ -1315,6 +1351,14 @@ function update(){
     ai2.y = GROUND_Y - 16 + Math.sin(ai2.flut) * 1.5;
     if (aabb(p, ai2)) p.x += (p.x < ai2.x ? -0.8 : 0.8);      // blocks like a board member; never hurts
     if (--ai2.t <= 0) actionItems = null;                     // statute of limitations
+  }
+
+  // -------- billboards: a partner board greets you once per run --------
+  for (const bb of BILLBOARDS){
+    if (bb.partner && !bb.spotted && Math.abs(p.x - bb.x) < 40){
+      bb.spotted = true; raised += 5; sPow();
+      addPop(p.x, p.y - 24, 'SPOTTED: ' + bb.name + ' (a real startup, unlike yours) +$5K', '#7cffa5', 150);
+    }
   }
 
   // -------- run-club wave (cosmetic; spawns on the playMs clock) --------
@@ -1903,6 +1947,22 @@ function drawBG(){
   cx.fillStyle = B.fog[1];
   cx.fillRect(fx - 60, 104, 200, 20); cx.fillRect(fx + 180, 116, 160, 16);
   if (B.foggy){ cx.fillStyle = B.fog[0]; cx.fillRect(0, 60, W, 20); cx.fillRect(0, 140, W, 34); } // Cerebral Valley only
+
+  // billboards — mid-ground .5, in FRONT of the fog (the y110 haze band washed
+  // out panel tops when boards drew earlier), behind the .85 bridge + gameplay.
+  // Drawn in every biome including THE CLOUD's void: the city is gone, the ads remain.
+  for (const bb of BILLBOARDS){
+    const x = Math.round((bb.x - cam) * 0.5) - 90;             // anchored parallax .5, panel centered on bb.x
+    if (x < -190 || x > W + 10) continue;
+    px(x + 22, bb.y + 40, 5, 30, '#3a3a44'); px(x + 153, bb.y + 40, 5, 30, '#3a3a44'); // posts
+    px(x, bb.y, 180, 40, bb.bg); px(x, bb.y, 180, 3, bb.fg);   // panel + accent stripe
+    occlude(x, bb.y, 180, 40);                                 // panel owns its overlay space
+    cx.fillStyle = bb.fg; cx.font = 'bold 16px monospace';
+    cx.fillText(bb.name, x + 10, bb.y + 22);
+    cx.fillStyle = '#cbd5e1'; cx.font = 'bold 7px monospace';
+    cx.fillText(bb.tagline, x + 10, bb.y + 34);
+    if (bb.partner){ px(x + 148, bb.y + 4, 28, 9, '#111'); cx.fillStyle = bb.fg; cx.font = 'bold 6px monospace'; cx.fillText('REAL', x + 152, bb.y + 11); }
+  }
   // golden gate towers near the finale (world-anchored)
   // anchor 7700 = the war-room's 6000 fix + the +1700 world shift. (The level file's
   // CODE_UPDATES said 8600 — that predates the war-room finding and would need
