@@ -523,6 +523,60 @@ const CHATS = [
 let chat = null;      // live chat state: {ci, qi, phase, t, score, swap, held, msg, good, amt}
 let chatStill = 0;    // touch trigger: frames stood still at a table
 
+// -------- THE ACCELERATOR INTERVIEW (canon rule 3: never the real name) --------
+// The famous ten-MINUTE interview, except it's ten SECONDS, total, for seven
+// questions. Unreadable on the first try — until you notice the pattern:
+// the short answer is always the right answer. Brevity is the whole meta.
+// Win 5/7 for the DEMO DAY LETTER (8s invincibility) + $150K. One shot per
+// run; a fail is an invitation to "apply again" (that's the next run).
+const ACC_X = 900; // SOMA storefront; scanned clear of enemies, signs, cameos, pits
+const ACC_QS = [
+  { q:'what does your company do?', a:'we sell rocks online', b:"we're reimagining the paradigm of mineral commerce" },
+  { q:'how do you make money?', a:'people pay us', b:'monetization is a phase-two conversation' },
+  { q:'why will you win?', a:'we ship faster', b:'our culture deck has ninety slides' },
+  { q:'who are your competitors?', a:"everyone. we're scared.", b:'we have no competitors' },
+  { q:"what's your growth?", a:'20% week over week', b:'the hockey stick is pending' },
+  { q:'why this idea?', a:'we had the problem', b:'a vision came to our CEO in Big Sur' },
+  { q:'what do you want from us?', a:'money', b:'mentorship, mostly, and the vibes' },
+];
+let interview = null; // {qi, t, score, held, phase, flash}
+let accDone = false;
+
+function interviewStart(){
+  interview = { qi: 0, t: 600, score: 0, held: true, phase: 'q', flash: 0 };
+  sPow();
+}
+function interviewUpdate(){
+  if (interview.phase === 'q'){
+    interview.t--;
+    if (interview.flash > 0) interview.flash--;
+    const L = keys['arrowleft'] || keys['a'] || touch.L;
+    const R = keys['arrowright'] || keys['d'] || touch.R;
+    if (!L && !R) interview.held = false;
+    let pick = -1;
+    if (!interview.held){ if (L) pick = 0; else if (R) pick = 1; }
+    if (pick >= 0){
+      interview.held = true;
+      const swap = interview.qi % 2 === 1;
+      const good = (swap ? 1 - pick : pick) === 0;    // the short answer is always answer a
+      if (good) interview.score++;
+      interview.flash = good ? 14 : -14; // brief ✓/✗ tick; the questions do not wait
+      if (interview.flash < 0) interview.flash = 14, interview.flashBad = true; else interview.flashBad = false;
+      interview.qi++;
+    }
+    if (interview.qi >= ACC_QS.length || interview.t <= 0){
+      interview.phase = 'end'; interview.t = 240;
+      interview.won = interview.score >= 5;
+      if (interview.won){ raised += 150; player.ycT = 60 * 8; moodUp(); sPow(); }
+      else moodDown();
+    }
+  } else if (--interview.t <= 0){
+    accDone = true;
+    if (interview.won) addPop(player.x, player.y - 20, 'DEMO DAY LETTER! +$150K · INVINCIBLE 8s', '#ff8c37', 150);
+    interview = null;
+  }
+}
+
 function chatStart(ci){
   chat = { ci, qi: 0, phase: 'q', t: 6 * 60, score: 0, swap: ci % 2 === 1,
            held: true, msg: '', good: false, amt: 0 };
@@ -704,6 +758,7 @@ function reset(fromCheckpoint){
     corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
     corgiHired = false;
     chat = null; chatStill = 0; for (const cc of CHATS) cc.done = false;
+    interview = null; accDone = false;
     slops = []; slopN = 0;
     room = { active: false, t: 0, px: 0, cans: [], done: false };
     cmoT = 0; cmoDone = false;
@@ -800,17 +855,20 @@ function update(){
 
   // HUMOR PATCH item 8: inside the hackathon house, the outside world waits
   if (room.active){ roomUpdate(); return; }
-  // coffee chat in progress: the world waits (investors do not)
+  // coffee chat / interview in progress: the world waits (investors do not)
   if (chat){ chatUpdate(); return; }
-  // chat trigger: press C at a table (touch: stand still at it ~2.5s)
+  if (interview){ interviewUpdate(); return; }
+  // mini-game triggers: press C at a table / the door (touch: stand still ~2.5s)
   if (state === ST.PLAY){
     let atTable = -1;
     for (let i = 0; i < CHATS.length; i++)
       if (!CHATS[i].done && Math.abs(p.x - CHATS[i].x) < 22 && p.onGround) atTable = i;
-    if (atTable >= 0){
+    const atDoor = !accDone && Math.abs(p.x - ACC_X) < 16 && p.onGround;
+    if (atTable >= 0 || atDoor){
       const still = Math.abs(p.vx) < 0.3;
       chatStill = still ? chatStill + 1 : 0;
-      if (keys['c'] || (('ontouchstart' in window) && chatStill >= 150)) chatStart(atTable);
+      const go = keys['c'] || (('ontouchstart' in window) && chatStill >= 150);
+      if (go){ if (atDoor) interviewStart(); else chatStart(atTable); }
     } else chatStill = 0;
   }
 
@@ -1637,7 +1695,63 @@ function drawChat(){
   drawHUD();
 }
 
+function drawInterview(){
+  occlude(0, 0, W, H);
+  px(0, 0, W, H, '#e8e4da');                                // daylight. terrifying.
+  px(0, 200, W, 70, '#c9c2b2');                             // floor
+  for (let i = 0; i < 3; i++)                               // the panel: three partners, identical posture
+    drawFounder(cx, 160 + i * 60, 118, 2.6, -1, 0, false,
+      { skin:'#e8b98a', hair:'#3a3a3a', hairDk:'#262626', hood:i === 1 ? '#5a6b8c' : '#6e7787', pocket:'#4a5568', hairStyle:i });
+  px(120, 150, 240, 8, '#8a7a5a'); px(130, 158, 6, 42, '#6e6248'); px(344, 158, 6, 42, '#6e6248'); // long desk hides their legs
+  drawFounder(cx, 60, 160, 2.6, 1, 0, false);               // you, in the folding chair era
+  cx.textAlign = 'left';
+  cx.font = 'bold 9px monospace'; cx.fillStyle = '#1a1a2e';
+  cx.fillText('THE ACCELERATOR — INTERVIEW', 134, 18);
+  cx.font = 'bold 7px monospace'; cx.fillStyle = '#6e6248';
+  cx.fillText('you have ten seconds. total. for all seven.', 134, 30);
+  if (interview.phase === 'q'){
+    // the shared clock — one bar for the whole interview
+    px(16, 38, Math.max(0, Math.round((W - 32) * interview.t / 600)), 5, interview.t < 180 ? '#d64550' : '#1a1a2e');
+    const q = ACC_QS[interview.qi], swap = interview.qi % 2 === 1;
+    cx.font = 'bold 9px monospace'; cx.fillStyle = '#1a1a2e';
+    cx.fillText('"' + q.q + '"  (' + (interview.qi + 1) + '/7)', 16, 60);
+    const optA = swap ? q.b : q.a, optB = swap ? q.a : q.b;
+    px(12, 226, 222, 32, '#fff'); px(12, 226, 222, 2, '#3b5bdb');
+    px(246, 226, 222, 32, '#fff'); px(246, 226, 222, 2, '#d97706');
+    cx.font = 'bold 8px monospace';
+    cx.fillStyle = '#3b5bdb'; cx.fillText('←', 18, 238);
+    cx.fillStyle = '#d97706'; cx.fillText('→', 452, 238);
+    cx.font = 'bold 7px monospace'; cx.fillStyle = '#1a1a2e';
+    cx.fillText(optA, 18, 250); cx.fillText(optB, 252, 250);
+    if (interview.flash > 0){ // last answer's verdict, gone in a blink
+      cx.font = 'bold 10px monospace'; cx.fillStyle = interview.flashBad ? '#d64550' : '#1d9e50';
+      cx.fillText(interview.flashBad ? '✗' : '✓', 452, 60);
+    }
+  } else {
+    cx.font = 'bold 9px monospace';
+    cx.fillStyle = interview.won ? '#1d9e50' : '#d64550';
+    cx.fillText(interview.won ? '"we\'d like you to be in the batch."' : '"we suggest applying again. everyone should apply. always."', 16, 60);
+    cx.font = 'bold 8px monospace'; cx.fillStyle = '#1a1a2e';
+    cx.fillText(interview.score + '/7 answered like an operator', 16, 76);
+    if (interview.won){ cx.fillStyle = '#d97706'; cx.fillText('DEMO DAY LETTER: +$150K · INVINCIBLE 8s', 16, 92); }
+  }
+  drawHUD();
+}
+
 function drawChatTables(){
+  { // THE ACCELERATOR interview door
+    const x = ACC_X - 7 - cam;
+    if (x > -60 && x < W + 60){
+      px(x - 6, GROUND_Y - 46, 26, 8, '#d97706');                  // the orange lintel
+      cx.font = 'bold 6px monospace'; cx.fillStyle = '#fff';
+      cx.fillText('THE ACCELERATOR', x - 18, GROUND_Y - 40);
+      px(x, GROUND_Y - 38, 14, 38, accDone ? '#6e6248' : '#8a6d00');
+      px(x + 2, GROUND_Y - 36, 10, 34, accDone ? '#4a4436' : '#d97706'); // door (dim once used)
+      px(x + 10, GROUND_Y - 22, 2, 2, '#1a1a2e');                  // handle
+      if (!accDone && Math.abs(player.x - ACC_X) < 40 && state === ST.PLAY)
+        celebBubble(x + 7, GROUND_Y - 52, ('ontouchstart' in window) ? '☕ stand here — 10-second interview' : 'press C — the 10-second interview');
+    }
+  }
   for (let i = 0; i < CHATS.length; i++){
     const c = CHATS[i];
     const x = c.x - cam;
@@ -1845,6 +1959,12 @@ function draw(){
   // coffee chat — full-frame two-shot across the table
   if (state === ST.PLAY && chat){
     drawChat();
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+    return;
+  }
+  // the accelerator interview — full-frame panel room
+  if (state === ST.PLAY && interview){
+    drawInterview();
     cx.setTransform(1, 0, 0, 1, 0, 0);
     return;
   }
@@ -2385,7 +2505,7 @@ function drawHUD(){
   for (let i = 0; i < Math.max(maxHearts, 3); i++)
     px(52 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
   // zone + timer
-  if (!chat){ // the chat header owns top-center while a coffee chat is up
+  if (!chat && !interview){ // mini-game headers own top-center while one is up
     cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14); occlude(W/2 - 55, 6, 110, 14);
     cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
     const zn = zoneName(player.x);
@@ -2403,7 +2523,7 @@ function drawHUD(){
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
   // first 6s of a run: controls strip along the bottom (playtest: powers went
   // unread; new players never learned X existed)
-  if (playMs < 6000 && !chat){
+  if (playMs < 6000 && !chat && !interview){
     const ct = ('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies · grab a DECK, then tap to pitch'
                                           : '←→ move · SPACE jump · stomp enemies · grab a DECK, then X to pitch';
     cx.font = 'bold 7px monospace';
