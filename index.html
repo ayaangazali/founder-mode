@@ -2978,7 +2978,7 @@ function showEndUI(won){
     </div>
     <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:12px; margin-top:4px; line-height:1.5"></div>` : '';
   uicard.innerHTML = `
-    <img id="endImg" src="${surfaces[cur].url}" style="width:min(560px,86vw); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
+    <img id="endImg" src="${surfaces[cur].url}" style="width:min(560px,86vw,calc((100vh - 250px)*1.9)); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
     ${valHtml}
     ${isTouch ? '<div style="color:#8d99ae; font-weight:bold; font-size:12px; margin-top:4px">press &amp; hold the badge to save it. yes, really.</div>' : ''}
     <div style="margin-top:8px">${btns}</div>

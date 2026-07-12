@@ -39,9 +39,13 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
     await p.keyboard.down('Space'); await p.waitForTimeout(200); await p.keyboard.up('Space');
     await p.waitForTimeout(300);
     const cyan = () => p.evaluate(() => { // AI-blue glow pixels in the sign band at x≈6900
-      const d = cx.getImageData(0, 0, 480, 232).data;
+      // text renders on the crisp overlay since the hi-res text canvas landed —
+      // scan BOTH surfaces (sprites on cx, glyphs on tcx)
       let n = 0;
+      const d = cx.getImageData(0, 0, 480, 232).data;
       for (let i = 0; i < d.length; i += 4) if (d[i] < 150 && d[i+1] > 180 && d[i+2] > 220) n++;
+      const d2 = tcx.getImageData(0, 0, tv.width, Math.round(232 * TS)).data;
+      for (let i = 0; i < d2.length; i += 4) if (d2[i+3] > 60 && d2[i] < 150 && d2[i+1] > 180 && d2[i+2] > 220) n++;
       return n;
     });
     await p.evaluate(() => { bosses[0].dead = true; player.x = 6880; player.y = GROUND_Y - 40; cam = 6720; player.hurtT = 240; });
