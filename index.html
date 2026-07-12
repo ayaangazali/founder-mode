@@ -685,8 +685,8 @@ function hurtPlayer(cause, word){
   }
 }
 
-function addPop(x,y,txt,c){
-  popups.push({x,y,txt,c,t:60});
+function addPop(x,y,txt,c,life=60){
+  popups.push({x,y,txt,c,t:life});
   if (popups.length > 6) popups.shift(); // playtest: cap the on-screen chatter
 }
 function addParts(x,y,c,n=8){
@@ -849,17 +849,19 @@ function update(){
       pw.got = true; sPow();
       if (pw.t === 'rug') moodDown(); else moodUp(); // getting rugged is a mood
 
-      if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! VELOCITY +47%', '#c58bff'); }
-      if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! INVINCIBLE', '#ff8c37'); }
-      if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! INNER PEACE +15% JUMP', '#39c46d'); }
-      if (pw.t === 'press'){ p.shield = 1; addPop(pw.x, pw.y-8, 'GOOD PRESS! one bad take, on the house', '#7ce0ff'); }
+      // power pickups hold 2.5s (playtest: owner grabbed powers and couldn't
+      // tell what they did — the 1s float was gone before it was read)
+      if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! auto speed boost, 10s', '#c58bff', 150); }
+      if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! invincible, 8s — just run', '#ff8c37', 150); }
+      if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! auto +15% jump, 10s', '#39c46d', 150); }
+      if (pw.t === 'press'){ p.shield = 1; addPop(pw.x, pw.y-8, 'GOOD PRESS! next hit is free (auto)', '#7ce0ff', 150); }
       if (pw.t === 'deck'){
         p.deckT = 60*15; // 15s: covers a full boss fight (playtest)
         addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! tap — pitch AT them (15s)'
-                                                        : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a');
+                                                        : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a', 150);
       }
-      if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5'); }
-      if (pw.t === 'contract'){ raised += 100; p.slowT = 60*8; addPop(pw.x, pw.y-8, 'ENTERPRISE CONTRACT! +$100K', '#7ce0ff'); addPop(pw.x, pw.y-18, '(procurement has questions)', '#8d99ae'); }
+      if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5', 150); }
+      if (pw.t === 'contract'){ raised += 100; p.slowT = 60*8; addPop(pw.x, pw.y-8, 'ENTERPRISE CONTRACT! +$100K (slows you, 8s)', '#7ce0ff', 150); addPop(pw.x, pw.y-18, '(procurement has questions)', '#8d99ae', 150); }
       if (pw.t === 'rug'){ raised = Math.max(0, raised - 5); addPop(pw.x, pw.y-8, 'RUGGED. -$5K', '#d64550'); }
       if (pw.t === 'sheet'){
         if (MK === 'downround'){ addPop(pw.x, pw.y-8, 'TERM SHEET! +0 RUNWAY (down round)', '#7cffa5'); }
@@ -2215,8 +2217,19 @@ function drawHUD(){
   else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
   else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', 12, 44); }
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
-  if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText('PITCHING ' + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
+  if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText((('ontouchstart' in window) ? 'PITCHING · tap fires · ' : 'PITCHING · X fires · ') + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
+  // first 6s of a run: controls strip along the bottom (playtest: powers went
+  // unread; new players never learned X existed)
+  if (playMs < 6000){
+    const ct = ('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies · grab a DECK, then tap to pitch'
+                                          : '←→ move · SPACE jump · stomp enemies · grab a DECK, then X to pitch';
+    cx.font = 'bold 7px monospace';
+    const ctw = cx.measureText(ct).width;
+    cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(W/2 - ctw/2 - 5), H - 20, Math.round(ctw + 10), 12);
+    occlude(W/2 - ctw/2 - 5, H - 20, ctw + 10, 12);
+    cx.fillStyle = '#cfd6e4'; cx.fillText(ct, Math.round(W/2 - ctw/2), H - 11);
+  }
   if (corgi.following && !corgi.sitting){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', 12, 74); }
 }
 
