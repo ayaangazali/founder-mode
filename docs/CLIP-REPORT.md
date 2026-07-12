@@ -37,3 +37,11 @@ greps clean · celeb grep-gate enforced as a test.
 ## Not merged, not deployed
 This branch is `humor-patch`, 11 commits ahead of main, awaiting owner review.
 `git checkout humor-patch` to play it; `git diff main..humor-patch -- index.html` for the full diff.
+
+## Billboards (branch `billboards`, 2026-07-12)
+| Moment | Screenshot | Why someone clips this |
+|---|---|---|
+| The 101-billboard skyline — 19 real-startup boards at parallax .5, two stacked heights, every zone | qa/overnight/billboards-*.png | founders screenshot THEIR OWN company's board in the game and post it; that's the outreach hook working in reverse |
+| "SPOTTED: CLEAN (a real startup, unlike yours) +$5K" under the one partner board | qa/overnight/billboards-sandhill.png | the game dunks on you while paying you to notice the sponsor — partner gets a clip that flatters them at the player's expense |
+
+Spec deviations for this batch are recorded in PARTNERS.md (anchored-parallax formula; height-stagger instead of the impossible >=900px spacing; CALLIX moved out of CHAD's arena).
