@@ -17,7 +17,7 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
   // ---- THE GREP GATE (spec GUARDRAILS, verbatim intent) ----
   const gate = await p.evaluate(() => {
     const src = makeBadge.toString() + makeObituary.toString() + shareText.toString()
-              + JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join('');
+              + JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join('') + JSON.stringify(WIN_FRONTPAGE) + WIN_BODY.map(f => f.toString()).join('');
     // incl. the IS CODE DEAD panel cast (pol gram / xandr wing / dareo)
     return /teal|barry gan|tusk|waltman|pol gram|xandr wing|dareo/i.test(src);
   });

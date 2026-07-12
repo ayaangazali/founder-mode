@@ -494,6 +494,7 @@ function lbFetch(after){
 }
 lbFetch();
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
+function playerName(){ try { return (localStorage.getItem('fm_name') || '').trim(); } catch(e){ return ''; } }
 // the 10 market conditions (MASTER-PLAN §1.6, exact strings) + the lever each pulls
 const MARKETS = [
   { s:'AI HYPE CYCLE: PEAK — SYNERGY.AI +1 HP',                                  k:'aihype' },
@@ -2974,6 +2975,7 @@ function makeBadge(won){
   b.fillText(won ? 'CERTIFIED UNICORN' : 'OUT OF RUNWAY', 320, 150);
   b.fillStyle = '#fff'; b.font = 'bold 34px monospace';
   b.fillText(won ? 'survived SF · defeated SYNERGY.AI' : 'SF claims another founder', 320, 205);
+  if (playerName()){ b.fillStyle = '#7ce0ff'; b.font = 'bold 30px monospace'; b.fillText('FOUNDER: ' + playerName().toUpperCase(), 320, 245); }
   const t = fmtTime(endTime || playMs);
   b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';
   b.fillText('RAISED  ' + fmtMoney(raised), 320, 295);
@@ -3042,15 +3044,33 @@ const OBIT_BODY = [
 ];
 const OBIT_CAPTIONS = ['the founder, moments before checking metrics', 'file photo: hoodie, ambition', 'the deceased, pictured at peak conviction'];
 
-function obitHeadline(){
+const WIN_FRONTPAGE = { h: 'LOCAL FOUNDER RINGS BELL, REMAINS INSUFFERABLE',
+                        s: '"we were never worried," say sources who were extremely worried' };
+const WIN_BODY = [
+  (r, t) => `The founder, who raised ${r} over a ${t} sprint, rang the bell under the bridge and immediately said "this validates the vision" to no one in particular.`,
+  () => 'Chad Capital, an early passer on the company, now describes itself as "an early believer with conviction."',
+  () => 'SYNERGY.AI could not be reached for comment. It has been acquired. By the founder.',
+  () => 'The victory lap will be a LinkedIn post. Sources confirm it was drafted before the bell.',
+  () => 'A source close to the cap table says the cap table would like to talk about secondaries.',
+];
+function obitHeadline(won){
+  if (won){
+    const h = WIN_FRONTPAGE.h;
+    return playerName() ? h.replace(/^LOCAL FOUNDER/, playerName().toUpperCase()) : h;
+  }
   const cause = OBIT_HEADLINES[deathCause] ? deathCause : 'burn';
-  return cause === 'buzzword' ? `MAN KILLED BY THE WORD "${deathWord}"` : OBIT_HEADLINES[cause].h;
+  let h = cause === 'buzzword' ? `MAN KILLED BY THE WORD "${deathWord}"` : OBIT_HEADLINES[cause].h;
+  if (playerName()){
+    const N = playerName().toUpperCase();
+    h = h.replace(/^LOCAL FOUNDER/, N).replace(/^FOUNDER(?=[ '])/, N).replace(/^MAN(?= )/, N);
+  }
+  return h;
 }
 
-function makeObituary(){
+function makeObituary(won){
   const cause = OBIT_HEADLINES[deathCause] ? deathCause : 'burn';
-  const headline = obitHeadline();
-  const sub = OBIT_HEADLINES[cause].s;
+  const headline = obitHeadline(won);
+  const sub = won ? WIN_FRONTPAGE.s : OBIT_HEADLINES[cause].s;
   const INK = '#16130c', FAINT = '#4a4438', GREEK = '#c9c0aa', PAPER = '#ece5d3';
   const oc = document.createElement('canvas');
   oc.width = 1200; oc.height = 630;
@@ -3095,14 +3115,15 @@ function makeObituary(){
   b.fillStyle = INK; b.fillRect(40, 214, 1120, 1);
 
   // two columns: 3 real lines each (seeded by the run), then greeked bars
-  const i1 = Math.floor(quoteRoll * OBIT_BODY.length) % OBIT_BODY.length;
-  const i2 = (i1 + 1 + Math.floor(quoteRoll * 3)) % OBIT_BODY.length === i1
-           ? (i1 + 1) % OBIT_BODY.length : (i1 + 1 + Math.floor(quoteRoll * 3)) % OBIT_BODY.length;
+  const POOL = won ? WIN_BODY : OBIT_BODY;
+  const i1 = Math.floor(quoteRoll * POOL.length) % POOL.length;
+  const i2 = (i1 + 1 + Math.floor(quoteRoll * 3)) % POOL.length === i1
+           ? (i1 + 1) % POOL.length : (i1 + 1 + Math.floor(quoteRoll * 3)) % POOL.length;
   const rM = fmtMoney(raised), tM = fmtTime(endTime || playMs);
   b.font = 'bold 17px monospace';
   [[48, i1], [440, i2]].forEach(([cx2, bi]) => {
     b.fillStyle = INK;
-    wrap(OBIT_BODY[bi](rM, tM), 356).slice(0, 3).forEach((ln, li) => b.fillText(ln, cx2, 246 + li * 25));
+    wrap(POOL[bi](rM, tM), 356).slice(0, 3).forEach((ln, li) => b.fillText(ln, cx2, 246 + li * 25));
     b.fillStyle = GREEK;
     for (let g = 0; g < 6; g++) b.fillRect(cx2, 332 + g * 22, g % 3 === 2 ? 250 : 352, 12);
   });
@@ -3116,20 +3137,23 @@ function makeObituary(){
   drawFounder(b, -60, -85, 10, 1, 0, false);
   b.restore();
   b.font = 'bold 14px monospace'; b.fillStyle = FAINT; b.textAlign = 'center';
-  b.fillText(OBIT_CAPTIONS[Math.floor(quoteRoll * 3) % 3], 999, 514, 300);
+  b.fillText(playerName()
+    ? playerName() + (won ? ', pictured at peak validation' : ', pictured at peak conviction')
+    : OBIT_CAPTIONS[Math.floor(quoteRoll * 3) % 3], 999, 514, 300);
   b.textAlign = 'left';
 
   // pull quote
   b.fillStyle = INK; b.fillRect(48, 486, 8, 74);
   b.font = 'bold 30px monospace';
-  b.fillText('"it was a market timing issue"', 72, 520, 720);
+  b.fillText(won ? '"i never doubted us"' : '"it was a market timing issue"', 72, 520, 720);
   b.font = 'bold 16px monospace'; b.fillStyle = FAINT;
-  b.fillText('— you, on LinkedIn', 72, 550);
+  b.fillText(won ? '— you, who doubted us, on LinkedIn' : '— you, on LinkedIn', 72, 550);
 
   // bottom ticker
   b.fillStyle = INK; b.fillRect(0, 592, 1200, 38);
   b.fillStyle = PAPER; b.font = 'bold 19px monospace';
-  b.fillText(`RAISED ${rM} ▼ · RUNWAY 0.0 MONTHS ▼ · VIBES DELISTED · NEXT: YOUR RUN?`, 48, 617, 1104);
+  b.fillText(won ? `RAISED ${rM} ▲ · BELL RUNG ▲ · VIBES: ALL-TIME HIGH · NEXT: YOUR RUN?`
+                 : `RAISED ${rM} ▼ · RUNWAY 0.0 MONTHS ▼ · VIBES DELISTED · NEXT: YOUR RUN?`, 48, 617, 1104);
   return oc;
 }
 
@@ -3177,10 +3201,10 @@ function showEndUI(won){
     badge: { c: makeBadge(won), fname: won ? 'founder-mode-unicorn.png' : 'founder-mode-rip.png',
              text: shareText(won), save: won ? '⬇ SAVE BADGE' : '⬇ SAVE BADGE', blob: null, file: null, blobUrl: null, url: '' },
   };
-  if (!won) surfaces.obit = { c: makeObituary(), fname: 'hypergrowth-daily-frontpage.png',
-    text: `I made the front page of Hypergrowth Daily: '${obitHeadline()}'. Play: ${GAME_URL}`,
+  surfaces.obit = { c: makeObituary(won), fname: won ? 'hypergrowth-daily-ipo.png' : 'hypergrowth-daily-frontpage.png',
+    text: `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${GAME_URL}`,
     save: '⬇ SAVE FRONT PAGE', blob: null, file: null, blobUrl: null, url: '' };
-  let cur = won ? 'badge' : 'obit';
+  let cur = won ? 'badge' : 'obit'; // wins lead with the badge, losses with the front page
   for (const k in surfaces){
     const s = surfaces[k];
     s.url = s.c.toDataURL('image/png');
@@ -3195,10 +3219,10 @@ function showEndUI(won){
   const bSave  = `<button id="bDl">${surfaces[cur].save}</button>`;
   const bCopy  = '<button id="bCp" class="alt">📋 COPY LINKEDIN POST</button>';
   const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button>`;
-  const bTog   = won ? '' : '<button id="bTg" style="font-size:12px; padding:6px 10px">view classic badge</button>';
+  const bTog   = `<button id="bTg" style="font-size:12px; padding:6px 10px">${won ? 'view front page' : 'view classic badge'}</button>`;
   // losers are the comedy's best distributors: PIVOT first, share buttons
   // immediately second (FINAL-REVIEW §2 amendment — outranks the spec's order)
-  const btns = won ? bShare + bSave + bCopy + bRetry : bRetry + bShare + bSave + bCopy + bTog;
+  const btns = won ? bShare + bSave + bCopy + bRetry + bTog : bRetry + bShare + bSave + bCopy + bTog;
 
   const val = valuation(won);
   lastVal = val.v;
@@ -3210,14 +3234,15 @@ function showEndUI(won){
       ${val.lines.join('<br>')}<br>
       <span style="color:#ffd94a; font-size:15px">= ${val.final}</span>
     </div></div>`;
-  // leaderboard row — only when served over http(s); file:// keeps local bests
-  const lbHtml = LB_ON ? `
+  // name row always renders (the name stamps the badge + front page);
+  // the POST button needs the network, so it's http(s)-only
+  const lbHtml = `
     <div style="margin-top:6px">
       <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${(() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })()}"
         style="width:170px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
-      <button id="lbGo" class="alt">🏆 POST VALUATION</button>
+      ${LB_ON ? '<button id="lbGo" class="alt">🏆 POST VALUATION</button>' : ''}
     </div>
-    <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:12px; margin-top:4px; line-height:1.5"></div>` : '';
+    <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:12px; margin-top:4px; line-height:1.5"></div>`;
   uicard.innerHTML = `
     <img id="endImg" src="${surfaces[cur].url}" style="width:min(560px,86vw,calc((100vh - 250px)*1.9)); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
     ${valHtml}
@@ -3228,6 +3253,13 @@ function showEndUI(won){
     ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:12px">or press R to run it back</div>'}`;
   ui.style.display = 'flex';
 
+  const nameEl = document.getElementById('lbName');
+  nameEl.onkeydown = e => e.stopPropagation();        // typing must not steer the game
+  nameEl.onchange = () => {                           // commit the name -> re-stamp badge + front page
+    const nm = nameEl.value.toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14);
+    try { localStorage.setItem('fm_name', nm); } catch(e){}
+    showEndUI(won);
+  };
   if (LB_ON){
     const listEl = document.getElementById('lbList');
     const renderTop = () => { listEl.innerHTML = lbTop && lbTop.length
@@ -3235,8 +3267,6 @@ function showEndUI(won){
           `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>')
       : ''; };
     renderTop();
-    const nameEl = document.getElementById('lbName');
-    nameEl.onkeydown = e => e.stopPropagation();      // typing initials must not steer the game
     document.getElementById('lbGo').onclick = () => {
       if (lbSent) return;
       const nm = (nameEl.value || 'YOU').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14) || 'YOU';
@@ -3255,7 +3285,7 @@ function showEndUI(won){
     };
   }
 
-  if (!won) document.getElementById('bTg').onclick = () => {
+  document.getElementById('bTg').onclick = () => {
     cur = cur === 'obit' ? 'badge' : 'obit';
     document.getElementById('endImg').src = surfaces[cur].url;
     document.getElementById('bDl').textContent = surfaces[cur].save;

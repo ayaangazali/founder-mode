@@ -434,3 +434,31 @@ GitHub (private).
   height capped so the taller card fits 667×375; fullrun bot checked against a
   pre-session baseline worktree — both hover at the 6-death budget on today's DOWN
   ROUND SEASON seed; no session regression. All probe suites + test trio green.
+
+## 2026-07-12/13 — [LAUNCH-POLISH SWEEP] (owner live-playtest calls, shipped same-day)
+
+- CANONICAL URL: foundermode.vercel.app (old founder-mode-kit host still serves).
+  GAME_URL, og:image, api bases all point at the new host.
+- SHIPPED TO MAIN: billboards v2 (16 boards after GOJIBERRY/REPLIT/SUPABASE cut;
+  132×30 framed panels, ≥290px spacing, title-screen suppressed, sky-band tiers
+  56/90) + "IS CODE DEAD?" panel (archetypes + intern only, "the big names
+  canceled") + six scattered look-alike parody celebs (POL GRAM x1560, BARRY GAN
+  x4300, XANDR WING x4840, PETER TEAL x7100, DAREO x7560, WALTMAN x8420), all on
+  the code-is-dead beat, RISKY_CAMEOS tier, grep-gated off share surfaces.
+- FINALE v2: rope-snap joke retired (owner call); reaching the bell arms a
+  MASH-R ceremony (meter decays while idle) → three-partial chime + confetti +
+  $1M → badge. endTime snapshots at the ring. Full Golden Gate rebuilt: towers,
+  crossbeams, sagging cables with suspenders, deck. bellPhase removed everywhere.
+- END SCREEN: valuation breakdown card; YOUR NAME field (14 chars, persists)
+  stamps the badge (FOUNDER: NAME), the front-page headline (NAME RINGS BELL /
+  NAME DIES IN MEETING...), and the photo caption, restamping live on change;
+  badge↔front-page toggle now on BOTH endings (new win edition of HYPERGROWTH
+  DAILY: win body pool, "i never doubted us" pull quote, ▲ ticker).
+- ZOOM: fit() uses exact fractional scale (integer floor letterboxed up to a
+  third of the window; obsolete since the crisp-text overlay). Title screen
+  cleanup: market ticker + seed line dropped, gold "made by ayaan gazali"
+  LinkedIn chip (title-only DOM).
+- Leaderboard name field 3→14 chars client+server. Analytics via http-gated
+  script injection (static tag 404'd on file:// and tripped playtest).
+- July 11 history compressed 37→26 commits (fixups folded into feature
+  leaders), all branches rebased, tags remapped; content verified byte-identical.

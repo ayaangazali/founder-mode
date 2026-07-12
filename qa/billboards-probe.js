@@ -35,8 +35,8 @@ const DENYLIST = /vercel|supabase|warp|replit|resend|firecrawl|deel|exa|stripe|o
   // ---- (1) share-surface gate: names absent from badge/obituary/share code+copy ----
   const leak = await p.evaluate(names => {
     const hay = (makeBadge.toString() + makeObituary.toString() + shareText.toString() +
-                 JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join(' ') +
-                 JSON.stringify(OBIT_CAPTIONS) + badgeFlairs.toString()).toUpperCase();
+                 JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join(' ') + JSON.stringify(WIN_FRONTPAGE) +
+                 WIN_BODY.map(f => f.toString()).join(' ') + JSON.stringify(OBIT_CAPTIONS) + badgeFlairs.toString()).toUpperCase();
     return names.filter(n => hay.includes(n));
   }, ALLOWED_REAL);
   check('billboard names never reach badge/obituary/share text', leak.length === 0, leak.join(','));
