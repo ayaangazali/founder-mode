@@ -414,6 +414,7 @@ let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (an
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
 let bellPhase = 0;      // HUMOR PATCH item 3: 0 untouched · 1 rope snapped · 2 re-armed (next pull wins)
 let barrySawIt = false, barryShownT = 0; // item 4: Barry watched you die near him
+let meetlyT = 0, actionItems = null;     // item 5: MEETLY.AI recap overlay + the ACTION ITEMS that chase you
 let witnessStill = 0, witnessed = false; // item 4: stood still through a whole rocket launch
 const ROCKET_ANCHOR = 3240;              // parallax-.5 anchor — on screen through the Sand Hill approach
 let deathSpots = [];    // HUMOR PATCH item 3: session-scoped death x's — 3+ within ±80 summons the FAILURE COACH
@@ -504,6 +505,7 @@ function reset(fromCheckpoint){
     quoteRoll = Math.random();
     bellPhase = 0; // the rope gets to snap again next run
     barrySawIt = false; barryShownT = 0; witnessStill = 0; witnessed = false;
+    meetlyT = 0; actionItems = null;
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
@@ -886,6 +888,7 @@ function update(){
             raised += bonus; sWin();
             addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
             addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
+            if (b.id === 'vc') meetlyT = 150; // item 5: the notetaker was in the room the whole time
           }
         }
         else if (p.pogo && !(b.hitT > 0) && !b.hinted){
@@ -940,6 +943,21 @@ function update(){
     if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
   }
   shots = shots.filter(s => !s.gone);
+
+  // -------- HUMOR PATCH item 5: MEETLY.AI aftermath --------
+  if (meetlyT > 0){
+    meetlyT--;
+    if (meetlyT === 0) // the recap lands, then the action items COME FOR YOU
+      actionItems = { x: bosses[1].x0, y: GROUND_Y - 16, w: 20, h: 16, t: 600, flut: 0 };
+  }
+  if (actionItems){
+    const ai2 = actionItems;
+    ai2.flut += 0.2;
+    ai2.x += (p.x > ai2.x ? 1 : -1) * 0.9;                    // paperwork always finds you
+    ai2.y = GROUND_Y - 16 + Math.sin(ai2.flut) * 1.5;
+    if (aabb(p, ai2)) p.x += (p.x < ai2.x ? -0.8 : 0.8);      // blocks like a board member; never hurts
+    if (--ai2.t <= 0) actionItems = null;                     // statute of limitations
+  }
 
   // -------- SDK crates (Platform boss) — fall, land, platform for 8s, deprecate --------
   for (const c of crates){
@@ -1685,6 +1703,36 @@ function draw(){
   // enemies
   for (const e of enemies){ if (!e.dead && e.x - cam > -30 && e.x - cam < W + 30) drawEnemy(e); }
 
+  // HUMOR PATCH item 5: MEETLY.AI — floats in Chad's arena corner "taking notes".
+  // Invincible. Does nothing. That's the product.
+  if (bosses[1].active && !bosses[1].dead){
+    const mx = bosses[1].wall - 34 - cam, my = 148 + Math.sin(frame * 0.06) * 3;
+    if (mx > -20 && mx < W + 20){
+      px(mx + 2, my, 8, 3, '#aab4c4');                           // the clip, upper bend
+      px(mx, my + 3, 3, 8, '#aab4c4'); px(mx + 9, my + 3, 3, 6, '#aab4c4');
+      px(mx + 2, my + 11, 8, 3, '#cfd6e4');                      // lower bend
+      px(mx + 4, my + 5, 4, 4, '#2b2d42');                       // face plate
+      px(mx + 5, my + 6, 2, 2, '#41f2ff');                       // one wide eye
+      if (frame % 30 < 15) px(mx + 11, my - 2, 2, 2, '#ff5a5a'); // REC. always REC.
+      if (frame % 20 < 10) px(mx + 5, my + 15, 2, 1, '#8d99ae'); // scribble particles
+    }
+  }
+  // the ACTION ITEMS — a paper stack with a lanyard and your name on everything
+  if (actionItems){
+    const ax = actionItems.x - cam, ay = actionItems.y;
+    if (ax > -40 && ax < W + 40){
+      px(ax, ay + 4, 20, 12, '#f4f4f4');
+      px(ax + 1, ay + 6, 18, 1, '#8d99ae'); px(ax + 1, ay + 9, 14, 1, '#8d99ae');
+      px(ax + 1, ay + 12, 16, 1, '#8d99ae');                     // dense, unread
+      px(ax + 2, ay + 2, 16, 3, '#e8ecf5');                      // the stack continues upward
+      px(ax + 8, ay - 1, 4, 4, '#d64550');                       // URGENT sticker
+      cx.font = 'bold 8px monospace';
+      const tw = cx.measureText('ACTION ITEMS').width;
+      cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(ax + 10 - tw/2 - 2), Math.round(ay - 14), tw + 4, 11);
+      cx.fillStyle = '#ff5a5a'; cx.fillText('ACTION ITEMS', Math.round(ax + 10 - tw/2), Math.round(ay - 5));
+    }
+  }
+
   // bosses
   for (const b of bosses){
     if (b.dead) continue;
@@ -1781,6 +1829,22 @@ function draw(){
     }
     for (const c of cameos) drawCameoBubble(c); // proximity dialogue, never hidden behind entities
     drawHUD();
+  }
+  // HUMOR PATCH item 5: the recap email — 2.5s of dimmed screen and assigned
+  // blame. Drawn dead last: nothing outranks a calendar invite.
+  if (meetlyT > 0 && state === ST.PLAY){
+    cx.fillStyle = 'rgba(8,8,20,.72)'; cx.fillRect(0, 0, W, H);
+    px(88, 64, 304, 128, '#f4f4f4');
+    px(88, 64, 304, 22, '#3b5bdb');
+    if (frame % 30 < 15) px(376, 70, 6, 6, '#ff5a5a');           // still recording, somehow
+    cx.font = 'bold 9px monospace'; cx.fillStyle = '#fff';
+    cx.fillText('MEETLY.AI HAS SENT THE RECAP', 96, 79);
+    cx.font = 'bold 8px monospace'; cx.fillStyle = '#16130c';
+    cx.fillText('Subject: Boss Fight — Recap & Action Items (47)', 98, 106);
+    cx.fillText('All action items assigned to: YOU', 98, 126);
+    cx.fillText('Next boss fight scheduled: now.', 98, 146);
+    cx.fillStyle = '#8d99ae';
+    cx.fillText('this meeting could have been an email. it is one now.', 98, 176);
   }
   cx.setTransform(1, 0, 0, 1, 0, 0); // undo hurt shake
 }
