@@ -12,10 +12,16 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<!-- Vercel Web Analytics, static-site flavor: one script tag, no npm, no
-     framework — the game stays one file. 404s silently on file:// or until
-     analytics is enabled on the Vercel project. -->
-<script defer src="/_vercel/insights/script.js"></script>
+<!-- Vercel Web Analytics, static-site flavor: no npm, no framework — the game
+     stays one file. Injected only over http(s): a static tag 404s on file://
+     and the console noise trips the playtest's zero-error gate. -->
+<script>
+if (/^https?:$/.test(location.protocol)){
+  const a = document.createElement('script');
+  a.defer = true; a.src = '/_vercel/insights/script.js';
+  document.head.appendChild(a);
+}
+</script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { height:100%; background:#0b0b14; overflow:hidden; touch-action:none; }
@@ -103,10 +109,11 @@ function occlude(x, y, w, h){ tcx.clearRect(x * TS, y * TS, w * TS, h * TS); }
 // dismissible in-fiction rotate prompt. never a wall, never an input pause.
 let rotDismissed = false;
 function fit() {
-  let s = Math.min(window.innerWidth / W, window.innerHeight / H);
-  if (s > 1) s = Math.floor(s); // integer scale above 1x: every game pixel maps to a
-                                // uniform block, so the 6px fonts stay crisp (a 2.3x
-                                // fractional scale smears glyphs into 2-and-3px runs)
+  // exact-fit scale (owner: integer flooring letterboxed up to a third of the
+  // window in black — "why is it so zoomed out"). The floor existed to keep
+  // upscaled 6px fonts crisp; text renders on the hi-res overlay now, so
+  // fractional sprite scale costs only sub-pixel chunk irregularity.
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
   cv.style.width  = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';
   // size the text overlay to the same CSS box, backed at devicePixelRatio
@@ -405,26 +412,26 @@ const signs = [
 // skyline instead of overlapping. All nudges vs the spec list: PARTNERS.md.
 const BILLBOARDS = [
   // ── SOMA (devtools) ──
-  {x:300,  y:66,  name:'SUPERSET',   tagline:'100 coding agents in parallel',    bg:'#0d1117', fg:'#20a7c9', partner:false},
-  {x:800,  y:108, name:'VERCEL',     tagline:'up before you finish the sen—',    bg:'#000000', fg:'#ffffff', partner:false},
-  {x:1400, y:66,  name:'WARP',       tagline:'finishes your bash for you',       bg:'#0a0a0a', fg:'#01a2ff', partner:false},
+  {x:300,  y:56,  name:'SUPERSET',   tagline:'100 coding agents in parallel',    bg:'#0d1117', fg:'#20a7c9', partner:false},
+  {x:800,  y:90,  name:'VERCEL',     tagline:'up before you finish the sen—',    bg:'#000000', fg:'#ffffff', partner:false},
+  {x:1400, y:56,  name:'WARP',       tagline:'finishes your bash for you',       bg:'#0a0a0a', fg:'#01a2ff', partner:false},
   // ── THE MISSION (AI hype) ──
-  {x:2300, y:108, name:'RESEND',     tagline:'email that actually lands',        bg:'#000000', fg:'#ffffff', partner:false},
-  {x:3050, y:66,  name:'EXA',        tagline:'search, but it gets the vibe',     bg:'#1a1a2e', fg:'#8b5cf6', partner:false},
+  {x:2300, y:90,  name:'RESEND',     tagline:'email that actually lands',        bg:'#000000', fg:'#ffffff', partner:false},
+  {x:3050, y:56,  name:'EXA',        tagline:'search, but it gets the vibe',     bg:'#1a1a2e', fg:'#8b5cf6', partner:false},
   // ── CEREBRAL VALLEY (agents) — clear of THE PLATFORM arena 5390-5640 ──
-  {x:4150, y:108, name:'FIRECRAWL',  tagline:'now hiring: 3 AI agents, $1M',     bg:'#0a0a0a', fg:'#ff6b35', partner:false},
-  {x:4650, y:66,  name:'BROWSER USE',tagline:'your agent, now with a browser',   bg:'#111111', fg:'#7cffa5', partner:false},
-  {x:5150, y:108, name:'MANUFACT',   tagline:'USB-C for AI (it just works)',     bg:'#0f0f17', fg:'#41f2ff', partner:false},
+  {x:4150, y:90,  name:'FIRECRAWL',  tagline:'now hiring: 3 AI agents, $1M',     bg:'#0a0a0a', fg:'#ff6b35', partner:false},
+  {x:4650, y:56,  name:'BROWSER USE',tagline:'your agent, now with a browser',   bg:'#111111', fg:'#7cffa5', partner:false},
+  {x:5150, y:90,  name:'MANUFACT',   tagline:'USB-C for AI (it just works)',     bg:'#0f0f17', fg:'#41f2ff', partner:false},
   // ── SAND HILL ROAD (the GTM money row) — clear of CHAD arena 6420-7030 ──
-  {x:5760, y:66,  name:'CLEAN',      tagline:'warm outbound. no cold slop.',     bg:'#0a0a0a', fg:'#4ade80', partner:true},
-  {x:6060, y:108, name:'CALLIX',     tagline:'GTM agents that dial for you',     bg:'#0a0a0a', fg:'#4ade80', partner:false},
-  {x:6360, y:66,  name:'INSFORGE',   tagline:'the agent-native AWS',             bg:'#0d1117', fg:'#58a6ff', partner:false},
+  {x:5760, y:56,  name:'CLEAN',      tagline:'warm outbound. no cold slop.',     bg:'#0a0a0a', fg:'#4ade80', partner:true},
+  {x:6060, y:90,  name:'CALLIX',     tagline:'GTM agents that dial for you',     bg:'#0a0a0a', fg:'#4ade80', partner:false},
+  {x:6360, y:56,  name:'INSFORGE',   tagline:'the agent-native AWS',             bg:'#0d1117', fg:'#58a6ff', partner:false},
   // ── THE CLOUD (infra + agents) — clear of SYNERGY.AI arena 8460-9040 ──
-  {x:7150, y:108, name:'SUPERMEMORY',tagline:'your AI finally remembers you',    bg:'#141433', fg:'#c58bff', partner:false},
-  {x:7480, y:66,  name:'HYPERSPELL', tagline:'memory layer for your agents',     bg:'#141433', fg:'#a78bfa', partner:false},
-  {x:7810, y:108, name:'AGENTMAIL',  tagline:"an inbox your agent can't ignore", bg:'#0a0a0a', fg:'#ffd94a', partner:false},
-  {x:8110, y:66,  name:'KINECT',     tagline:'the AI-native commerce stack',     bg:'#0f0f17', fg:'#00e0c6', partner:false},
-  {x:8400, y:108, name:'DEEL',       tagline:'hire anyone, anywhere, instantly', bg:'#1b1b3a', fg:'#7c6bff', partner:false},
+  {x:7150, y:90,  name:'SUPERMEMORY',tagline:'your AI finally remembers you',    bg:'#141433', fg:'#c58bff', partner:false},
+  {x:7480, y:56,  name:'HYPERSPELL', tagline:'memory layer for your agents',     bg:'#141433', fg:'#a78bfa', partner:false},
+  {x:7810, y:90,  name:'AGENTMAIL',  tagline:"an inbox your agent can't ignore", bg:'#0a0a0a', fg:'#ffd94a', partner:false},
+  {x:8110, y:56,  name:'KINECT',     tagline:'the AI-native commerce stack',     bg:'#0f0f17', fg:'#00e0c6', partner:false},
+  {x:8400, y:90,  name:'DEEL',       tagline:'hire anyone, anywhere, instantly', bg:'#1b1b3a', fg:'#7c6bff', partner:false},
 ];
 
 // cameo NPCs {x, id, h, line} — background only: no collision, no update, no state.
@@ -1958,6 +1965,7 @@ function drawBG(){
   // remain. v2 (owner pass): panels 132x30 (were 180x40), steel frame, corner
   // rivets, catwalk + braced posts — smaller and more built.
   for (const bb of BILLBOARDS){
+    if (state === ST.TITLE) break;                             // the title owns its sky — no boards over the logo
     const x = Math.round((bb.x - cam) * 0.5) - 66;             // anchored parallax .5, panel centered on bb.x
     if (x < -142 || x > W + 10) continue;
     px(x + 16, bb.y + 32, 4, 28, '#3a3a44'); px(x + 112, bb.y + 32, 4, 28, '#3a3a44'); // posts
