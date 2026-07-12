@@ -425,6 +425,33 @@ let corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face:
 // harmless and die on touch; the one drawn CORRECTLY is real and hurts.
 let slops = [], slopN = 0;
 const SLOP_LABELS = ['IA', 'A1', 'ΛI'];
+// HUMOR PATCH item 8: HACKATHON HOUSE — a 12-second interior micro-room behind
+// the hacker-house door. World sim pauses inside; playMs keeps running (the 12
+// seconds are REAL — that's the entry fee). Once per run.
+const ROOM_DOOR_X = 4537;
+let room = { active: false, t: 0, px: 0, cans: [], done: false };
+
+function roomUpdate(){
+  room.t--;
+  if (L()) room.px -= 1.7;
+  if (R()) room.px += 1.7;
+  room.px = clamp(room.px, 10, 448);
+  for (const c of room.cans){
+    if (!c.got && Math.abs(room.px + 6 - c.x) < 10){
+      c.got = true; raised += 1; sCoin();
+      addPop(player.x, player.y - 16, '+$1K (energy drink)', '#9fe8b5');
+    }
+  }
+  if (room.px > 414){                                  // the exit pedestal, in time
+    room.active = false; room.done = true;
+    player.deckT = 60 * 15;
+    addPop(player.x, player.y - 20, '1ST PLACE: a Notion template', '#ffd94a');
+    moodUp(); sWin();
+  } else if (room.t <= 0){                             // ejected
+    room.active = false; room.done = true;
+    addPop(player.x, player.y - 20, 'honorable mention', '#8d99ae');
+  }
+}
 let witnessStill = 0, witnessed = false; // item 4: stood still through a whole rocket launch
 const ROCKET_ANCHOR = 3240;              // parallax-.5 anchor — on screen through the Sand Hill approach
 let deathSpots = [];    // HUMOR PATCH item 3: session-scoped death x's — 3+ within ±80 summons the FAILURE COACH
@@ -518,6 +545,7 @@ function reset(fromCheckpoint){
     meetlyT = 0; actionItems = null;
     corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
     slops = []; slopN = 0;
+    room = { active: false, t: 0, px: 0, cans: [], done: false };
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
@@ -603,6 +631,9 @@ function update(){
   if (state !== ST.PLAY) return;
   playMs += 1000 / 60; // simulated play clock — the only clock the HUD/badge trust
   const p = player;
+
+  // HUMOR PATCH item 8: inside the hackathon house, the outside world waits
+  if (room.active){ roomUpdate(); return; }
 
   // -------- robotaxi (neutral moving platform; stops dead mid-route, lovingly) --------
   taxi.dx = 0;
@@ -967,6 +998,13 @@ function update(){
     if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
   }
   shots = shots.filter(s => !s.gone);
+
+  // -------- HUMOR PATCH item 8: the hackathon house door --------
+  if (!room.done && !room.active && Math.abs(p.x + 6 - ROOM_DOOR_X) < 9 && p.onGround){
+    room.active = true; room.t = 720; room.px = 24;
+    room.cans = [{x:90},{x:150},{x:215},{x:280},{x:345}].map(c => ({...c, got:false}));
+    sPow();
+  }
 
   // -------- HUMOR PATCH item 7: slop clones — shamble, die on touch, one is real --------
   for (const sl of slops){
@@ -1502,6 +1540,41 @@ function draw(){
 
   if (state === ST.TITLE){ cx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(); return; }
 
+  // HUMOR PATCH item 8: inside the hackathon house — full-frame interior
+  if (state === ST.PLAY && room.active){
+    px(0, 0, W, H, '#181322');                                    // 2am interior
+    px(0, 232, W, H - 232, '#2a2338');                            // floor
+    px(0, 0, W, 18, '#1f6feb');                                   // sponsor banner
+    cx.font = 'bold 9px monospace'; cx.fillStyle = '#fff'; cx.textAlign = 'center';
+    cx.fillText('SPONSORED BY OMNICORP CLOUD', W/2, 12);
+    cx.textAlign = 'left';
+    cx.font = 'bold 8px monospace'; cx.fillStyle = '#8d99ae';
+    cx.fillText('HOUR 46 OF 48', 20, 40);
+    const secs = Math.ceil(room.t / 60);
+    cx.fillStyle = secs <= 4 && frame % 20 < 10 ? '#ff5a5a' : '#ffd94a';
+    cx.font = 'bold 12px monospace';
+    cx.fillText('DEMO IN ' + secs + 's', 350, 40);
+    for (let f = 0; f < 3; f++){                                  // founders frozen mid-keystroke
+      const fx = 70 + f * 110, fy = 196;
+      px(fx + 14, fy + 14, 30, 6, '#3a2f4a');                     // desk
+      px(fx + 20, fy + 4, 8, 10, '#2b2d42');                      // laptop lid
+      px(fx + 21, fy + 5, 6, 8, '#41f2ff');                       // the glow that never sleeps
+      drawFounder(cx, fx, fy + 4, 1, 1, 0, false,
+        { skin:'#dba470', hair:'#3a2a1e', hairDk:'#2a1d14', hood:'#5d647a', pocket:'#4a5162', hairStyle:1 });
+    }
+    for (const c of room.cans){                                   // energy drinks = money now
+      if (c.got) continue;
+      const bob = Math.sin((frame + c.x) * 0.1) * 1.5;
+      px(c.x, 216 + bob, 5, 9, '#9fe8b5'); px(c.x + 1, 215 + bob, 3, 1, '#e8ecf5');
+    }
+    px(414, 210, 40, 22, '#8a6d00'); px(418, 206, 32, 6, '#ffd94a'); // exit pedestal
+    cx.font = 'bold 8px monospace'; cx.fillStyle = '#ffd94a';
+    cx.fillText('DEMO →', 416, 202);
+    drawFounder(cx, room.px, 208, 1, 1, (frame >> 3) % 2, false);  // you, hustling
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+    return;
+  }
+
   const B = BIOMES[zoneName(cam + W/2)]; // same lookup as drawBG — sky and ground flip together
 
   // signs — 8px face (was 6px): readable at 1x-2x window scales without leaving
@@ -1590,6 +1663,21 @@ function draw(){
         px(bx + 6, y - 18, 4, 3, '#fff');
         cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 4), Math.round(y - 20.5));
       }
+    }
+  }
+
+  // HUMOR PATCH item 8: the hackathon house door (next to the HACKER HOUSE sign)
+  {
+    const x = ROOM_DOOR_X - 7 - cam;
+    if (x > -30 && x < W + 30){
+      px(x, GROUND_Y - 24, 14, 24, room.done ? '#241c30' : '#3a2f4a'); // the door
+      px(x + 2, GROUND_Y - 22, 10, 20, room.done ? '#181322' : '#181322');
+      if (!room.done){
+        px(x + 3, GROUND_Y - 20, 8, 16, frame % 40 < 20 ? '#41f2ff' : '#2a6a7a'); // something's happening inside
+        px(x + 10, GROUND_Y - 13, 2, 2, '#ffd94a');                               // handle
+      }
+      cx.font = 'bold 8px monospace'; cx.fillStyle = room.done ? '#5d647a' : '#9fe8b5';
+      cx.fillText(room.done ? 'judging' : 'ENTER', Math.round(x - 2), Math.round(GROUND_Y - 28));
     }
   }
 
