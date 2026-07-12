@@ -2288,82 +2288,61 @@ function draw(){
     }
   }
 
-  // "IS CODE DEAD?" — a street panel in the Mission (owner request, corgi-café
-  // tier set piece). v2: the FULL lineup — six thin-veil parody guests
-  // (RISKY_CAMEOS tier: owner owns the call, draw-only, grep-gated off every
-  // share surface) plus two archetypes, every bubble name-tagged so you know
-  // who's talking. One speaker at a time. The punchline is mechanical: an
-  // intern behind the stage types nonstop to keep the CODE IS DEAD banner
-  // running — on his speaking turn he stops typing and the banner corrupts.
+  // "IS CODE DEAD?" — a street panel in the Mission. v3 (owner call): the
+  // famous guests left for solo cameos around the map; the panel is now two
+  // archetypes and an intern, which is somehow more honest. The punchline is
+  // unchanged and mechanical: the intern types nonstop to keep the CODE IS
+  // DEAD banner running; on his speaking turn he stops and it corrupts.
   if (RISKY_CAMEOS){
     const A = 2740 - cam;                                       // stage center, world 2740
-    if (A > -190 && A < W + 190){
+    if (A > -160 && A < W + 160){
       const gy = GROUND_Y;
-      const speaker = Math.floor(frame / 210) % 9;              // 8 guests + the intern
-      const glitch = speaker === 8;                             // banner fails while he talks
-      // riser + backdrop (wide enough for eight chairs)
-      px(A - 88, gy - 10, 182, 10, '#3a3348'); px(A - 88, gy - 10, 182, 2, '#4a4460');
-      px(A - 84, gy - 64, 168, 36, '#1d1830'); px(A - 84, gy - 64, 168, 2, '#41f2ff');
+      const speaker = Math.floor(frame / 210) % 3;              // monk, solo founder, intern
+      const glitch = speaker === 2;                             // banner fails while he talks
+      // riser + backdrop
+      px(A - 56, gy - 10, 118, 10, '#3a3348'); px(A - 56, gy - 10, 118, 2, '#4a4460');
+      px(A - 52, gy - 64, 104, 36, '#1d1830'); px(A - 52, gy - 64, 104, 2, '#41f2ff');
       cx.font = 'bold 8px monospace'; cx.fillStyle = '#fff';
-      cx.fillText('IS CODE DEAD?', Math.round(A - 32), Math.round(gy - 54));
+      cx.fillText('IS CODE DEAD?', Math.round(A - 30), Math.round(gy - 54));
       cx.font = 'bold 6px monospace'; cx.fillStyle = '#8d99ae';
-      cx.fillText('a panel · day 3 · no q&a · sold out', Math.round(A - 52), Math.round(gy - 46));
+      cx.fillText('a panel · day 3 · the big names canceled', Math.round(A - 50), Math.round(gy - 46));
       // the LED banner the intern keeps alive
-      px(A - 84, gy - 40, 168, 9, '#0e1020');
+      px(A - 52, gy - 40, 104, 9, '#0e1020');
       cx.font = 'bold 6px monospace';
       cx.fillStyle = glitch ? (frame % 8 < 4 ? '#d64550' : '#3a2a2a') : '#7cffa5';
-      cx.fillText(glitch ? 'C0D3 IS D3~D' : 'CODE IS DEAD', Math.round(A - 18), Math.round(gy - 33));
-      // eight guests behind the table (heads + torsos; the table hides the rest)
-      const GUESTS = [   // dx, look flags — order matches LINES below
-        { dx: -76, hood: '#ff8c37', skin: '#f2e2c4', hair: '#111111', spiky: 1 },            // BARRY GAN (the accelerator guy)
-        { dx: -54, hood: '#6b7d6a', skin: '#f2c9a0', hair: '#4a3626' },                      // WALTMAN (it knows me)
-        { dx: -32, hood: '#c2b280', skin: '#f2c9a0', hair: '#b9b9b9', bald: 1, glasses: 1 }, // POL GRAM (essayist)
-        { dx: -10, hood: '#16161d', skin: '#e8d4b8', hair: '#8a7a5a', coat: 1 },             // PETER TEAL (down from the roof)
-        { dx: 12,  hood: '#1a1a1a', skin: '#e8b98a', hair: '#111111', phone: 1 },            // XANDR WING (label the data)
-        { dx: 34,  hood: '#2c3e6b', skin: '#e8b98a', hair: '#2b2118', curly: 1 },            // DAREO (the safety lab)
-        { dx: 56,  hood: '#6e5537', skin: '#00000000', hair: '#6e5537', monk: 1 },           // HF-ZERO MONK (archetype)
-        { dx: 78,  hood: '#39c46d', skin: '#d9a06b', hair: '#0f0f14', solo: 1 },             // THE SOLO FOUNDER (archetype)
+      cx.fillText(glitch ? 'C0D3 IS D3~D' : 'CODE IS DEAD', Math.round(A - 20), Math.round(gy - 33));
+      // two guests behind the table (the table hides the rest)
+      const GUESTS = [
+        { dx: -16, hood: '#6e5537', skin: '#00000000', hair: '#6e5537', monk: 1 },  // HF-ZERO MONK (archetype)
+        { dx: 16,  hood: '#39c46d', skin: '#d9a06b', hair: '#0f0f14', solo: 1 },    // THE SOLO FOUNDER (archetype)
       ];
       for (const g of GUESTS){
         const gx = A + g.dx - 5;
         if (g.solo){ px(gx, gy - 16, 12, 3, '#8d99ae'); px(gx, gy - 13, 12, 3, '#6a7183'); } // sits on laptops
         px(gx + 1, gy - 24, 8, 8, g.hood);                       // torso
-        if (g.coat){ px(gx, gy - 24, 10, 6, g.hood); }           // long dark coat, broader shoulders
         px(gx + 2, gy - 30, 6, 6, g.monk ? '#2a2118' : g.skin);  // head (monks are all hood)
         if (g.monk){ px(gx + 1, gy - 32, 8, 4, g.hood); px(gx + 1, gy - 30, 2, 6, g.hood); px(gx + 7, gy - 30, 2, 6, g.hood); }
-        else if (g.bald){ px(gx + 1, gy - 29, 1, 3, g.hair); px(gx + 8, gy - 29, 1, 3, g.hair); } // hair: sides only
-        else if (g.curly){ px(gx + 1, gy - 32, 8, 3, g.hair); px(gx + 1, gy - 30, 1, 2, g.hair); px(gx + 8, gy - 30, 1, 2, g.hair); }
-        else if (g.spiky){ px(gx + 2, gy - 33, 2, 3, g.hair); px(gx + 5, gy - 34, 2, 4, g.hair); px(gx + 7, gy - 33, 1, 3, g.hair); }
         else px(gx + 2, gy - 32, 6, 2, g.hair);
-        if (g.glasses){ px(gx + 3, gy - 28, 2, 1, '#fff'); px(gx + 6, gy - 28, 2, 1, '#fff'); }
-        if (g.phone){ px(gx + 8, gy - 22, 2, 4, '#0e1020'); px(gx + 8, gy - 22, 2, 1, '#41f2ff'); }
         if (g.solo) px(gx + 2, gy - 23, 6, 3, '#cfd6e4');        // laptop on lap, mid-panel
       }
       // the long table (drawn after: hides everyone's lower half)
-      px(A - 84, gy - 20, 168, 4, '#54401f'); px(A - 82, gy - 16, 4, 6, '#3d2e16'); px(A + 78, gy - 16, 4, 6, '#3d2e16');
+      px(A - 52, gy - 20, 104, 4, '#54401f'); px(A - 50, gy - 16, 4, 6, '#3d2e16'); px(A + 46, gy - 16, 4, 6, '#3d2e16');
       // the intern, stage right, keeping the banner alive over a crate desk
-      const ix = A + 100;
+      const ix = A + 68;
       px(ix - 2, gy - 12, 16, 12, '#4a3a28');                    // crate desk
       px(ix + 1, gy - 16, 10, 4, '#cfd6e4'); px(ix + 2, gy - 15, 8, 2, glitch ? '#3a2a2a' : '#7cffa5'); // laptop, screen dies with the banner
       px(ix + 3, gy - 26, 6, 6, '#f2c9a0'); px(ix + 3, gy - 28, 6, 2, '#4a3626');   // head down
       px(ix + 2, gy - 20, 8, 5, '#8d99ae');                      // hoodie hunch
       if (!glitch && (frame >> 2) % 2) px(ix + 1, gy - 17, 2, 2, '#f2c9a0'); // typing hand blur
-      px(A + 84, gy - 38, Math.max(2, ix - A - 82), 1, '#2c2c36'); // the cable. THE cable.
+      px(A + 52, gy - 38, Math.max(2, ix - A - 50), 1, '#2c2c36'); // the cable. THE cable.
       // one speaker at a time, name-tagged (proximity-gated so it never spams)
       if (Math.abs(player.x - 2740) < 150 && state === ST.PLAY){
         const LINES = [
-          "BARRY GAN: it's so over for code. we're SO back, though.",
-          'WALTMAN: coding is over. i am calm about it. very calm.',
-          'POL GRAM: coding is dead. i wrote 40,000 words about it.',
-          'PETER TEAL: competition is for coders.',
-          "XANDR WING: don't learn to code. label the data.",
-          'DAREO: AI writes 90% of our code. we watch it. closely.',
           'HF-ZERO MONK: code was never alive.',
           'THE SOLO FOUNDER: i replaced my team with me. i AM the team.',
           'the intern: (the banner runs on code.)',
         ];
-        const sxs = GUESTS.map(g => A + g.dx).concat([ix + 6]);
-        // anchored high enough that the box floats above the backdrop header
+        const sxs = [A - 16, A + 16, ix + 6];
         celebBubble(sxs[speaker], gy - 44, LINES[speaker]);
       }
     }
@@ -2404,59 +2383,118 @@ function draw(){
   }
 
   // ---- HUMOR PATCH item 4: THE CELEBS (RISKY_CAMEOS) — draw-only; they never
-  // touch collision, state, or any share surface ----
+  // touch collision, state, or any share surface. v2 (owner call): scattered
+  // solo across the map, sprites pushed toward pixel-likeness — signature
+  // hair, outfit, and prop each; every one is on the "code is dead" beat. ----
   if (RISKY_CAMEOS){
-    { // PETER TEAL — end of Sand Hill, all black, chess pawn. Does not move. Moving is consensus.
+    { // PETER TEAL — end of Sand Hill. Black blazer, white collar, receding
+      // hairline, one appraising eye, chess pawn. Does not move. Moving is consensus.
       const x = 7100 - cam;
       if (x > -40 && x < W + 40){
-        const y = GROUND_Y - 17;
-        px(x+3, y+0, 6, 2, '#12141d');                             // severe hair
-        px(x+3, y+2, 6, 4, '#e8c39a');                             // face
-        px(x+4, y+3, 1, 2, '#111');                                // one eye. appraising.
-        px(x+1, y+6, 10, 8, '#0b0c12');                            // all black, obviously
-        px(x+2, y+14, 3, 2, '#0b0c12'); px(x+7, y+14, 3, 2, '#0b0c12');
-        px(x+2, y+16, 3, 1, '#111'); px(x+7, y+16, 3, 1, '#111');
-        px(x+14, y+11, 3, 2, '#e8ecf5'); px(x+15, y+8, 1, 3, '#e8ecf5'); px(x+14, y+7, 3, 1, '#e8ecf5'); // the pawn
-        if (Math.abs(player.x - 7106) <= 60 && state === ST.PLAY) celebBubble(x + 6, y, 'COMPETITION IS FOR PEOPLE.');
+        const y = GROUND_Y - 18;
+        px(x+3, y+0, 6, 2, '#8a7a5a'); px(x+2, y+1, 1, 2, '#8a7a5a'); px(x+9, y+1, 1, 2, '#8a7a5a'); // receding, temples holding on
+        px(x+3, y+2, 6, 5, '#e8d4b8');                             // pale. very pale.
+        px(x+4, y+3, 2, 1, '#5a4a3a'); px(x+7, y+3, 1, 1, '#111'); // heavy brow, one eye. appraising.
+        px(x+4, y+6, 4, 1, '#7a5a4a');                             // flat line of a mouth
+        px(x+1, y+7, 10, 8, '#0b0c12');                            // black blazer
+        px(x+5, y+7, 2, 3, '#fff');                                // white collar V
+        px(x+2, y+15, 3, 2, '#0b0c12'); px(x+7, y+15, 3, 2, '#0b0c12');
+        px(x+2, y+17, 3, 1, '#111'); px(x+7, y+17, 3, 1, '#111');
+        px(x+14, y+12, 3, 2, '#e8ecf5'); px(x+15, y+9, 1, 3, '#e8ecf5'); px(x+14, y+8, 3, 1, '#e8ecf5'); // the pawn
+        if (Math.abs(player.x - 7106) <= 60 && state === ST.PLAY)
+          celebBubble(x + 6, y, ['COMPETITION IS FOR CODERS.', 'code was a bubble. i shorted it.'][Math.floor(playMs / 2600) % 2]);
       }
     }
-    { // BARRY GAN — by the demo-day sign: cap, double thumbs-up, unstoppable
+    { // BARRY GAN — by the demo-day sign. Swept black hair, glasses, the
+      // orange accelerator jacket, double thumbs-up, unstoppable.
       const x = 4300 - cam;
       if (x > -40 && x < W + 40){
-        const y = GROUND_Y - 16, up = (frame >> 4) % 2;
-        px(x+3, y+0, 6, 2, '#3b5bdb'); px(x+9, y+0, 2, 1, '#3b5bdb'); // cap + bill
-        px(x+3, y+2, 6, 4, '#e8c39a');
-        px(x+4, y+3, 1, 1, '#111'); px(x+7, y+3, 1, 1, '#111');
+        const y = GROUND_Y - 17, up = (frame >> 4) % 2;
+        px(x+2, y+0, 8, 2, '#111'); px(x+2, y+2, 1, 2, '#111');   // full swept black hair
+        px(x+3, y+2, 6, 4, '#f2d4a8');
+        px(x+3, y+3, 3, 1, '#3a3a3a'); px(x+7, y+3, 2, 1, '#3a3a3a'); // the glasses
         px(x+4, y+5, 4, 1, '#7a4a3a');                             // the grin
-        px(x+2, y+6, 8, 7, '#f4f4f4');                             // crisp tee
-        px(x+0, y+(up?4:6), 2, 3, '#e8c39a'); px(x+10, y+(up?4:6), 2, 3, '#e8c39a'); // double thumbs, pumping
-        px(x+2, y+13, 3, 3, '#8d99ae'); px(x+7, y+13, 3, 3, '#8d99ae');
+        px(x+2, y+6, 8, 7, '#ff8c37');                             // the orange jacket
+        px(x+5, y+6, 2, 4, '#fff');                                // tee underneath
+        px(x+0, y+(up?4:6), 2, 3, '#f2d4a8'); px(x+10, y+(up?4:6), 2, 3, '#f2d4a8'); // double thumbs, pumping
+        px(x+2, y+13, 3, 3, '#2b2d42'); px(x+7, y+13, 3, 3, '#2b2d42');
         px(x+2, y+16, 3, 1, '#fff'); px(x+7, y+16, 3, 1, '#fff');
         if (Math.abs(player.x - 4306) <= 70 && state === ST.PLAY){
           let line;
           if (barrySawIt){ line = '...OK MAYBE NOT LIKE THAT'; if (++barryShownT > 240) barrySawIt = false; }
-          else line = ['YOU CAN JUST DO THINGS', 'SF IS BACK', 'BUILD BUILD BUILD'][Math.floor(playMs / 2500) % 3];
+          else line = ['YOU CAN JUST DO THINGS', "it's so over for code. we're SO back.", 'BUILD BUILD BUILD'][Math.floor(playMs / 2500) % 3];
           celebBubble(x + 6, y, line);
         }
       }
     }
-    { // SAM WALTMAN — outside the campus, gray tee. The sign says what it says.
+    { // SAM WALTMAN — outside the campus. Brown curls, gray-green henley,
+      // white sneakers, the tiny hand-held sign. Two rects. Devastating.
       const x = 8420 - cam;
       if (x > -80 && x < W + 40){
-        const y = GROUND_Y - 16;
-        px(x+3, y+0, 6, 2, '#4a3626');
+        const y = GROUND_Y - 17;
+        px(x+2, y+0, 8, 2, '#4a3626'); px(x+2, y+2, 2, 1, '#4a3626'); px(x+8, y+2, 2, 1, '#4a3626'); // short curls, hugging the sides
         px(x+3, y+2, 6, 4, '#e8c39a');
-        px(x+4, y+3, 1, 1, '#111'); px(x+7, y+3, 1, 1, '#111');
-        px(x+2, y+6, 8, 7, '#8d99ae');                             // gray tee
-        px(x+1, y+6, 2, 5, '#5d647a');                             // backpack strap
+        px(x+4, y+3, 1, 1, '#2f5f4f'); px(x+7, y+3, 1, 1, '#2f5f4f'); // the calm green stare
+        px(x+2, y+6, 8, 7, '#6b7d6a');                             // gray-green henley
+        px(x+5, y+6, 1, 3, '#4f5f4e');                             // henley buttons
         px(x+2, y+13, 3, 3, '#2b2d42'); px(x+7, y+13, 3, 3, '#2b2d42');
-        px(x+2, y+16, 3, 1, '#111'); px(x+7, y+16, 3, 1, '#111');
-        const txt = bosses[2].dead ? 'it knew me' : 'it knows me'; // two rects. devastating.
+        px(x+2, y+16, 3, 1, '#fff'); px(x+7, y+16, 3, 1, '#fff');  // white sneakers
+        const txt = bosses[2].dead ? 'it knew me' : 'it knows me';
         cx.font = 'bold 8px monospace';
         const tw = cx.measureText(txt).width;
         px(x + 13, y + 2, tw + 6, 12, '#e8e0c9');                  // the tiny hand-held sign
         px(x + 12, y + 8, 1, 8, '#8a5a2b');
         cx.fillStyle = '#3a3a3a'; cx.fillText(txt, Math.round(x + 16), Math.round(y + 11));
+        if (Math.abs(player.x - 8426) <= 60 && state === ST.PLAY)
+          celebBubble(x + 6, y, ['coding is over. i am calm about it.', 'very calm.'][Math.floor(playMs / 2600) % 2]);
+      }
+    }
+    { // POL GRAM — SOMA. Bald crown, gray sides, glasses, polo + khaki
+      // shorts, holding the essay. All forty thousand words of it.
+      const x = 1560 - cam;
+      if (x > -40 && x < W + 40){
+        const y = GROUND_Y - 17;
+        px(x+2, y+1, 1, 3, '#b9b9b9'); px(x+9, y+1, 1, 3, '#b9b9b9'); // gray sides; the crown gleams
+        px(x+3, y+1, 6, 5, '#f2c9a0');
+        px(x+3, y+3, 3, 1, '#555'); px(x+7, y+3, 2, 1, '#555');    // the glasses
+        px(x+2, y+6, 8, 6, '#9ec7e0');                             // light-blue polo
+        px(x+2, y+12, 8, 3, '#c2b280');                            // khaki shorts
+        px(x+3, y+15, 2, 2, '#f2c9a0'); px(x+7, y+15, 2, 2, '#f2c9a0'); // founder legs
+        px(x+2, y+17, 3, 1, '#fff'); px(x+7, y+17, 3, 1, '#fff');  // white dad sneakers
+        px(x+10, y+8, 4, 5, '#f4f0e0'); px(x+11, y+9, 2, 1, '#999'); px(x+11, y+11, 2, 1, '#999'); // the essay, dense
+        if (Math.abs(player.x - 1566) <= 60 && state === ST.PLAY)
+          celebBubble(x + 6, y, ['coding is dead. i wrote 40,000 words about it.', 'make something people want. not code.'][Math.floor(playMs / 2600) % 2]);
+      }
+    }
+    { // XANDR WING — Cerebral Valley. Black buzz cut, black tee, phone glow.
+      // The data is not going to label itself. Yet.
+      const x = 4840 - cam;
+      if (x > -40 && x < W + 40){
+        const y = GROUND_Y - 17;
+        px(x+3, y+0, 6, 2, '#0a0a0a');                             // buzz cut
+        px(x+3, y+2, 6, 4, '#e8b98a');
+        px(x+4, y+3, 1, 1, '#111'); px(x+7, y+3, 1, 1, '#111');
+        px(x+2, y+6, 8, 7, '#141414');                             // black tee, uniform of scale
+        px(x+10, y+8, 2, 4, '#0e1020'); px(x+10, y+8, 2, 1, '#41f2ff'); // the phone, glowing
+        px(x+2, y+13, 3, 3, '#1a1a1a'); px(x+7, y+13, 3, 3, '#1a1a1a');
+        px(x+2, y+16, 3, 1, '#fff'); px(x+7, y+16, 3, 1, '#fff');
+        if (Math.abs(player.x - 4846) <= 60 && state === ST.PLAY)
+          celebBubble(x + 6, y, ["don't learn to code. label the data.", 'my agents wrote my keynote.'][Math.floor(playMs / 2600) % 2]);
+      }
+    }
+    { // DAREO — THE CLOUD, near the memory boards. The curls, the glasses,
+      // the navy sweater, the measured concern.
+      const x = 7560 - cam;
+      if (x > -40 && x < W + 40){
+        const y = GROUND_Y - 18;
+        px(x+2, y+0, 8, 3, '#2b2118'); px(x+1, y+1, 1, 3, '#2b2118'); px(x+10, y+1, 1, 3, '#2b2118'); // the curls, voluminous
+        px(x+3, y+3, 6, 4, '#e8b98a');
+        px(x+3, y+4, 3, 1, '#3a3a3a'); px(x+7, y+4, 2, 1, '#3a3a3a'); // the glasses
+        px(x+2, y+7, 8, 7, '#2c3e6b');                             // navy sweater
+        px(x+2, y+14, 3, 3, '#3a3a44'); px(x+7, y+14, 3, 3, '#3a3a44');
+        px(x+2, y+17, 3, 1, '#fff'); px(x+7, y+17, 3, 1, '#fff');
+        if (Math.abs(player.x - 7566) <= 60 && state === ST.PLAY)
+          celebBubble(x + 6, y, ['AI writes 90% of our code.', 'we watch it. closely.'][Math.floor(playMs / 2600) % 2]);
       }
     }
   }
