@@ -408,6 +408,13 @@ let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (back
 let hitstopT = 0, shakeT = 0, prevJump = false;
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
+let bellPhase = 0;      // HUMOR PATCH item 3: 0 untouched · 1 rope snapped · 2 re-armed (next pull wins)
+let deathSpots = [];    // HUMOR PATCH item 3: session-scoped death x's — 3+ within ±80 summons the FAILURE COACH
+let coachX = null;
+function recordDeathSpot(x){
+  deathSpots.push(x);
+  if (coachX === null && deathSpots.filter(d => Math.abs(d - x) <= 80).length >= 3) coachX = x;
+}
 let deathCause = 'burn', deathWord = 'SYNERGY'; // HUMOR PATCH: the obituary needs to know what got you
 
 // HUMOR PATCH item 2: the mood meter — the founder's internal monologue.
@@ -487,6 +494,7 @@ function reset(fromCheckpoint){
     checkpoint = 20; bellDone = false;
     playMs = 0; endTime = 0;
     quoteRoll = Math.random();
+    bellPhase = 0; // the rope gets to snap again next run
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
@@ -551,6 +559,7 @@ function hurtPlayer(cause, word){
   addPop(player.x, player.y-10, '-1 RUNWAY', '#ff5a5a');
   if (hearts <= 0){
     endTime = playMs;
+    recordDeathSpot(player.x);
     state = ST.DEAD;
     showEndUI(false);
   }
@@ -647,7 +656,7 @@ function update(){
     moodDown();
     hearts--; sHurt();
     addPop(cam+220, 120, zoneName(p.x) === 'THE CLOUD' ? '-1 RUNWAY (the 0.01% downtime)' : '-1 RUNWAY (pivot failed)', '#ff5a5a');
-    if (hearts <= 0){ endTime = playMs; state = ST.DEAD; showEndUI(false); return; }
+    if (hearts <= 0){ endTime = playMs; recordDeathSpot(p.x); state = ST.DEAD; showEndUI(false); return; }
     p.x = checkpoint; p.y = GROUND_Y - 40; p.vx = 0; p.vy = 0; p.hurtT = 90;
     cam = Math.max(0, checkpoint - 100);
   }
@@ -935,13 +944,27 @@ function update(){
   popups = popups.filter(q => q.t > 0);
 
   // -------- IPO bell (win) --------
+  // HUMOR PATCH item 3: the first pull SNAPS THE ROPE. Walk it off (back past
+  // x=9060), come back, pull again — that one works. Every winner gets exactly
+  // one beat of pure panic. bellPhase: 0 untouched · 1 snapped · 2 re-armed.
   const finalBoss = bosses[2];
   if (state === ST.PLAY && finalBoss.dead && !bellDone && p.x > 9100){
-    bellDone = true;
-    endTime = playMs;
-    raised += 1000;
-    state = ST.WIN; sWin();
-    showEndUI(true);
+    if (bellPhase === 0){
+      bellPhase = 1;
+      shakeT = 2; sHurt();
+      addPop(9020, GROUND_Y - 64, "INFRA WASN'T READY TO SCALE", '#ff5a5a');
+      moodDown(); // of course it's so over. you're AT the bell.
+    } else if (bellPhase === 2){
+      bellDone = true;
+      endTime = playMs;
+      raised += 1000;
+      state = ST.WIN; sWin();
+      showEndUI(true);
+    }
+  }
+  if (bellPhase === 1 && p.x < 9060){
+    bellPhase = 2;
+    addPop(p.x, p.y - 20, 'ROPE RE-RIGGED. TRY AGAIN.', '#7cffa5');
   }
 }
 // ------------------------- SPRITES -------------------------
@@ -1366,6 +1389,22 @@ function draw(){
     sg.l.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 22 - sg.l.length * 10 + i * 10 + 8)));
   }
 
+  // HUMOR PATCH item 3: post-boss beat — Chad pivoted, posthumously. The sign
+  // lights up behind his arena only once he's dead (so it never sits in a live
+  // fight; the no-signs-in-arenas rule is about fights, not wakes).
+  if (bosses[1].dead){
+    const x = 6900 - cam;
+    if (x > -160 && x < W + 20){
+      cx.font = 'bold 8px monospace';
+      const lines = ['CHAD CAPITAL', 'IS NOW CHAD.AI'];
+      const wmax = Math.max(...lines.map(t => cx.measureText(t).width)) + 8;
+      px(x + 12, GROUND_Y - 46, wmax, 25, '#221b2e');
+      px(x + 12 + wmax/2 - 2, GROUND_Y - 22, 4, 22, '#4a3a2a');
+      cx.fillStyle = frame % 40 < 20 ? '#41f2ff' : '#7ce0ff';       // freshly lit. of course it glows AI-blue.
+      lines.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 46 + i * 10 + 9)));
+    }
+  }
+
   // ground
   for (const s of segs){
     const x0 = Math.max(s[0], cam - 4) - cam, x1 = Math.min(s[1], cam + W + 4) - cam;
@@ -1396,6 +1435,33 @@ function draw(){
     } else { // crates
       px(x, pl[1], pl[2], 12, '#8a5a2b'); cx.strokeStyle = '#5e3c1a'; cx.lineWidth = 1;
       for (let bx2 = 0; bx2 < pl[2]; bx2 += 14) cx.strokeRect(x + bx2 + 0.5, pl[1] + 0.5, 13, 11);
+    }
+  }
+
+  // HUMOR PATCH item 3: the FAILURE COACH — dies 3+ times at the same spot and
+  // an athleisure guy materializes there, clapping. He is very proud of you.
+  if (coachX !== null){
+    const x = coachX - cam;
+    if (x > -60 && x < W + 60){
+      const y = GROUND_Y - 16, clap = (frame >> 4) % 2;
+      px(x+3, y+0, 6, 2, '#d64550');                               // cap (backwards)
+      px(x+3, y+2, 6, 4, '#e8c39a');                               // face
+      px(x+5, y+3, 1, 1, '#111'); px(x+7, y+3, 1, 1, '#111');      // eyes, gleaming
+      px(x+4, y+4, 4, 1, '#7a4a3a');                               // enormous grin
+      px(x+2, y+6, 8, 7, '#39c46d');                               // athleisure quarter-zip
+      if (clap){ px(x+5, y+7, 2, 2, '#e8c39a'); }                  // hands together
+      else { px(x+1, y+7, 2, 2, '#e8c39a'); px(x+9, y+7, 2, 2, '#e8c39a'); } // hands apart
+      px(x+2, y+13, 3, 3, '#2b2d42'); px(x+7, y+13, 3, 3, '#2b2d42');
+      px(x+2, y+16, 3, 1, '#fff'); px(x+7, y+16, 3, 1, '#fff');    // pristine trainers
+      if (Math.abs(player.x - coachX) <= 70 && state === ST.PLAY){
+        cx.font = 'bold 8px monospace';
+        const line = 'fail faster! this is great for you!';
+        const tw = cx.measureText(line).width;
+        const bx = clamp(x + 6 - tw/2 - 4, 2, W - tw - 10);
+        px(bx, y - 30, tw + 8, 12, '#fff');
+        px(bx + 6, y - 18, 4, 3, '#fff');
+        cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 4), Math.round(y - 20.5));
+      }
     }
   }
 

@@ -56,9 +56,13 @@ const { chromium } = require('playwright');
 
   await page.keyboard.up('ArrowRight');
   await page.evaluate(() => { player.x = 9080; player.y = 180; });
-  await page.keyboard.down('ArrowRight');
-  await page.waitForTimeout(1500);
-  await page.keyboard.up('ArrowRight');
+  // HUMOR PATCH: the first bell pull snaps the rope — walk back past 9060 to
+  // re-rig, then pull again
+  await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1200); await page.keyboard.up('ArrowRight');
+  const snap = await page.evaluate(() => ({ bellPhase, state }));
+  console.log('rope snap:', JSON.stringify(snap));
+  await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(2000); await page.keyboard.up('ArrowLeft');
+  await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowRight');
   const s5 = await page.evaluate(() => ({ state, bellDone, raised }));
   console.log('win check:', JSON.stringify(s5));
   await page.waitForTimeout(600);
