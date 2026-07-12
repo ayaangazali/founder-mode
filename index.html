@@ -223,14 +223,18 @@ const segs = [
 // shifted 4250→5918 close 84/86px gaps to 54; the two y:168 plats drop to 174
 // (rise 64 > 62px jump apex). "100% coins" is now actually possible.
 // CV stack-1 base nudged 4050→4070 to clear the zone sign (step gaps stay <=48).
+// Post-solid-undersides reachability pass (playtest: "some jumps are impossible" —
+// confirmed by audit; the old jump-up-THROUGH-the-platform routes died with the
+// bonk physics): 420→410 and 1060→1070 close 64px frame-perfect lateral hops to
+// 54; 2550 and 3700 rise to y176 (their tops sat at/past the exact jump apex).
 const plats = [
-  [300,190,56],[420,152,56],[560,190,56],
-  [900,182,72],[1060,146,56],[1180,182,56],
+  [300,190,56],[410,152,56],[560,190,56],
+  [900,182,72],[1070,146,56],[1180,182,56],
   [1650,178,64],
   [2050,184,56],[2170,148,56],[2280,184,56], // 2290→2280: crate ended 4px before the pit lip — solid undersides made lip jumps bonk into the pit
-  [2550,170,88],
+  [2550,176,88],
   [3150,182,56],[3260,150,56],[3430,182,56],
-  [3700,174,72],
+  [3700,176,72],
   [4070,184,56],[4154,150,56],[4258,116,64],            // CV stack 1: hacker-house climb
   [4560,180,72],[4680,146,64],[4792,180,64],            // CV stack 2: over the phantom
   [5000,180,56],[5104,146,56],[5208,180,72],            // CV stack 3: robotaxi route
@@ -242,13 +246,13 @@ const plats = [
 
 // coins: rows {x,y,n}
 const coinRows = [
-  {x:310,y:172,n:3},{x:430,y:134,n:3},
-  {x:910,y:164,n:4},{x:1070,y:128,n:3},
+  {x:310,y:172,n:3},{x:420,y:134,n:3},
+  {x:910,y:164,n:4},{x:1080,y:128,n:3},
   {x:1660,y:160,n:4},
   {x:2060,y:166,n:3},{x:2180,y:130,n:3},{x:2300,y:166,n:3},
-  {x:2560,y:152,n:5},
+  {x:2560,y:158,n:5},
   {x:3160,y:164,n:3},{x:3270,y:132,n:3},{x:3440,y:164,n:3},
-  {x:3710,y:156,n:4},
+  {x:3710,y:158,n:4},
   {x:4080,y:166,n:3},{x:4164,y:132,n:3},{x:4268,y:98,n:4},   // CV climbs
   {x:4570,y:162,n:4},{x:4690,y:128,n:3},
   {x:5010,y:162,n:3},{x:5114,y:128,n:4},{x:5430,y:162,n:4},
@@ -335,7 +339,6 @@ const signs = [
   {x:7210,l:['THE CLOUD','99.99% uptime*']},
   {x:7380,l:['FOUNDERS ETC.','a fort.','actually a fort.']},
   {x:7490,l:['MIND THE GAPS',"(that's the 0.01%)"]},
-  {x:7690,l:['NOW ENTERING','THE CLOUD','*not actual uptime']},
   {x:8260,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']},
   {x:8400,l:['SYNERGY.AI CAMPUS','humans welcome','(as training data)']}
 ];
@@ -534,7 +537,10 @@ function hurtPlayer(){
   }
 }
 
-function addPop(x,y,txt,c){ popups.push({x,y,txt,c,t:60}); }
+function addPop(x,y,txt,c){
+  popups.push({x,y,txt,c,t:60});
+  if (popups.length > 6) popups.shift(); // playtest: cap the on-screen chatter
+}
 function addParts(x,y,c,n=8){
   for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-0.5)*3,vy:-Math.random()*3-1,t:30+Math.random()*20,c});
 }
@@ -659,7 +665,9 @@ function update(){
   for (const c of coins){
     if (!c.got && aabb(p, c)){
       c.got = true; raised += COIN_VALUE; sCoin(); // rate environment sets the coin (ROADMAP §7)
-      addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K', '#ffd94a');
+      // one popup per coin cluster, not per coin — a full row was 5 stacked labels (playtest)
+      if (!popups.some(q2 => q2.txt.startsWith('+$') && Math.abs(q2.x - c.x) < 56))
+        addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K', '#ffd94a');
     }
   }
 
@@ -672,9 +680,9 @@ function update(){
       if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! INNER PEACE +15% JUMP', '#39c46d'); }
       if (pw.t === 'press'){ p.shield = 1; addPop(pw.x, pw.y-8, 'GOOD PRESS! one bad take, on the house', '#7ce0ff'); }
       if (pw.t === 'deck'){
-        p.deckT = 60*10;
-        addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! tap — pitch AT them (10s)'
-                                                        : 'PITCH DECK! press X — pitch AT them (10s)', '#ffd94a');
+        p.deckT = 60*15; // 15s: covers a full boss fight (playtest)
+        addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! tap — pitch AT them (15s)'
+                                                        : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a');
       }
       if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5'); }
       if (pw.t === 'contract'){ raised += 100; p.slowT = 60*8; addPop(pw.x, pw.y-8, 'ENTERPRISE CONTRACT! +$100K', '#7ce0ff'); addPop(pw.x, pw.y-18, '(procurement has questions)', '#8d99ae'); }
@@ -755,8 +763,11 @@ function update(){
     if (!b.active && p.x > b.trigger){ b.active = true; sBoss(); b.quipT = 1; }
     if (!b.active) continue;
 
-    // movement: pace toward player (THE PLATFORM is slow and huge — and never hops)
-    const bspd = b.id==='ai' ? 0.8 : b.id==='platform' ? 0.35 : 0.6;
+    // movement: pace toward player (THE PLATFORM is slow and huge — and never hops).
+    // SYNERGY.AI 0.8→0.6 (levers table, re-measured per ruling 2.4's own protocol:
+    // 30 humans x 20 attempts = 0 wins — at 0.8 its homing walk made side-contact
+    // damage unavoidable for anyone who isn't frame-precise)
+    const bspd = b.id==='ai' ? 0.6 : b.id==='platform' ? 0.35 : 0.6;
     b.dir = p.x < b.x ? -1 : 1;
     b.x += b.dir * bspd;
     b.x = clamp(b.x, b.trigger + 30, b.wall - b.w - 4);
@@ -793,7 +804,7 @@ function update(){
         if (!shots.some(s2 => s2.t==='buzz' && Math.abs(s2.x - sx) < 30))
           shots.push({x:sx, y:b.y-6+Math.random()*28, vx:b.dir*2.2, vy:0, w:26, h:9, t:'buzz',
                       label: words[Math.floor(Math.random()*words.length)], wob:Math.random()*6.28});
-        b.atkT = 70;
+        b.atkT = 85; // was 70 — attack-rate lever, same human re-measure as bspd above
       }
     }
 
@@ -817,6 +828,12 @@ function update(){
             addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
             addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
           }
+        }
+        else if (p.pogo && !(b.hitT > 0) && !b.hinted){
+          // the invisible wall between casuals and a win: a bounce without a fresh
+          // jump press does no damage, and nothing ever said so. Say so. Once.
+          b.hinted = true;
+          addPop(b.x - 44, b.y - 48, 'TIP: PRESS JUMP AGAIN TO STOMP', '#7ce0ff');
         }
         p.pogo = true; // disarm until the next jump press / ground touch
       } else { hurtPlayer(); if (state !== ST.PLAY) return; }
@@ -1082,15 +1099,17 @@ function drawBoss(b){
   }
   // hp pips
   for (let i=0;i<b.maxhp;i++) px(x + i*7, y - 12, 5, 4, i < b.hp ? '#ff5a5a' : '#3a3a3a');
-  // quip bubble — anchored to the boss, only while the boss is actually on screen
+  // quip bubble — anchored to the boss, only while the boss is actually on screen.
+  // 8px face (playtest: 6px read as blur at 1-2x window scales); still anchored
+  // per ruling 2.5, raised 4px for the taller line
   if (b.active && !b.dead && x > -b.w && x < W){
     const q = b.quips[b.quip];
-    cx.font = 'bold 6px monospace';
+    cx.font = 'bold 8px monospace';
     const tw = cx.measureText(q).width;
-    const bx = clamp(x + b.w/2 - tw/2 - 3, 2, W - tw - 8);
-    px(bx, y - 34, tw + 6, 10, '#fff');
-    px(bx + 6, y - 24, 4, 3, '#fff');
-    cx.fillStyle = '#111'; cx.fillText(q, Math.round(bx + 3), Math.round(y - 26.5));
+    const bx = clamp(x + b.w/2 - tw/2 - 4, 2, W - tw - 10);
+    px(bx, y - 38, tw + 8, 12, '#fff');
+    px(bx + 6, y - 26, 4, 3, '#fff');
+    cx.fillStyle = '#111'; cx.fillText(q, Math.round(bx + 4), Math.round(y - 28.5));
   }
 }
 
@@ -1181,13 +1200,13 @@ function drawCameoBubble(c){
   const x = c.x - cam; if (x < -40 || x > W + 40) return;
   if (Math.abs(player.x - (c.x + 7)) > 60) return;
   if (c.id === 'stealth' && frame % 90 > 85) return;               // can't talk while nonexistent
-  cx.font = 'bold 6px monospace';
+  cx.font = 'bold 8px monospace';                                  // readable at 1-2x (playtest)
   const tw = cx.measureText(c.line).width;
-  const bx = clamp(x + 7 - tw/2 - 3, 2, W - tw - 8);
-  const by = GROUND_Y - c.h - 14;
-  px(bx, by - 10, tw + 6, 10, '#fff');
+  const bx = clamp(x + 7 - tw/2 - 4, 2, W - tw - 10);
+  const by = GROUND_Y - c.h - 16;
+  px(bx, by - 12, tw + 8, 12, '#fff');
   px(bx + 6, by, 4, 3, '#fff');
-  cx.fillStyle = '#111'; cx.fillText(c.line, Math.round(bx + 3), Math.round(by - 2.5));
+  cx.fillStyle = '#111'; cx.fillText(c.line, Math.round(bx + 4), Math.round(by - 2.5));
 }
 
 // ------------------------- BACKGROUND -------------------------
@@ -1501,12 +1520,13 @@ function draw(){
       px(x + 2, s.y + 4, 4, 3, '#ffd94a');                        // the chart goes up
       px(x + 7, s.y + 5, 5, 1, '#7ce0ff'); px(x + 7, s.y + 3, 3, 1, '#7ce0ff');
     } else {
-      // pill drawn to fit the word (>= hitbox on all sides); collision AABB stays 26x9
-      cx.font = 'bold 6px monospace';
+      // pill drawn to fit the word at the readable 8px face — drawn box >= the
+      // unchanged 26x9 collision AABB on ALL sides (item 31 rule: visual >= hitbox)
+      cx.font = 'bold 8px monospace';
       const tw = cx.measureText(s.label).width;
-      const pw2 = Math.max(s.w, tw + 6);
-      px(x + s.w/2 - pw2/2, s.y, pw2, s.h, '#d64550');
-      cx.fillStyle = '#fff'; cx.fillText(s.label, Math.round(x + s.w/2 - tw/2), Math.round(s.y + 7));
+      const pw2 = Math.max(s.w, tw + 8);
+      px(x + s.w/2 - pw2/2, s.y - 2, pw2, s.h + 4, '#d64550');
+      cx.fillStyle = '#fff'; cx.fillText(s.label, Math.round(x + s.w/2 - tw/2), Math.round(s.y + 6));
     }
   }
 
@@ -1526,11 +1546,11 @@ function draw(){
 
   // popups + HUD only during play (end screens keep the frame clean behind the card)
   if (state === ST.PLAY){
-    cx.font = 'bold 7px monospace';
+    cx.font = 'bold 8px monospace'; // readable at 1-2x (playtest)
     for (const q of popups){
       cx.fillStyle = 'rgba(0,0,0,.55)';
       const tw = cx.measureText(q.txt).width;
-      cx.fillRect(Math.round(q.x - cam - 2), Math.round(q.y - 8), tw + 4, 10);
+      cx.fillRect(Math.round(q.x - cam - 2), Math.round(q.y - 9), tw + 4, 12);
       cx.fillStyle = q.c; cx.fillText(q.txt, Math.round(q.x - cam), Math.round(q.y));
     }
     for (const c of cameos) drawCameoBubble(c); // proximity dialogue, never hidden behind entities
