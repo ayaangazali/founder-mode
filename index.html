@@ -297,6 +297,15 @@ window.addEventListener('keydown', e => {
       beep(660, .3, 'square', .08);
     }
   }
+  // TESTING BRANCH: instant power-ups (X pitching is global via throwDeck)
+  if (TEST_MODE && state === ST.PLAY && !e.repeat){
+    const k = nk;
+    if (k === '1'){ player.coffeeT = 60*10; addPop(player.x, player.y-8, 'COLD BREW! VELOCITY +47%', '#c58bff'); sPow(); }
+    if (k === '2'){ player.ycT = 60*8; addPop(player.x, player.y-8, 'ACCELERATED! INVINCIBLE', '#ff8c37'); sPow(); }
+    if (k === '3'){ if (hearts < 5) hearts++; maxHearts = Math.max(maxHearts, hearts); addPop(player.x, player.y-8, 'TERM SHEET! +1 RUNWAY', '#7cffa5'); sPow(); }
+    if (k === '4'){ player.matchaT = 60*10; addPop(player.x, player.y-8, 'MATCHA! INNER PEACE +15% JUMP', '#39c46d'); sPow(); }
+    if (k === '5'){ player.shield = 1; addPop(player.x, player.y-8, 'GOOD PRESS! one bad take, on the house', '#7ce0ff'); sPow(); }
+  }
   if (nk === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
   if (nk === 'r' && !e.repeat && endGraceT <= 0 && (state === ST.DEAD || state === ST.WIN)){
     resumePlay(state === ST.DEAD); // death retries from checkpoint; a win restart is a fresh run
@@ -600,6 +609,15 @@ const checkpoints = [20, 1930, 3970, 5750, 7240]; // one per zone start (5 zones
 const ROBOTAXI = { x0:4960, x1:5300, w:30, top:GROUND_Y-14, speed:0.7, stopEvery:220, stopFor:120 };
 let taxi = { x:4960, dir:1, stopT:0, moveT:0 };
 
+// TESTING BRANCH: fund-district funders — composite archetypes (canon rule 3:
+// recognizable as a species, never a person). Walk up and the check clears.
+const funders = [
+  { x:4612, name:'THE MONK',     amt:200, coat:'#6b4f8a', line:'"ship or pray. today: both."',  met:false },
+  { x:5852, name:'THE PARTNER',  amt:100, coat:'#2b2d42', line:'"software eats. we invoice."',  met:false },
+  { x:5990, name:'THE ELDER GP', amt:150, coat:'#4a3423', line:'"i funded your boss\'s boss."', met:false },
+  { x:7352, name:'THE FORT KID', amt:75,  coat:'#39c46d', line:'"the fort has a waitlist."',    met:false },
+];
+
 // ------------------- DAILY SEED + MARKET CONDITIONS (ROADMAP §7) -------------------
 // The calendar date is the ONLY wall-clock read in the game (a daily seed is date-
 // derived by definition); every timer below still runs on frames / playMs.
@@ -692,6 +710,9 @@ const COIN_VALUE = MK === 'rateshigh' ? 4 : MK === 'ratescut' ? 6 : 5;
 const BURN_FRAMES = MK === 'audit' ? 60 * 4 : 60 * 6; // burn tick, frames (AUDIT WEEK: 2s faster)
 
 // ------------------------- STATE -------------------------
+// TESTING BRANCH ONLY — never merge to main. Infinite runway, instant power-ups
+// (1/2/3/4), X pitches without needing the pickup, funder NPCs wire checks.
+const TEST_MODE = true;
 const ST = { TITLE:0, PLAY:1, WIN:2, DEAD:3 };
 let state = ST.TITLE;
 let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (backgrounded tabs don't count)
@@ -1024,9 +1045,10 @@ let crates = [];   // v1.0: SDK crates dropped by THE PLATFORM — fall, land, b
 let deckCd = 0;    // PITCH DECK attack cooldown (frames; the attack only exists while p.deckT > 0)
 
 // the founder's one weapon, and only while holding a fresh deck (PITCH DECK pickup)
+// (TESTING BRANCH: the deck never runs out — X always pitches)
 function throwDeck(){
   if (paused || chat || interview || room.active) return; // no shots into a frozen sim (audit)
-  if (state !== ST.PLAY || player.deckT <= 0 || deckCd > 0) return;
+  if (state !== ST.PLAY || (!TEST_MODE && player.deckT <= 0) || deckCd > 0) return;
   deckCd = 15;
   shots.push({ x: player.x + (player.face > 0 ? 12 : -16), y: player.y + 5,
                vx: player.face * 4, vy: 0, w: 14, h: 9, t:'deck', mine:true });
@@ -1079,6 +1101,7 @@ function reset(fromCheckpoint){
     bosses.forEach(b => { b.x0 = b.x; b.y0 = b.y; });
     crates = [];                                            // SDK crates (Platform boss)
     taxi = { x:ROBOTAXI.x0, dir:1, stopT:0, moveT:0 };      // robotaxi back to depot
+    funders.forEach(f => f.met = false);                    // TESTING BRANCH: fresh run, fresh checks
     // daily market conditions — each pulls one existing lever (ROADMAP §7)
     if (MK === 'aihype'){ bosses[2].hp = bosses[2].maxhp = 6; }
     if (MK === 'layoffs'){ enemies.push(makeEnemy({x:5850,t:'s'}), makeEnemy({x:6130,t:'s'})); }
@@ -1191,7 +1214,7 @@ function hurtPlayer(cause, word){
   if (word) deathWord = word;
   moodDown();                      // one hit = IT'S SO OVER, instantly
   if (corgi.following){ corgi.sitting = true; corgi.sitT = 45; } // the corgi sits and waits for you
-  hearts--;
+  if (!TEST_MODE) hearts--;        // testing branch: runway is infinite — juice still plays
   sHurt();
   player.hurtT = 90;
   player.vy = -4; player.vx = -player.face * 3;
@@ -1338,7 +1361,8 @@ function update(){
   if (p.y > H + 30){
     deathCause = 'pit';
     moodDown();
-    hearts--; sHurt();
+    if (!TEST_MODE) hearts--;
+    sHurt();
     addPop(cam+220, 120, zoneName(p.x) === 'THE CLOUD' ? '-1 RUNWAY (the 0.01% downtime)' : '-1 RUNWAY (pivot failed)', '#ff5a5a');
     if (hearts <= 0){
       if (!momRound()){ endTime = playMs; recordDeathSpot(p.x); state = ST.DEAD; showEndUI(false); return; }
@@ -3116,6 +3140,21 @@ function draw(){
     }
   }
 
+  // TESTING BRANCH: funder sprites — suit + coat color per fund; wave once met
+  for (const f of funders){
+    const x = f.x - cam; if (x < -40 || x > W + 40) continue;
+    const y = GROUND_Y - 16;
+    px(x+3, y+0, 6, 2, '#3a3a3a');                               // corporate haircut
+    px(x+3, y+2, 6, 4, '#e8c39a');                               // face
+    px(x+4, y+3, 1, 1, '#111'); px(x+7, y+3, 1, 1, '#111');      // eyes
+    px(x+1, y+6, 10, 7, f.coat);                                 // the coat IS the fund
+    px(x+5, y+6, 2, 5, '#fff');                                  // shirt gap
+    if (f.met && (frame>>4)%2) px(x+11, y+4, 2, 2, '#e8c39a');   // waves after wiring the check
+    else px(x+10, y+8, 2, 2, '#e8c39a');
+    px(x+2, y+13, 3, 3, '#2b2d42'); px(x+7, y+13, 3, 3, '#2b2d42');
+    px(x+2, y+16, 3, 1, '#111'); px(x+7, y+16, 3, 1, '#111');
+  }
+
   // SDK crates — falling lock-in / temporary platforms (sprites.js §5)
   for (const c of crates){
     const x = c.x - cam; if (x < -20 || x > W + 20) continue;
@@ -3344,6 +3383,19 @@ function draw(){
       cx.fillStyle = q.c; cx.fillText(q.txt, Math.round(q.x - cam), Math.round(q.y));
     }
     for (const c of cameos) drawCameoBubble(c); // proximity dialogue, never hidden behind entities
+    // TESTING BRANCH: funder proximity dialogue (same bubble style as cameos)
+    for (const f of funders){
+      const x = f.x - cam; if (x < -40 || x > W + 40) continue;
+      if (Math.abs(player.x - (f.x + 6)) > 60) continue;
+      const line = f.met ? f.line : 'COME CLOSER. LET US TALK TERMS.';
+      cx.font = 'bold 6px monospace';
+      const tw = cx.measureText(line).width;
+      const bx = clamp(x + 6 - tw/2 - 3, 2, W - tw - 8);
+      const by = GROUND_Y - 30;
+      px(bx, by - 10, tw + 6, 10, '#fff');
+      px(bx + 6, by, 4, 3, '#fff');
+      cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 3), Math.round(by - 2.5));
+    }
     drawHUD();
   }
   // HUMOR PATCH item 9: the vertical-video frame — you've been content
@@ -3418,6 +3470,12 @@ function drawHUD(){
     cx.fillStyle = '#cfd6e4'; cx.fillText(ct, Math.round(W/2 - ctw/2), H - 11);
   }
   if (corgi.following && !corgi.sitting && !inOverlay){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', 12, 84); }
+  if (TEST_MODE){ // TESTING BRANCH watermark — a screenshot can never pass as main
+    // y=36: one row below the mood meter (y22-33), which owns the top-center slot
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 92, 36, 184, 12); occlude(W/2 - 92, 36, 184, 12);
+    cx.fillStyle = '#ff8c37'; cx.font = 'bold 7px monospace';
+    cx.fillText('TEST MODE ∞ RUNWAY · 1-5 powers · X pitch', W/2 - 88, 45);
+  }
 }
 
 function drawTitle(){
