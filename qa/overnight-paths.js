@@ -76,9 +76,12 @@ async function start(page){
     const { ctx, page, errors } = await fresh(browser);
     await start(page);
     await page.evaluate(() => { bosses.forEach(b => { b.dead = true; }); raised = 500; player.x = 9095; });
+    // humor patch: first pull snaps the rope — retreat past 9060, pull again
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(700); await page.keyboard.up('ArrowRight');
+    await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(2000); await page.keyboard.up('ArrowLeft');
+    await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowRight');
     const w = await page.evaluate(() => ({ state, bellDone, raised }));
-    check('bell → WIN state + $1M bell bonus', w.state === 2 && w.bellDone && w.raised === 1500, `raised=${w.raised}`);
+    check('bell → WIN state + $1M bell bonus (post rope-snap)', w.state === 2 && w.bellDone && w.raised === 1500, `raised=${w.raised}`);
     await page.keyboard.press('r');
     await page.waitForTimeout(350);
     const fresh2 = await page.evaluate(() => ({ state, x: player.x, raised, hearts }));
