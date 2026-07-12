@@ -415,6 +415,11 @@ let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable 
 let bellPhase = 0;      // HUMOR PATCH item 3: 0 untouched · 1 rope snapped · 2 re-armed (next pull wins)
 let barrySawIt = false, barryShownT = 0; // item 4: Barry watched you die near him
 let meetlyT = 0, actionItems = null;     // item 5: MEETLY.AI recap overlay + the ACTION ITEMS that chase you
+// HUMOR PATCH item 6: THE CORGI (10x8, devastating). It cannot die. It has no
+// health, no hitbox, and appears in no collision path — immortality by
+// construction, verified by qa/corgi-probe.js. While it follows, burn is paused.
+const CORGI_HOME = 2596;
+let corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
 let witnessStill = 0, witnessed = false; // item 4: stood still through a whole rocket launch
 const ROCKET_ANCHOR = 3240;              // parallax-.5 anchor — on screen through the Sand Hill approach
 let deathSpots = [];    // HUMOR PATCH item 3: session-scoped death x's — 3+ within ±80 summons the FAILURE COACH
@@ -506,6 +511,7 @@ function reset(fromCheckpoint){
     bellPhase = 0; // the rope gets to snap again next run
     barrySawIt = false; barryShownT = 0; witnessStill = 0; witnessed = false;
     meetlyT = 0; actionItems = null;
+    corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
@@ -562,6 +568,7 @@ function hurtPlayer(cause, word){
   if (cause) deathCause = cause;   // the last thing that hurt you writes the headline
   if (word) deathWord = word;
   moodDown();                      // one hit = IT'S SO OVER, instantly
+  if (corgi.following){ corgi.sitting = true; corgi.sitT = 45; } // the corgi sits and waits for you
   hearts--;
   sHurt();
   player.hurtT = 90;
@@ -701,7 +708,8 @@ function update(){
   // burn rate: standing still burns runway (ROADMAP §3 — the theme lives in the loop;
   // AUDIT WEEK shortens the tick). Frame-counted: backgrounded tabs don't burn.
   // Riding the robotaxi is commuting, not idling — no burn on the roof.
-  if (Math.abs(p.vx) < 0.3 && p.onGround && !p.onTaxi) p.burnT = (p.burnT || 0) + 1; else p.burnT = 0;
+  // And a following corgi pauses burn entirely (morale: high).
+  if (Math.abs(p.vx) < 0.3 && p.onGround && !p.onTaxi && !(corgi.following && !corgi.sitting)) p.burnT = (p.burnT || 0) + 1; else p.burnT = 0;
   if (p.burnT > 60 * 3 && frame % 10 === 0)
     parts.push({x:p.x + 4 + Math.random()*4, y:p.y + 2, vx:0, vy:-0.6, t:20, c:'#8d99ae'}); // smoke warning
   if (p.burnT >= BURN_FRAMES){
@@ -943,6 +951,27 @@ function update(){
     if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
   }
   shots = shots.filter(s => !s.gone);
+
+  // -------- HUMOR PATCH item 6: the corgi --------
+  if (!corgi.following && corgi.followT === 0 && Math.abs(p.x - corgi.x) < 26){
+    corgi.following = true; corgi.followT = 1800; corgi.sitting = false;
+    addPop(corgi.x - 10, GROUND_Y - 28, 'CORGI ACQUIRED (acqui-hire)', '#ffd94a');
+    moodUp(); sPow();
+  }
+  if (corgi.following){
+    if (corgi.sitting){
+      if (corgi.sitT > 0) corgi.sitT--;                          // the sit is a whole moment; let it read
+      else if (Math.abs(p.x - corgi.x) < 26) corgi.sitting = false; // you came back. of course you did.
+    } else {
+      const cdx = (p.x - 14 * p.face) - corgi.x;
+      corgi.x += clamp(cdx * 0.08, -2.2, 2.2);
+      if (Math.abs(cdx) > 2) corgi.face = cdx > 0 ? 1 : -1;
+      if (--corgi.followT <= 0){ corgi.following = false; }      // shift's over; heads back to the café
+    }
+  } else if (Math.abs(corgi.x - CORGI_HOME) > 2){
+    corgi.x += corgi.x > CORGI_HOME ? -0.8 : 0.8;                // trots home
+    corgi.face = corgi.x > CORGI_HOME ? -1 : 1;
+  }
 
   // -------- HUMOR PATCH item 5: MEETLY.AI aftermath --------
   if (meetlyT > 0){
@@ -1535,6 +1564,40 @@ function draw(){
     }
   }
 
+  // HUMOR PATCH item 6: CORGI CAFÉ — storefront under the Mission crates
+  {
+    const x = 2556 - cam;
+    if (x > -100 && x < W + 40){
+      px(x, GROUND_Y - 30, 78, 30, '#5a3d55');                   // façade
+      px(x, GROUND_Y - 34, 78, 6, '#d9748f');                    // awning
+      for (let a = 0; a < 5; a++) px(x + 4 + a * 15, GROUND_Y - 34, 8, 6, '#f4c6d3'); // awning stripes
+      px(x + 6, GROUND_Y - 22, 26, 16, '#ffe9b3');               // warm window
+      px(x + 10, GROUND_Y - 16, 6, 5, '#8a5a2b');                // a patron's coffee
+      px(x + 44, GROUND_Y - 20, 14, 20, '#3a2a36');              // door
+      cx.font = 'bold 8px monospace'; cx.fillStyle = '#ffe9b3';
+      cx.fillText('CORGI CAFÉ', Math.round(x + 6), Math.round(GROUND_Y - 24));
+    }
+  }
+  // the corgi itself (10x8, devastating) — never collides with anything, ever
+  {
+    const x = corgi.x - cam;
+    if (x > -30 && x < W + 30){
+      const y = GROUND_Y - 8;
+      const trot = corgi.following && !corgi.sitting && (frame >> 3) % 2;
+      px(x, y + (corgi.sitting ? 2 : 0), 8, 5, '#e8a04c');       // loaf
+      px(x + (corgi.face > 0 ? 6 : -2), y - 2, 4, 4, '#e8a04c'); // head
+      px(x + (corgi.face > 0 ? 6 : -2), y + 1, 4, 1, '#fff');    // snoot
+      px(x + (corgi.face > 0 ? 8 : 0), y - 1, 1, 1, '#111');     // eye
+      px(x + (corgi.face > 0 ? 6 : 1), y - 3, 1, 2, '#c77f33');  // ear
+      px(x + (corgi.face > 0 ? 8 : 3), y - 3, 1, 2, '#c77f33');  // other ear
+      px(x + (corgi.face > 0 ? -1 : 8), y + (frame % 10 < 5 ? 0 : 1), 1, 2, '#e8a04c'); // tail. always wagging.
+      if (!corgi.sitting){                                       // stubs
+        px(x + 1, y + 5, 1, 3 - (trot ? 1 : 0), '#c77f33'); px(x + 6, y + 5, 1, 3 - (trot ? 0 : 1), '#c77f33');
+      }
+      if (corgi.sitting && (frame >> 4) % 2) px(x + (corgi.face > 0 ? 10 : -3), y - 5, 2, 2, '#7ce0ff'); // waiting patiently
+    }
+  }
+
   // ---- HUMOR PATCH item 4: THE CELEBS (RISKY_CAMEOS) — draw-only; they never
   // touch collision, state, or any share surface ----
   if (RISKY_CAMEOS){
@@ -1873,6 +1936,7 @@ function drawHUD(){
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
   if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText('PITCHING ' + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
+  if (corgi.following && !corgi.sitting){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', 12, 74); }
 }
 
 function drawTitle(){
