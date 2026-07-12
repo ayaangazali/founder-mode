@@ -430,6 +430,9 @@ const SLOP_LABELS = ['IA', 'A1', 'ΛI'];
 // seconds are REAL — that's the entry fee). Once per run.
 const ROOM_DOOR_X = 4537;
 let room = { active: false, t: 0, px: 0, cans: [], done: false };
+// HUMOR PATCH item 9: THE VIBES CMO — pass her ring light once per run and YOU
+// become content for 1.5 seconds. Non-lethal. Deeply lethal.
+let cmoT = 0, cmoDone = false;
 
 function roomUpdate(){
   room.t--;
@@ -546,6 +549,7 @@ function reset(fromCheckpoint){
     corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
     slops = []; slopN = 0;
     room = { active: false, t: 0, px: 0, cans: [], done: false };
+    cmoT = 0; cmoDone = false;
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
@@ -998,6 +1002,12 @@ function update(){
     if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
   }
   shots = shots.filter(s => !s.gone);
+
+  // -------- HUMOR PATCH item 9: the vibes CMO catches you in frame --------
+  if (cmoT > 0) cmoT--;
+  if (!cmoDone && Math.abs(p.x - 2506) < 30){
+    cmoDone = true; cmoT = 90;
+  }
 
   // -------- HUMOR PATCH item 8: the hackathon house door --------
   if (!room.done && !room.active && Math.abs(p.x + 6 - ROOM_DOOR_X) < 9 && p.onGround){
@@ -1681,6 +1691,41 @@ function draw(){
     }
   }
 
+  // HUMOR PATCH item 9: THE VIBES CMO — ring light, tripod, permanent content
+  {
+    const x = 2500 - cam;
+    if (x > -40 && x < W + 40){
+      const y = GROUND_Y - 16;
+      // the ring light (a square halo — pixel art forgives)
+      px(x - 8, y - 4, 10, 1, '#fff2b0'); px(x - 8, y + 5, 10, 1, '#fff2b0');
+      px(x - 8, y - 3, 1, 8, '#fff2b0'); px(x + 1, y - 3, 1, 8, '#fff2b0');
+      px(x - 4, y + 6, 2, 10, '#5d647a');                        // tripod
+      px(x + 6, y + 0, 6, 2, '#6b4a2e');                         // hair, effortless
+      px(x + 6, y + 2, 6, 4, '#f2c9a0');                         // face, lit perfectly
+      px(x + 7, y + 3, 1, 1, '#111');
+      px(x + 5, y + 6, 8, 7, '#d9748f');                         // brand-color set
+      px(x + 13, y + 7, 2, 3, '#39c46d');                        // iced matcha, of course
+      px(x + 6, y + 13, 3, 3, '#e8e0c9'); px(x + 10, y + 13, 3, 3, '#e8e0c9');
+      px(x + 6, y + 16, 3, 1, '#fff'); px(x + 10, y + 16, 3, 1, '#fff');
+    }
+  }
+  // HUMOR PATCH item 9: the run-club laggard (the wave itself is v1.0; he IS the joke)
+  {
+    const lx = 3350 + Math.sin(frame * 0.012) * 45;              // forever behind the group
+    const x = lx - cam;
+    if (x > -40 && x < W + 40){
+      const y = GROUND_Y - 15, step = (frame >> 3) % 2;
+      px(x + 3, y, 6, 2, '#39c46d');                             // club cap (matching merch)
+      px(x + 3, y + 2, 6, 4, '#e8c39a');
+      px(x + 7, y + 3, 1, 1, '#111');                            // eye on the phone
+      px(x + 2, y + 6, 8, 5, '#39c46d');                         // club tee
+      px(x + 10, y + 7, 3, 4, '#0e1020'); px(x + 10, y + 7, 3, 1, '#41f2ff'); // the phone
+      px(x + 3, y + 11, 3, 3 - step, '#2b2d42'); px(x + 7, y + 11, 3, 2 + step, '#2b2d42'); // jog. ish.
+      px(x + 3, y + 14, 3, 1, '#fff'); px(x + 7, y + 14, 3, 1, '#fff');
+      if (Math.abs(player.x - lx) <= 60 && state === ST.PLAY) celebBubble(x + 6, y, 'wait up. wait. guys.');
+    }
+  }
+
   // HUMOR PATCH item 6: CORGI CAFÉ — storefront under the Mission crates
   {
     const x = 2556 - cam;
@@ -2029,6 +2074,19 @@ function draw(){
     for (const c of cameos) drawCameoBubble(c); // proximity dialogue, never hidden behind entities
     drawHUD();
   }
+  // HUMOR PATCH item 9: the vertical-video frame — you've been content
+  if (cmoT > 0 && state === ST.PLAY){
+    cx.fillStyle = 'rgba(8,8,16,.82)';
+    cx.fillRect(0, 0, 150, H); cx.fillRect(330, 0, 150, H);       // vertical crop
+    cx.strokeStyle = '#fff'; cx.lineWidth = 2;
+    cx.strokeRect(150.5, 4.5, 179, H - 9);
+    cx.font = 'bold 8px monospace'; cx.fillStyle = '#fff'; cx.textAlign = 'center';
+    cx.fillText('✨ day in my life as an obstacle ✨', 240, 22);
+    cx.fillText('2.1M views · ♥ 402K', 240, H - 16);
+    if (frame % 20 < 10){ cx.fillStyle = '#ff5a5a'; cx.fillRect(156, 10, 5, 5); }
+    cx.textAlign = 'left';
+  }
+
   // HUMOR PATCH item 5: the recap email — 2.5s of dimmed screen and assigned
   // blame. Drawn dead last: nothing outranks a calendar invite.
   if (meetlyT > 0 && state === ST.PLAY){
