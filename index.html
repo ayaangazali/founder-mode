@@ -44,6 +44,8 @@
   #tL{left:calc(18px + env(safe-area-inset-left, 0px))}
   #tR{left:calc(104px + env(safe-area-inset-left, 0px))}
   #touch div#tJ{right:calc(18px + env(safe-area-inset-right, 0px)); width:86px; height:86px; line-height:82px; border-radius:50%;}
+  #touch div#tP{top:calc(10px + env(safe-area-inset-top, 0px)); bottom:auto; right:calc(12px + env(safe-area-inset-right, 0px));
+                width:40px; height:40px; line-height:37px; font-size:18px; border-radius:10px;}
   #rot { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(8px + env(safe-area-inset-bottom, 0px));
          display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
          font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
@@ -53,7 +55,7 @@
 <body>
 <div id="wrap"><div id="stack"><canvas id="game" width="480" height="270"></canvas><canvas id="txt"></canvas></div></div>
 <div id="ui"><div class="card" id="uicard"></div></div>
-<div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div></div>
+<div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">⏸</div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
 <script>
 "use strict";
@@ -127,6 +129,7 @@ const keys = {};
 let anyKeyPressed = false;
 window.addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  if (e.key === 'Escape' && state === ST.PLAY){ paused = !paused; return; }
   keys[e.key.toLowerCase()] = true;
   if (e.key === ' ') keys['space'] = true;
   anyKeyPressed = true;
@@ -189,6 +192,10 @@ if ('ontouchstart' in window) {
   };
   for (const ev of ['touchstart','touchmove','touchend','touchcancel'])
     tEl.addEventListener(ev, e => { e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio(); recompute(e); }, {passive:false});
+  document.getElementById('tP').addEventListener('touchstart', e => {
+    e.preventDefault(); e.stopPropagation();
+    if (state === ST.PLAY) paused = !paused;
+  }, {passive:false});
   cv.addEventListener('touchstart', e => {
     e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio();
     if (state === ST.TITLE){
@@ -476,6 +483,7 @@ let state = ST.TITLE;
 let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (backgrounded tabs don't count)
 let lastVal = 0;                          // valuation of the run that just ended (leaderboard submits this)
 let hitstopT = 0, shakeT = 0, prevJump = false;
+let paused = false; // ESC / the ⏸ touch button — sim + playMs freeze, draw keeps running
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
 let bellPhase = 0;      // HUMOR PATCH item 3: 0 untouched · 1 rope snapped · 2 re-armed (next pull wins)
@@ -1199,14 +1207,14 @@ function update(){
             raised += bonus; sWin();
             addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
             addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
-            if (b.id === 'vc') meetlyT = 150; // item 5: the notetaker was in the room the whole time
+            if (b.id === 'vc') meetlyT = 330; // item 5: the notetaker was in the room the whole time (5.5s — owner couldn't finish it at 2.5)
           }
         }
         else if (p.pogo && !(b.hitT > 0) && !b.hinted){
           // the invisible wall between casuals and a win: a bounce without a fresh
           // jump press does no damage, and nothing ever said so. Say so. Once.
           b.hinted = true;
-          addPop(b.x - 44, b.y - 48, 'TIP: PRESS JUMP AGAIN TO STOMP', '#7ce0ff');
+          addPop(b.x - 44, b.y - 48, 'TIP: PRESS JUMP AGAIN TO STOMP', '#7ce0ff', 150);
         }
         p.pogo = true; // disarm until the next jump press / ground touch
       } else { hurtPlayer(b.id === 'vc' ? 'VC terms' : b.id === 'platform' ? 'platform boss' : 'buzzword', 'SYNERGY'); if (state !== ST.PLAY) return; }
@@ -1580,13 +1588,7 @@ function drawBoss(b){
   // 8px face (playtest: 6px read as blur at 1-2x window scales); still anchored
   // per ruling 2.5, raised 4px for the taller line
   if (b.active && !b.dead && x > -b.w && x < W){
-    const q = b.quips[b.quip];
-    cx.font = 'bold 8px monospace';
-    const tw = cx.measureText(q).width;
-    const bx = clamp(x + b.w/2 - tw/2 - 4, 2, W - tw - 10);
-    px(bx, y - 38, tw + 8, 12, '#fff'); occlude(bx, y - 38, tw + 8, 12);
-    px(bx + 6, y - 26, 4, 3, '#fff');
-    cx.fillStyle = '#111'; cx.fillText(q, Math.round(bx + 4), Math.round(y - 28.5));
+    celebBubble(x + b.w/2, y - 8, b.quips[b.quip]); // same anchor, now stack-aware
   }
 }
 
@@ -1791,26 +1793,29 @@ function drawChatTables(){
 }
 
 // shared bubble for the humor-patch NPCs (coach/celebs) — 8px, cameo style
+// Bubbles placed this frame stack upward instead of overlapping (playtest:
+// two talkers in range rendered on top of each other — both unreadable). A
+// white stem stretches from the raised box back down to the speaker.
+let bubbleRects = []; // cleared at the top of every draw()
 function celebBubble(sxCenter, topY, line){
   cx.font = 'bold 8px monospace';
   const tw = cx.measureText(line).width;
   const bx = clamp(sxCenter - tw/2 - 4, 2, W - tw - 10);
-  px(bx, topY - 30, tw + 8, 12, '#fff'); occlude(bx, topY - 30, tw + 8, 12);
-  px(bx + 6, topY - 18, 4, 3, '#fff');
-  cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 4), Math.round(topY - 20.5));
+  let by = topY - 30;
+  let guard = 0;
+  while (guard++ < 8 && bubbleRects.some(r =>
+    bx < r.x + r.w + 4 && bx + tw + 8 > r.x - 4 && by < r.y + r.h + 2 && by + 12 > r.y - 2)) by -= 15;
+  bubbleRects.push({ x: bx, y: by, w: tw + 8, h: 12 });
+  px(bx, by, tw + 8, 12, '#fff'); occlude(bx, by, tw + 8, 12);
+  px(clamp(sxCenter + 2, bx + 2, bx + tw + 2), by + 12, 4, (topY - 15) - (by + 12), '#fff');
+  cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 4), Math.round(by + 9.5));
 }
 
 function drawCameoBubble(c){
   const x = c.x - cam; if (x < -40 || x > W + 40) return;
   if (Math.abs(player.x - (c.x + 7)) > 60) return;
   if (c.id === 'stealth' && frame % 90 > 85) return;               // can't talk while nonexistent
-  cx.font = 'bold 8px monospace';                                  // readable at 1-2x (playtest)
-  const tw = cx.measureText(c.line).width;
-  const bx = clamp(x + 7 - tw/2 - 4, 2, W - tw - 10);
-  const by = GROUND_Y - c.h - 16;
-  px(bx, by - 12, tw + 8, 12, '#fff'); occlude(bx, by - 12, tw + 8, 12);
-  px(bx + 6, by, 4, 3, '#fff');
-  cx.fillStyle = '#111'; cx.fillText(c.line, Math.round(bx + 4), Math.round(by - 2.5));
+  celebBubble(x + 7, GROUND_Y - c.h + 2, c.line);                  // same geometry, now stack-aware
 }
 
 // ------------------------- BACKGROUND -------------------------
@@ -1937,6 +1942,7 @@ function fmtTime(ms){ const s = Math.floor(ms/1000); return String(Math.floor(s/
 // ------------------------- DRAW -------------------------
 function draw(){
   tcx.clearRect(0, 0, tv.width, tv.height); // text overlay redraws with every frame
+  bubbleRects.length = 0;                   // speech-bubble stacking resets per frame
   // hurt juice: 2-frame camera shake
   if (shakeT > 0 && state === ST.PLAY){ cx.translate(frame % 2 ? 2 : -2, 0); shakeT--; }
 
@@ -2539,7 +2545,7 @@ function draw(){
     cx.textAlign = 'left';
   }
 
-  // HUMOR PATCH item 5: the recap email — 2.5s of dimmed screen and assigned
+  // HUMOR PATCH item 5: the recap email — 5.5s of dimmed screen and assigned
   // blame. Drawn dead last: nothing outranks a calendar invite.
   if (meetlyT > 0 && state === ST.PLAY){
     cx.fillStyle = 'rgba(8,8,20,.72)'; cx.fillRect(0, 0, W, H);
@@ -3076,10 +3082,25 @@ function stepGame(){
   if (hitstopT > 0){ hitstopT--; return; } // hurt hitstop: freeze sim, keep drawing
   update();
 }
+function drawPause(){
+  // drawn after draw() so it covers every scene, including the mini-game
+  // full-frame branches that return early
+  px(0, 0, W, H, 'rgba(8,8,20,.7)'); occlude(0, 0, W, H);
+  cx.textAlign = 'center';
+  cx.fillStyle = '#ffd94a'; cx.font = 'bold 16px monospace';
+  cx.fillText('PAUSED', W/2, 118);
+  cx.fillStyle = '#8d99ae'; cx.font = 'bold 8px monospace';
+  cx.fillText('(the market, briefly, moves without you)', W/2, 134);
+  cx.fillStyle = '#fff';
+  cx.fillText(('ontouchstart' in window) ? 'tap ⏸ to resume' : 'ESC to resume', W/2, 150);
+  cx.textAlign = 'left';
+}
 function loop(now){
   acc += Math.min(now - (last || now), 100); last = now;
-  while (acc >= STEP){ stepGame(); acc -= STEP; }
+  if (paused && state === ST.PLAY){ acc = 0; }
+  else while (acc >= STEP){ stepGame(); acc -= STEP; }
   draw();
+  if (paused && state === ST.PLAY) drawPause();
   requestAnimationFrame(loop);
 }
 reset(false);
