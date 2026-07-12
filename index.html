@@ -21,6 +21,8 @@
     image-rendering: crisp-edges;
     background:#0b0b14;
   }
+  #stack { position:relative; line-height:0; }
+  canvas#txt { position:absolute; left:0; top:0; pointer-events:none; }
   #ui { position:fixed; inset:0; pointer-events:none; display:none; align-items:center; justify-content:center;
         background:rgba(8,8,20,.78); z-index:10; }
   #ui .card { pointer-events:auto; text-align:center; font-family:"Courier New",monospace; }
@@ -49,7 +51,7 @@
 </style>
 </head>
 <body>
-<div id="wrap"><canvas id="game" width="480" height="270"></canvas></div>
+<div id="wrap"><div id="stack"><canvas id="game" width="480" height="270"></canvas><canvas id="txt"></canvas></div></div>
 <div id="ui"><div class="card" id="uicard"></div></div>
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
@@ -68,6 +70,26 @@ const cv = document.getElementById('game');
 const cx = cv.getContext('2d');
 cx.imageSmoothingEnabled = false;
 
+// --- crisp text overlay: sprites stay chunky on #game; every fillText is
+// mirrored onto #txt, a second canvas at native device resolution stacked on
+// top (playtest: 8px glyphs at 2x read as blur; dialogue must be legible).
+// cx.fillText is patched so all ~60 call sites get this for free — layout math
+// (measureText, bubble boxes) still runs in 480×270 game units on cx.
+const tv = document.getElementById('txt');
+const tcx = tv.getContext('2d');
+let TS = 2; // game-unit → overlay-pixel scale; set by fit()
+cx.fillText = function(str, x, y){
+  tcx.font = cx.font.replace(/(\d+(?:\.\d+)?)px/, (m0, n) => (parseFloat(n) * TS) + 'px');
+  tcx.fillStyle = cx.fillStyle;
+  tcx.textAlign = cx.textAlign;
+  tcx.textBaseline = cx.textBaseline;
+  tcx.fillText(str, x * TS, y * TS);
+};
+// overlay text stacks above ALL game pixels, so a bubble box drawn later can no
+// longer hide text drawn earlier. every backing box calls this to punch out the
+// overlay beneath it — restores draw-order occlusion for text.
+function occlude(x, y, w, h){ tcx.clearRect(x * TS, y * TS, w * TS, h * TS); }
+
 // --- scale canvas to window, keep 16:9, integer-ish scale ---
 // portrait on touch: non-blocking (ruling 2.1) — top-align canvas, buttons directly under it,
 // dismissible in-fiction rotate prompt. never a wall, never an input pause.
@@ -79,6 +101,11 @@ function fit() {
                                 // fractional scale smears glyphs into 2-and-3px runs)
   cv.style.width  = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';
+  // size the text overlay to the same CSS box, backed at devicePixelRatio
+  const dpr = window.devicePixelRatio || 1;
+  TS = Math.floor(W * s) / W * dpr;
+  tv.width  = Math.round(W * TS); tv.height = Math.round(H * TS);
+  tv.style.width = cv.style.width; tv.style.height = cv.style.height;
   const isTouch = 'ontouchstart' in window;
   const portrait = isTouch && window.innerHeight > window.innerWidth;
   document.getElementById('wrap').style.alignItems = portrait ? 'flex-start' : 'center';
@@ -1363,7 +1390,7 @@ function drawBoss(b){
     cx.font = 'bold 8px monospace';
     const tw = cx.measureText(q).width;
     const bx = clamp(x + b.w/2 - tw/2 - 4, 2, W - tw - 10);
-    px(bx, y - 38, tw + 8, 12, '#fff');
+    px(bx, y - 38, tw + 8, 12, '#fff'); occlude(bx, y - 38, tw + 8, 12);
     px(bx + 6, y - 26, 4, 3, '#fff');
     cx.fillStyle = '#111'; cx.fillText(q, Math.round(bx + 4), Math.round(y - 28.5));
   }
@@ -1457,7 +1484,7 @@ function celebBubble(sxCenter, topY, line){
   cx.font = 'bold 8px monospace';
   const tw = cx.measureText(line).width;
   const bx = clamp(sxCenter - tw/2 - 4, 2, W - tw - 10);
-  px(bx, topY - 30, tw + 8, 12, '#fff');
+  px(bx, topY - 30, tw + 8, 12, '#fff'); occlude(bx, topY - 30, tw + 8, 12);
   px(bx + 6, topY - 18, 4, 3, '#fff');
   cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 4), Math.round(topY - 20.5));
 }
@@ -1470,7 +1497,7 @@ function drawCameoBubble(c){
   const tw = cx.measureText(c.line).width;
   const bx = clamp(x + 7 - tw/2 - 4, 2, W - tw - 10);
   const by = GROUND_Y - c.h - 16;
-  px(bx, by - 12, tw + 8, 12, '#fff');
+  px(bx, by - 12, tw + 8, 12, '#fff'); occlude(bx, by - 12, tw + 8, 12);
   px(bx + 6, by, 4, 3, '#fff');
   cx.fillStyle = '#111'; cx.fillText(c.line, Math.round(bx + 4), Math.round(by - 2.5));
 }
@@ -1598,6 +1625,7 @@ function fmtTime(ms){ const s = Math.floor(ms/1000); return String(Math.floor(s/
 
 // ------------------------- DRAW -------------------------
 function draw(){
+  tcx.clearRect(0, 0, tv.width, tv.height); // text overlay redraws with every frame
   // hurt juice: 2-frame camera shake
   if (shakeT > 0 && state === ST.PLAY){ cx.translate(frame % 2 ? 2 : -2, 0); shakeT--; }
 
@@ -1724,7 +1752,7 @@ function draw(){
         const line = 'fail faster! this is great for you!';
         const tw = cx.measureText(line).width;
         const bx = clamp(x + 6 - tw/2 - 4, 2, W - tw - 10);
-        px(bx, y - 30, tw + 8, 12, '#fff');
+        px(bx, y - 30, tw + 8, 12, '#fff'); occlude(bx, y - 30, tw + 8, 12);
         px(bx + 6, y - 18, 4, 3, '#fff');
         cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 4), Math.round(y - 20.5));
       }
@@ -2009,6 +2037,7 @@ function draw(){
       cx.font = 'bold 8px monospace';
       const tw = cx.measureText('ACTION ITEMS').width;
       cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(ax + 10 - tw/2 - 2), Math.round(ay - 14), tw + 4, 11);
+      occlude(ax + 10 - tw/2 - 2, ay - 14, tw + 4, 11);
       cx.fillStyle = '#ff5a5a'; cx.fillText('ACTION ITEMS', Math.round(ax + 10 - tw/2), Math.round(ay - 5));
     }
   }
@@ -2065,6 +2094,7 @@ function draw(){
       cx.font = 'bold 6px monospace';
       const tw = cx.measureText('TERMS').width;
       cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(x - 2), Math.round(s.y - 10), tw + 4, 9);
+      occlude(x - 2, s.y - 10, tw + 4, 9);
       cx.fillStyle = '#fff'; cx.fillText('TERMS', Math.round(x), Math.round(s.y - 3));
     } else if (s.t === 'thread'){
       // THREAD bomb: white card, red header (sprites.js §2)
@@ -2112,6 +2142,7 @@ function draw(){
     cx.font = 'bold 7px monospace';
     const mw = cx.measureText(m.t).width;
     cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(Math.round(W/2 - mw/2 - 5), 22, Math.round(mw + 10), 11);
+    occlude(W/2 - mw/2 - 5, 22, mw + 10, 11);
     cx.fillStyle = m.c;
     if (moodTier === 4 && frame % 8 < 3 && !moodLock) cx.fillStyle = '#ffd94a'; // deranged shimmer
     cx.fillText(m.t, Math.round(W/2 - mw/2), 30);
@@ -2124,6 +2155,7 @@ function draw(){
       cx.fillStyle = 'rgba(0,0,0,.55)';
       const tw = cx.measureText(q.txt).width;
       cx.fillRect(Math.round(q.x - cam - 2), Math.round(q.y - 9), tw + 4, 12);
+      occlude(q.x - cam - 2, q.y - 9, tw + 4, 12);
       cx.fillStyle = q.c; cx.fillText(q.txt, Math.round(q.x - cam), Math.round(q.y));
     }
     for (const c of cameos) drawCameoBubble(c); // proximity dialogue, never hidden behind entities
@@ -2163,7 +2195,7 @@ function draw(){
 
 function drawHUD(){
   // raised
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(6, 6, 118, 30);
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(6, 6, 118, 30); occlude(6, 6, 118, 30);
   cx.fillStyle = '#ffd94a'; cx.font = 'bold 9px monospace';
   cx.fillText('RAISED ' + fmtMoney(raised), 12, 18);
   // runway hearts
@@ -2171,11 +2203,11 @@ function drawHUD(){
   for (let i = 0; i < Math.max(maxHearts, 3); i++)
     px(52 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
   // zone + timer
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14);
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14); occlude(W/2 - 55, 6, 110, 14);
   cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
   const zn = zoneName(player.x);
   cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14);
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14); occlude(W - 62, 6, 56, 14);
   cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 56, 16);
   // active powers
   cx.font = 'bold 7px monospace';
@@ -2220,7 +2252,7 @@ function drawTitle(){
     cx.font = 'bold 6px monospace';
     const tw = cx.measureText(q).width;
     const bx = clamp(74 - tw / 2 - 3, 2, W - tw - 8); // centered over the founder's head
-    px(bx, 160, tw + 6, 10, '#fff');
+    px(bx, 160, tw + 6, 10, '#fff'); occlude(bx, 160, tw + 6, 10);
     px(72, 170, 4, 3, '#fff');                        // tail, points at the founder below
     cx.fillStyle = '#111';
     cx.fillText(q, Math.round(bx + 3), Math.round(167.5));
