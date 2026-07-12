@@ -409,6 +409,21 @@ let hitstopT = 0, shakeT = 0, prevJump = false;
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
 let deathCause = 'burn', deathWord = 'SYNERGY'; // HUMOR PATCH: the obituary needs to know what got you
+
+// HUMOR PATCH item 2: the mood meter — the founder's internal monologue.
+// Flips INSTANTLY on single events (one coin after a beatdown = WE'RE SO BACK),
+// decays toward "heads down building" on a playMs clock, shows during boss
+// fights, and reads IT'S SO OVER one final time on the death frame.
+const MOODS = [
+  { t: "IT'S SO OVER",            c: '#ff5a5a' },
+  { t: 'quiet quitting (myself)', c: '#8d99ae' },
+  { t: 'heads down building',     c: '#7ce0ff' },
+  { t: "WE'RE SO BACK",           c: '#7cffa5' },
+  { t: 'WE ARE SO BACK (deranged)', c: '#ff8c37' },
+];
+let moodTier = 2, moodChangedAt = 0, lastHitAt = -99999, moodLock = false;
+function moodUp(){ if (!moodLock){ moodTier = Math.max(moodTier, 3); moodChangedAt = playMs; } }
+function moodDown(){ if (!moodLock){ moodTier = 0; moodChangedAt = playMs; lastHitAt = playMs; } }
 let crates = [];   // v1.0: SDK crates dropped by THE PLATFORM — fall, land, become 8s platforms
 let deckCd = 0;    // PITCH DECK attack cooldown (frames; the attack only exists while p.deckT > 0)
 
@@ -527,6 +542,7 @@ function hurtPlayer(cause, word){
   }
   if (cause) deathCause = cause;   // the last thing that hurt you writes the headline
   if (word) deathWord = word;
+  moodDown();                      // one hit = IT'S SO OVER, instantly
   hearts--;
   sHurt();
   player.hurtT = 90;
@@ -628,6 +644,7 @@ function update(){
   // fell in a pit
   if (p.y > H + 30){
     deathCause = 'pit';
+    moodDown();
     hearts--; sHurt();
     addPop(cam+220, 120, zoneName(p.x) === 'THE CLOUD' ? '-1 RUNWAY (the 0.01% downtime)' : '-1 RUNWAY (pivot failed)', '#ff5a5a');
     if (hearts <= 0){ endTime = playMs; state = ST.DEAD; showEndUI(false); return; }
@@ -643,6 +660,15 @@ function update(){
   if (p.slowT > 0) p.slowT--;
   if (p.deckT > 0) p.deckT--;
   if (deckCd > 0) deckCd--;
+
+  // mood decay toward "heads down building"; sustained flawless caffeination goes deranged
+  if (!moodLock){
+    if (playMs - moodChangedAt > 2500 && moodTier !== 2){
+      moodTier += moodTier < 2 ? 1 : -1;
+      moodChangedAt = playMs;
+    }
+    if (moodTier === 3 && p.coffeeT > 0 && playMs - lastHitAt > 10000) moodTier = 4;
+  }
 
   // burn rate: standing still burns runway (ROADMAP §3 — the theme lives in the loop;
   // AUDIT WEEK shortens the tick). Frame-counted: backgrounded tabs don't burn.
@@ -669,6 +695,7 @@ function update(){
   for (const c of coins){
     if (!c.got && aabb(p, c)){
       c.got = true; raised += COIN_VALUE; sCoin(); // rate environment sets the coin (ROADMAP §7)
+      moodUp(); // every coin lifts the mood, even when the popup dedupes
       // one popup per coin cluster, not per coin — a full row was 5 stacked labels (playtest)
       if (!popups.some(q2 => q2.txt.startsWith('+$') && Math.abs(q2.x - c.x) < 56))
         addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K', '#ffd94a');
@@ -679,6 +706,8 @@ function update(){
   for (const pw of powers){
     if (!pw.got && aabb(p, pw)){
       pw.got = true; sPow();
+      if (pw.t === 'rug') moodDown(); else moodUp(); // getting rugged is a mood
+
       if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! VELOCITY +47%', '#c58bff'); }
       if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! INVINCIBLE', '#ff8c37'); }
       if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! INNER PEACE +15% JUMP', '#39c46d'); }
@@ -744,12 +773,12 @@ function update(){
 
     // collide with player
     if (Math.abs(e.x - p.x) < 300 && aabb(p, e)){
-      if (p.ycT > 0){ e.dead = true; sStomp(); raised += 10; addPop(e.x, e.y-8, 'DISRUPTED! +$10K', '#ff8c37'); addParts(e.x+7, e.y+7, '#ff8c37');
+      if (p.ycT > 0){ e.dead = true; sStomp(); raised += 10; moodUp(); addPop(e.x, e.y-8, 'DISRUPTED! +$10K', '#ff8c37'); addParts(e.x+7, e.y+7, '#ff8c37');
         if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
       }
       else if (p.vy > 1 && p.y + p.h - e.y < 10 && !(e.t === 't' && (frame + e.x0) % 140 < 36)){
         // (a thought leader mid-post has i-frames — the glow warns you)
-        e.dead = true; p.vy = -5; p.bounceT = 12; sStomp();
+        e.dead = true; p.vy = -5; p.bounceT = 12; sStomp(); moodUp();
         const reward = (e.t === 't' || e.t === 'c') ? 15 : 10;
         raised += reward;
         const msgs = {g:'CHURN CRUSHED! +$10K', m:'MEETING CANCELED! +$10K', s:'THESIS DECLINED! +$10K',
@@ -820,7 +849,7 @@ function update(){
         // damage needs i-frames expired AND an armed stomp (fresh jump press or ground touch
         // since the last bounce) — a zero-input drop bounces forever but only ever hits once
         if (!(b.hitT > 0) && !p.pogo){
-          b.hp--; b.hitT = 30;
+          b.hp--; b.hitT = 30; moodUp();
           addParts(b.x+b.w/2, b.y, '#fff', 12);
           addPop(b.x-40, b.y-12, b.hp>0 ? 'CONVICTION: '+b.hp : 'DOWN ROUND!!', '#ffd94a');
           if (b.hp <= 0){
@@ -854,7 +883,7 @@ function update(){
       // the flying PITCH DECK — flattens enemies, argues with bosses on their own terms
       for (const e of enemies){
         if (!e.dead && aabb(s, e)){
-          s.gone = true; e.dead = true; sStomp(); raised += 10;
+          s.gone = true; e.dead = true; sStomp(); raised += 10; moodUp();
           addPop(e.x, e.y-8, 'DECKED! +$10K', '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
           if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37');
         }
@@ -1551,6 +1580,19 @@ function draw(){
 
   // particles
   for (const q of parts) px(q.x - cam, q.y, 2, 2, q.c);
+
+  // mood meter — top-center under the zone name; deliberately ALSO drawn on the
+  // death frame (spec: IT'S SO OVER lands on the obituary screenshot). The only
+  // HUD element exempt from the end-screen blackout, by design.
+  if (state === ST.PLAY || state === ST.DEAD){
+    const m = MOODS[moodLock ? 5 : moodTier] || { t: 'FOUNDER MODE', c: '#ffd94a' };
+    cx.font = 'bold 7px monospace';
+    const mw = cx.measureText(m.t).width;
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(Math.round(W/2 - mw/2 - 5), 22, Math.round(mw + 10), 11);
+    cx.fillStyle = m.c;
+    if (moodTier === 4 && frame % 8 < 3 && !moodLock) cx.fillStyle = '#ffd94a'; // deranged shimmer
+    cx.fillText(m.t, Math.round(W/2 - mw/2), 30);
+  }
 
   // popups + HUD only during play (end screens keep the frame clean behind the card)
   if (state === ST.PLAY){
