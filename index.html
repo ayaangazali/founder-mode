@@ -471,6 +471,100 @@ let meetlyT = 0, actionItems = null;     // item 5: MEETLY.AI recap overlay + th
 const CORGI_HOME = 2596;
 let corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
 let corgiHired = false; // ever adopted this run — worth a valuation multiple, obviously
+
+// -------- COFFEE CHATS — the investor-psychology mini-game --------
+// Three funder archetypes (canon rule 3: composites, never real people) hold
+// coffee chats at fixed tables. Press C at the table (touch: stand still).
+// Three questions, two answers each, 6s per question. The "right" answer is
+// whichever flatters that archetype's thesis — learning to pattern-match
+// investor bias IS the game (satire in mechanics, rule 1). 3/3 = their check,
+// 2/3 = a small check, worse = a deadpan pass. Each table pays once per run.
+const CHATS = [
+  { x:1150, name:'THE OPERATOR ANGEL', amt:150, done:false,
+    lk:{ skin:'#e8b98a', hair:'#2b2118', hairDk:'#1d150e', hood:'#ff8c37', pocket:'#c96a20', hairStyle:1 },
+    intro:'got 30 seconds? i deploy between standups.',
+    qs:[
+      { q:'when did you last ship?', a:'this morning. twice.', b:"we're finalizing the roadmap", right:0,
+        ra:'disgusting. i love it.', rb:'roadmaps are where features go to nap. pass.' },
+      { q:"who's your first user?", a:'my mom. she churned.', b:"we're pre-user by design", right:0,
+        ra:'honest churn. rare.', rb:'"pre-user." so, a diary.' },
+      { q:'why you?', a:"i can't stop", b:'i did a case study on hustle', right:0,
+        ra:'medically concerning. fundable.', rb:'a case study. on hustle. wow.' } ],
+    win:"wiring $150K. don't make me regret this before lunch.",
+    mid:'$50K. call it conviction, minus the conviction.',
+    lose:"circle back when you've shipped something. anything." },
+  { x:5100, name:'THE DEEP TECH PARTNER', amt:200, done:false,
+    lk:{ skin:'#f2c9a0', hair:'#5a5f6e', hairDk:'#434855', hood:'#7ce0ff', pocket:'#4aa8c7', hairStyle:2 },
+    intro:'i only do coffee at inference cost.',
+    qs:[
+      { q:"what's the moat?", a:'our eval harness. it is mean.', b:'first-mover advantage', right:0,
+        ra:'a mean eval. continue.', rb:'first mover. like pets dot com.' },
+      { q:'compute plan?', a:'we own three GPUs. they have names.', b:"we'll rent when we need it", right:0,
+        ra:'named GPUs. that is a family.', rb:'renting is a mindset. a weak one.' },
+      { q:'AGI timeline?', a:"already happened. it's shy.", b:'ten years, like fusion', right:0,
+        ra:'shy AGI. bullish.', rb:'fusion is always ten years away. so are you.' } ],
+    win:"$200K. spend it on compute or don't call me.",
+    mid:'$50K, earmarked for GPUs. i will check.',
+    lose:'come back with benchmarks. or a meaner eval.' },
+  { x:6480, name:'THE CONTRARIAN', amt:250, done:false,
+    lk:{ skin:'#d9a06b', hair:'#0f0f14', hairDk:'#0a0a0e', hood:'#d9748f', pocket:'#a84e66', hairStyle:0 },
+    intro:'everyone hates coffee chats, so i love them. sit.',
+    qs:[
+      { q:'everyone loves your space right now.', a:'then i hate it now', b:"yes! it's very hot", right:0,
+        ra:'exactly. heat is for exits.', rb:'"hot." so is a house fire.' },
+      { q:'your TAM is huge.', a:'TAM is consensus. we sell to 40 people.', b:'$8 trillion by 2031', right:0,
+        ra:'forty people. i want to meet none of them. in.', rb:'everyone says trillions. that IS the problem.' },
+      { q:'AI?', a:"we're AI-abstinent", b:'AI-first. AI-everything.', right:0,
+        ra:'abstinent? in THIS market? deranged. i respect it.', rb:'so is everyone. next.' } ],
+    win:"$250K, because nobody else would. that's the point.",
+    mid:'$50K. contrarian, but not stupid.',
+    lose:'too consensus. even your mistakes are consensus.' },
+];
+let chat = null;      // live chat state: {ci, qi, phase, t, score, swap, held, msg, good, amt}
+let chatStill = 0;    // touch trigger: frames stood still at a table
+
+function chatStart(ci){
+  chat = { ci, qi: 0, phase: 'q', t: 6 * 60, score: 0, swap: ci % 2 === 1,
+           held: true, msg: '', good: false, amt: 0 };
+  sPow();
+}
+function chatUpdate(){
+  const c = CHATS[chat.ci];
+  if (chat.phase === 'q'){
+    chat.t--;
+    const L = keys['arrowleft'] || keys['a'] || touch.L;
+    const R = keys['arrowright'] || keys['d'] || touch.R;
+    if (!L && !R) chat.held = false;                 // require a fresh press per question
+    let pick = -1;
+    if (!chat.held){ if (L) pick = 0; else if (R) pick = 1; }
+    if (chat.t <= 0) pick = 2;                       // froze: the silence is also an answer
+    if (pick >= 0){
+      chat.held = true;
+      const q = c.qs[chat.qi];
+      const chosen = pick === 2 ? -1 : (chat.swap ? 1 - pick : pick);
+      chat.good = chosen === q.right;
+      if (chat.good) chat.score++;
+      chat.msg = pick === 2 ? '(you froze. they noted it. literally, in a note.)'
+                            : (chat.good ? q.ra : q.rb);
+      chat.phase = 'react'; chat.t = 120;
+    }
+  } else if (chat.phase === 'react'){
+    if (--chat.t <= 0){
+      chat.qi++;
+      if (chat.qi >= c.qs.length){
+        chat.phase = 'end'; chat.t = 190;
+        chat.amt = chat.score >= 3 ? c.amt : chat.score === 2 ? 50 : 0;
+        chat.msg = chat.score >= 3 ? c.win : chat.score === 2 ? c.mid : c.lose;
+        if (chat.amt){ raised += chat.amt; moodUp(); sPow(); } else moodDown();
+      } else { chat.phase = 'q'; chat.t = 6 * 60; chat.swap = (chat.ci + chat.qi) % 2 === 1; chat.held = true; }
+    }
+  } else if (--chat.t <= 0){                          // end card done
+    c.done = true;
+    if (chat.amt) addPop(player.x, player.y - 20,
+      (chat.score >= 3 ? 'TERM SHEET! +$' : 'SMALL CHECK +$') + chat.amt + 'K', '#ffd94a', 150);
+    chat = null;
+  }
+}
 // HUMOR PATCH item 7: SLOP PHASE — SYNERGY.AI's phase 2. Slop clones live in
 // their OWN array (never `enemies`, so ZERO CHURN stays honest). Most are
 // harmless and die on touch; the one drawn CORRECTLY is real and hurts.
@@ -609,6 +703,7 @@ function reset(fromCheckpoint){
     meetlyT = 0; actionItems = null;
     corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
     corgiHired = false;
+    chat = null; chatStill = 0; for (const cc of CHATS) cc.done = false;
     slops = []; slopN = 0;
     room = { active: false, t: 0, px: 0, cans: [], done: false };
     cmoT = 0; cmoDone = false;
@@ -705,6 +800,19 @@ function update(){
 
   // HUMOR PATCH item 8: inside the hackathon house, the outside world waits
   if (room.active){ roomUpdate(); return; }
+  // coffee chat in progress: the world waits (investors do not)
+  if (chat){ chatUpdate(); return; }
+  // chat trigger: press C at a table (touch: stand still at it ~2.5s)
+  if (state === ST.PLAY){
+    let atTable = -1;
+    for (let i = 0; i < CHATS.length; i++)
+      if (!CHATS[i].done && Math.abs(p.x - CHATS[i].x) < 22 && p.onGround) atTable = i;
+    if (atTable >= 0){
+      const still = Math.abs(p.vx) < 0.3;
+      chatStill = still ? chatStill + 1 : 0;
+      if (keys['c'] || (('ontouchstart' in window) && chatStill >= 150)) chatStart(atTable);
+    } else chatStill = 0;
+  }
 
   // -------- robotaxi (neutral moving platform; stops dead mid-route, lovingly) --------
   taxi.dx = 0;
@@ -1484,6 +1592,67 @@ function drawCameoSprite(c){
   }
 }
 
+// -------- coffee chat: full-frame scene + world-side tables --------
+function drawChat(){
+  const c = CHATS[chat.ci];
+  occlude(0, 0, W, H);                                     // clean slate on the text layer
+  px(0, 0, W, H, '#171221');                               // café interior
+  px(0, 210, W, 60, '#2a2338');                            // floor
+  px(150, 176, 180, 10, '#6b4f2a'); px(160, 186, 8, 24, '#54401f'); px(312, 186, 8, 24, '#54401f'); // table
+  px(196, 166, 10, 10, '#e8ecf5'); px(206, 168, 3, 5, '#e8ecf5');   // your cup
+  px(272, 166, 10, 10, '#e8ecf5'); px(269, 168, 3, 5, '#e8ecf5');   // their cup
+  if (frame % 40 < 20){ px(199, 158, 2, 5, '#8d99ae'); px(275, 158, 2, 5, '#8d99ae'); } // steam
+  drawFounder(cx, 120, 128, 3, 1, 0, false);               // you
+  drawFounder(cx, 322, 128, 3, -1, 0, false, c.lk);        // them
+  cx.textAlign = 'left';
+  // header — starts right of the RAISED box (drawHUD owns the top-left corner)
+  cx.font = 'bold 9px monospace'; cx.fillStyle = '#ffd94a';
+  cx.fillText('COFFEE CHAT — ' + c.name, 134, 18);
+  cx.font = 'bold 7px monospace'; cx.fillStyle = '#8d99ae';
+  cx.fillText(chat.qi === 0 && chat.phase === 'q' && chat.t > 330 ? c.intro : 'question ' + Math.min(chat.qi + 1, 3) + ' of 3', 134, 30);
+  if (chat.phase === 'q'){
+    const q = c.qs[chat.qi];
+    // timer bar — drains left to right; the meeting was always going to run short
+    px(16, 42, Math.max(0, Math.round((W - 32) * chat.t / 360)), 4, chat.t < 120 ? '#d64550' : '#39c46d');
+    cx.font = 'bold 9px monospace'; cx.fillStyle = '#fff';
+    cx.fillText('"' + q.q + '"', 16, 62);
+    const optA = chat.swap ? q.b : q.a, optB = chat.swap ? q.a : q.b;
+    // two answer cards
+    px(12, 226, 222, 32, '#232a3a'); px(12, 226, 222, 2, '#7ce0ff');
+    px(246, 226, 222, 32, '#232a3a'); px(246, 226, 222, 2, '#ffd94a');
+    cx.font = 'bold 8px monospace';
+    cx.fillStyle = '#7ce0ff'; cx.fillText('←', 18, 238);
+    cx.fillStyle = '#ffd94a'; cx.fillText('→', 452, 238);
+    cx.font = 'bold 7px monospace'; cx.fillStyle = '#e8ecf5';
+    cx.fillText(optA, 18, 250); cx.fillText(optB, 252, 250);
+  } else {
+    cx.font = 'bold 8px monospace';
+    cx.fillStyle = chat.phase === 'end' ? (chat.amt ? '#7cffa5' : '#ff8c8c') : (chat.good ? '#7cffa5' : '#ff8c8c');
+    cx.fillText('"' + chat.msg + '"', 16, 62);
+    if (chat.phase === 'end'){
+      cx.fillStyle = '#ffd94a'; cx.font = 'bold 9px monospace';
+      cx.fillText(chat.amt ? '+$' + chat.amt + 'K RAISED' : '+$0. exposure, probably.', 16, 80);
+    }
+  }
+  drawHUD();
+}
+
+function drawChatTables(){
+  for (let i = 0; i < CHATS.length; i++){
+    const c = CHATS[i];
+    const x = c.x - cam;
+    if (x < -60 || x > W + 60) continue;
+    // sidewalk café table + the funder waiting on the far chair
+    px(x - 12, GROUND_Y - 14, 26, 3, '#6b4f2a');
+    px(x - 10, GROUND_Y - 11, 3, 11, '#54401f'); px(x + 9, GROUND_Y - 11, 3, 11, '#54401f');
+    px(x - 4, GROUND_Y - 19, 5, 5, '#e8ecf5');                       // the cup
+    if (!c.done) drawFounder(cx, x + 12, GROUND_Y - 16, 1, -1, 0, false, c.lk);
+    if (!c.done && Math.abs(player.x - c.x) < 40 && state === ST.PLAY){
+      celebBubble(x, GROUND_Y - 22, ('ontouchstart' in window) ? '☕ stand here — coffee chat' : '☕ press C — coffee chat');
+    }
+  }
+}
+
 // shared bubble for the humor-patch NPCs (coach/celebs) — 8px, cameo style
 function celebBubble(sxCenter, topY, line){
   cx.font = 'bold 8px monospace';
@@ -1669,6 +1838,13 @@ function draw(){
     cx.font = 'bold 8px monospace'; cx.fillStyle = '#ffd94a';
     cx.fillText('DEMO →', 416, 202);
     drawFounder(cx, room.px, 208, 1, 1, (frame >> 3) % 2, false);  // you, hustling
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+    return;
+  }
+
+  // coffee chat — full-frame two-shot across the table
+  if (state === ST.PLAY && chat){
+    drawChat();
     cx.setTransform(1, 0, 0, 1, 0, 0);
     return;
   }
@@ -1907,6 +2083,7 @@ function draw(){
   }
 
   // cameo sprites — background layer: everything gameplay draws on top of them
+  drawChatTables(); // coffee-chat tables + waiting funders
   for (const c of cameos) drawCameoSprite(c);
 
   // robotaxi — neutral rideable platform (sprites.js §4, s=1)
@@ -2208,10 +2385,12 @@ function drawHUD(){
   for (let i = 0; i < Math.max(maxHearts, 3); i++)
     px(52 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
   // zone + timer
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14); occlude(W/2 - 55, 6, 110, 14);
-  cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
-  const zn = zoneName(player.x);
-  cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
+  if (!chat){ // the chat header owns top-center while a coffee chat is up
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14); occlude(W/2 - 55, 6, 110, 14);
+    cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
+    const zn = zoneName(player.x);
+    cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
+  }
   cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14); occlude(W - 62, 6, 56, 14);
   cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 56, 16);
   // active powers
@@ -2224,7 +2403,7 @@ function drawHUD(){
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
   // first 6s of a run: controls strip along the bottom (playtest: powers went
   // unread; new players never learned X existed)
-  if (playMs < 6000){
+  if (playMs < 6000 && !chat){
     const ct = ('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies · grab a DECK, then tap to pitch'
                                           : '←→ move · SPACE jump · stomp enemies · grab a DECK, then X to pitch';
     cx.font = 'bold 7px monospace';
