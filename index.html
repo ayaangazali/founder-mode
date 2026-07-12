@@ -408,6 +408,7 @@ let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (back
 let hitstopT = 0, shakeT = 0, prevJump = false;
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
+let deathCause = 'burn', deathWord = 'SYNERGY'; // HUMOR PATCH: the obituary needs to know what got you
 let crates = [];   // v1.0: SDK crates dropped by THE PLATFORM — fall, land, become 8s platforms
 let deckCd = 0;    // PITCH DECK attack cooldown (frames; the attack only exists while p.deckT > 0)
 
@@ -514,7 +515,7 @@ function collidePlats(p){
   if (land(taxi.x, ROBOTAXI.top, ROBOTAXI.w)) p.onTaxi = true;       // rideable robotaxi roof
 }
 
-function hurtPlayer(){
+function hurtPlayer(cause, word){
   if (player.hurtT > 0 || player.ycT > 0) return;
   if (player.shield > 0){
     // GOOD PRESS: the bad take bounces off the news cycle instead of you
@@ -524,6 +525,8 @@ function hurtPlayer(){
     beep(700, .12, 'triangle', .08);
     return;
   }
+  if (cause) deathCause = cause;   // the last thing that hurt you writes the headline
+  if (word) deathWord = word;
   hearts--;
   sHurt();
   player.hurtT = 90;
@@ -624,6 +627,7 @@ function update(){
 
   // fell in a pit
   if (p.y > H + 30){
+    deathCause = 'pit';
     hearts--; sHurt();
     addPop(cam+220, 120, zoneName(p.x) === 'THE CLOUD' ? '-1 RUNWAY (the 0.01% downtime)' : '-1 RUNWAY (pivot failed)', '#ff5a5a');
     if (hearts <= 0){ endTime = playMs; state = ST.DEAD; showEndUI(false); return; }
@@ -649,7 +653,7 @@ function update(){
   if (p.burnT >= BURN_FRAMES){
     p.burnT = 0;
     addPop(p.x, p.y - 14, 'BURN RATE', '#ff5a5a');
-    hurtPlayer(); if (state !== ST.PLAY) return;
+    hurtPlayer('burn'); if (state !== ST.PLAY) return;
   }
   if (Math.abs(p.vx) > 0.5 && p.onGround && frame % 6 === 0) p.runFrame ^= 1;
 
@@ -753,7 +757,7 @@ function update(){
         addPop(e.x, e.y-8, msgs[e.t], '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
         if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
       }
-      else { hurtPlayer(); if (state !== ST.PLAY) return; }
+      else { hurtPlayer({g:'gremlin', m:'meeting', s:'scooter', t:'thought leader', c:'phantom'}[e.t]); if (state !== ST.PLAY) return; }
     }
   }
 
@@ -836,7 +840,7 @@ function update(){
           addPop(b.x - 44, b.y - 48, 'TIP: PRESS JUMP AGAIN TO STOMP', '#7ce0ff');
         }
         p.pogo = true; // disarm until the next jump press / ground touch
-      } else { hurtPlayer(); if (state !== ST.PLAY) return; }
+      } else { hurtPlayer(b.id === 'vc' ? 'VC terms' : b.id === 'platform' ? 'platform boss' : 'buzzword', 'SYNERGY'); if (state !== ST.PLAY) return; }
     }
   }
 
@@ -873,7 +877,11 @@ function update(){
           }
         }
       }
-    } else if (aabb(p, s)){ s.gone = true; hurtPlayer(); if (state !== ST.PLAY) return; }
+    } else if (aabb(p, s)){
+      s.gone = true;
+      hurtPlayer(s.t === 'sheet' ? 'VC terms' : s.t === 'thread' ? 'thought leader' : 'buzzword', s.label);
+      if (state !== ST.PLAY) return;
+    }
     if (s.y > H + 20 || s.x < cam - 40 || s.x > cam + W + 40) s.gone = true;
   }
   shots = shots.filter(s => !s.gone);
@@ -1745,6 +1753,122 @@ function makeBadge(won){
   return bc;
 }
 
+// ---- HUMOR PATCH item 1: THE OBITUARY — the HYPERGROWTH DAILY front page ----
+// Generated from run telemetry; every death writes a different article. This is
+// the loss screen's default share image (classic badge stays behind a toggle).
+const OBIT_HEADLINES = {
+  'meeting':        { h: 'LOCAL FOUNDER DIES IN MEETING THAT HAD NO AGENDA',   s: 'recurring invite had no end date, sources confirm' },
+  'pit':            { h: 'FOUNDER PIVOTS DIRECTLY INTO THE GROUND',            s: 'the gap in the market was literal' },
+  'burn':           { h: 'FOUNDER BURNS OUT WHILE STANDING COMPLETELY STILL',  s: 'runway consumed by ambient costs, thought leadership' },
+  'gremlin':        { h: 'CHURN FINALLY GETS HIM',                             s: "retention was 'a Q3 priority'" },
+  'scooter':        { h: 'FOUNDER STRUCK BY ANGEL INVESTOR ON SCOOTER',        s: "the angel was 'just circling back'" },
+  'thought leader': { h: "FOUNDER RATIO'D TO DEATH IN CEREBRAL VALLEY",        s: 'thread had 9 parts. victim read 4.' },
+  'phantom':        { h: 'COMPLIANCE PHANTOM CLAIMS ANOTHER STARTUP',          s: 'the regulation existed since 2019, apparently' },
+  'VC terms':       { h: 'FOUNDER BURIED UNDER TERM SHEET',                    s: "the liquidation preferences were 'non-standard'" },
+  'platform boss':  { h: 'DEVREL MECHA DEPRECATES LOCAL FOUNDER',              s: 'he built on the platform. the platform built on him.' },
+  'buzzword':       { h: null /* uses deathWord */,                            s: 'witnesses say it was travelling in a sine wave' },
+  'rug token':      { h: "FOUNDER'S PORTFOLIO 'DIVERSIFIED' INTO ZERO",        s: 'the token had a roadmap' },
+};
+const OBIT_BODY = [
+  (r, t) => `The founder, who raised ${r} over a ${t} career, was described by colleagues as "basically profitable." The company's product could not be reached for comment, as it did not exist.`,
+  () => 'Chad Capital, an early passer on the company, said: "I passed on them twice. Pattern recognition."',
+  () => 'SYNERGY.AI issued a statement: "WE WISH THEM WELL. THEIR USERS ARE NOW OUR TRAINING DATA."',
+  () => 'The memorial will be a LinkedIn post. In lieu of flowers, please like and repost.',
+  () => 'A source close to the cap table says the cap table was the problem.',
+];
+const OBIT_CAPTIONS = ['the founder, moments before checking metrics', 'file photo: hoodie, ambition', 'the deceased, pictured at peak conviction'];
+
+function obitHeadline(){
+  const cause = OBIT_HEADLINES[deathCause] ? deathCause : 'burn';
+  return cause === 'buzzword' ? `MAN KILLED BY THE WORD "${deathWord}"` : OBIT_HEADLINES[cause].h;
+}
+
+function makeObituary(){
+  const cause = OBIT_HEADLINES[deathCause] ? deathCause : 'burn';
+  const headline = obitHeadline();
+  const sub = OBIT_HEADLINES[cause].s;
+  const INK = '#16130c', FAINT = '#4a4438', GREEK = '#c9c0aa', PAPER = '#ece5d3';
+  const oc = document.createElement('canvas');
+  oc.width = 1200; oc.height = 630;
+  const b = oc.getContext('2d');
+  b.imageSmoothingEnabled = false;
+  b.fillStyle = PAPER; b.fillRect(0, 0, 1200, 630);
+  b.textAlign = 'left';
+
+  const wrap = (text, maxW) => { // word-wrap against the current font
+    const words = text.split(' '), lines = [];
+    let line = '';
+    for (const w of words){
+      const tryLine = line ? line + ' ' + w : w;
+      if (b.measureText(tryLine).width > maxW && line){ lines.push(line); line = w; }
+      else line = tryLine;
+    }
+    if (line) lines.push(line);
+    return lines;
+  };
+
+  // masthead
+  b.fillStyle = INK; b.fillRect(40, 16, 1120, 3);
+  b.font = 'bold 56px monospace'; b.textAlign = 'center';
+  b.fillText('HYPERGROWTH DAILY', 600, 70);
+  b.fillRect(40, 84, 1120, 1);
+  const DAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  b.font = 'bold 16px monospace'; b.textAlign = 'left'; b.fillStyle = FAINT;
+  b.fillText(`${DAYS[_today.getDay()]}, ${MONTHS[_today.getMonth()]} ${_today.getDate()}, ${_today.getFullYear()} · "all signal, no revenue" · $8/mo`, 48, 106);
+  b.textAlign = 'right';
+  b.fillText('MARKETS: ' + MARKET.s.slice(0, 42), 1152, 106, 520);
+  b.textAlign = 'left';
+  b.fillStyle = INK; b.fillRect(40, 116, 1120, 4);
+
+  // headline (shrink to fit) + subhead
+  let hs = 46;
+  b.font = `bold ${hs}px monospace`;
+  while (hs > 26 && b.measureText(headline).width > 1112){ hs -= 2; b.font = `bold ${hs}px monospace`; }
+  b.fillStyle = INK; b.fillText(headline, 44, 168);
+  b.font = 'bold 21px monospace'; b.fillStyle = FAINT;
+  b.fillText(sub, 46, 200, 1108);
+  b.fillStyle = INK; b.fillRect(40, 214, 1120, 1);
+
+  // two columns: 3 real lines each (seeded by the run), then greeked bars
+  const i1 = Math.floor(quoteRoll * OBIT_BODY.length) % OBIT_BODY.length;
+  const i2 = (i1 + 1 + Math.floor(quoteRoll * 3)) % OBIT_BODY.length === i1
+           ? (i1 + 1) % OBIT_BODY.length : (i1 + 1 + Math.floor(quoteRoll * 3)) % OBIT_BODY.length;
+  const rM = fmtMoney(raised), tM = fmtTime(endTime || playMs);
+  b.font = 'bold 17px monospace';
+  [[48, i1], [440, i2]].forEach(([cx2, bi]) => {
+    b.fillStyle = INK;
+    wrap(OBIT_BODY[bi](rM, tM), 356).slice(0, 3).forEach((ln, li) => b.fillText(ln, cx2, 246 + li * 25));
+    b.fillStyle = GREEK;
+    for (let g = 0; g < 6; g++) b.fillRect(cx2, 332 + g * 22, g % 3 === 2 ? 250 : 352, 12);
+  });
+
+  // the "photo": founder at 10x, tilted, framed, with caption
+  b.strokeStyle = INK; b.lineWidth = 3;
+  b.strokeRect(846, 232, 306, 262);
+  b.save();
+  b.beginPath(); b.rect(848, 234, 302, 258); b.clip();
+  b.translate(999, 355); b.rotate(-0.055);
+  drawFounder(b, -60, -85, 10, 1, 0, false);
+  b.restore();
+  b.font = 'bold 14px monospace'; b.fillStyle = FAINT; b.textAlign = 'center';
+  b.fillText(OBIT_CAPTIONS[Math.floor(quoteRoll * 3) % 3], 999, 514, 300);
+  b.textAlign = 'left';
+
+  // pull quote
+  b.fillStyle = INK; b.fillRect(48, 486, 8, 74);
+  b.font = 'bold 30px monospace';
+  b.fillText('"it was a market timing issue"', 72, 520, 720);
+  b.font = 'bold 16px monospace'; b.fillStyle = FAINT;
+  b.fillText('— you, on LinkedIn', 72, 550);
+
+  // bottom ticker
+  b.fillStyle = INK; b.fillRect(0, 592, 1200, 38);
+  b.fillStyle = PAPER; b.font = 'bold 19px monospace';
+  b.fillText(`RAISED ${rM} ▼ · RUNWAY 0.0 MONTHS ▼ · VIBES DELISTED · NEXT: YOUR RUN?`, 48, 617, 1104);
+  return oc;
+}
+
 function shareText(won){
   const t = fmtTime(endTime || playMs);
   const f = badgeFlairs(won);
@@ -1760,46 +1884,65 @@ function showEndUI(won){
   keys['r'] = false; touch.L = touch.R = touch.J = false;
   document.getElementById('touch').style.display = 'none';
 
-  const bc = makeBadge(won);
-  const url = bc.toDataURL('image/png');
   const isTouch = 'ontouchstart' in window;
-  const fname = won ? 'founder-mode-unicorn.png' : 'founder-mode-rip.png';
-
-  // pre-generate the badge blob so it's ready inside click handlers (required on iOS)
-  let badgeBlob = null, badgeFile = null, blobUrl = null;
-  bc.toBlob(blob => { if (blob){ badgeBlob = blob; badgeFile = new File([blob], fname, {type:'image/png'}); blobUrl = URL.createObjectURL(blob); } }, 'image/png');
+  // two share surfaces on a loss: the obituary front page (default) and the
+  // classic badge behind a toggle. One surface on a win: the badge.
+  const surfaces = {
+    badge: { c: makeBadge(won), fname: won ? 'founder-mode-unicorn.png' : 'founder-mode-rip.png',
+             text: shareText(won), save: won ? '⬇ SAVE BADGE' : '⬇ SAVE BADGE', blob: null, file: null, blobUrl: null, url: '' },
+  };
+  if (!won) surfaces.obit = { c: makeObituary(), fname: 'hypergrowth-daily-frontpage.png',
+    text: `I made the front page of Hypergrowth Daily: '${obitHeadline()}'. Play: ${GAME_URL}`,
+    save: '⬇ SAVE FRONT PAGE', blob: null, file: null, blobUrl: null, url: '' };
+  let cur = won ? 'badge' : 'obit';
+  for (const k in surfaces){
+    const s = surfaces[k];
+    s.url = s.c.toDataURL('image/png');
+    // pre-generate blobs so they're ready inside click handlers (required on iOS)
+    s.c.toBlob(blob => { if (blob){ s.blob = blob; s.file = new File([blob], s.fname, {type:'image/png'}); s.blobUrl = URL.createObjectURL(blob); } }, 'image/png');
+  }
   // feature-detect native file share (no UA sniffing) with a sync dummy file
   let canShareFiles = false;
   try { canShareFiles = !!(navigator.canShare && navigator.canShare({files:[new File([new Uint8Array(4)], 'b.png', {type:'image/png'})]})); } catch(err){}
 
-  const bShare = canShareFiles ? '<button id="bSh" class="alt">📤 SHARE BADGE</button>' : '';
-  const bSave  = '<button id="bDl">⬇ SAVE BADGE</button>';
+  const bShare = canShareFiles ? '<button id="bSh" class="alt">📤 SHARE</button>' : '';
+  const bSave  = `<button id="bDl">${surfaces[cur].save}</button>`;
   const bCopy  = '<button id="bCp" class="alt">📋 COPY LINKEDIN POST</button>';
   const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button>`;
-  // losers are the comedy's best distributors: PIVOT first, share buttons immediately second
-  const btns = won ? bShare + bSave + bCopy + bRetry : bRetry + bShare + bSave + bCopy;
+  const bTog   = won ? '' : '<button id="bTg" style="font-size:12px; padding:6px 10px">view classic badge</button>';
+  // losers are the comedy's best distributors: PIVOT first, share buttons
+  // immediately second (FINAL-REVIEW §2 amendment — outranks the spec's order)
+  const btns = won ? bShare + bSave + bCopy + bRetry : bRetry + bShare + bSave + bCopy + bTog;
 
   uicard.innerHTML = `
-    <img src="${url}" style="width:min(560px,86vw); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
+    <img id="endImg" src="${surfaces[cur].url}" style="width:min(560px,86vw); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
     ${isTouch ? '<div style="color:#8d99ae; font-weight:bold; font-size:12px; margin-top:4px">press &amp; hold the badge to save it. yes, really.</div>' : ''}
     <div style="margin-top:8px">${btns}</div>
     <div id="cpMsg" style="color:#7cffa5; font-weight:bold; min-height:20px; margin-top:4px"></div>
     ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:12px">or press R to run it back</div>'}`;
   ui.style.display = 'flex';
 
+  if (!won) document.getElementById('bTg').onclick = () => {
+    cur = cur === 'obit' ? 'badge' : 'obit';
+    document.getElementById('endImg').src = surfaces[cur].url;
+    document.getElementById('bDl').textContent = surfaces[cur].save;
+    document.getElementById('bTg').textContent = cur === 'obit' ? 'view classic badge' : 'view front page';
+  };
   if (canShareFiles) document.getElementById('bSh').onclick = () => {
-    const data = badgeFile && navigator.canShare({files:[badgeFile]})
-      ? {files:[badgeFile], text:shareText(won)} : {text:shareText(won)};
+    const s = surfaces[cur];
+    const data = s.file && navigator.canShare({files:[s.file]})
+      ? {files:[s.file], text:s.text} : {text:s.text};
     navigator.share(data).catch(()=>{});
   };
   document.getElementById('bDl').onclick = () => {
     const a = document.createElement('a');
-    a.href = blobUrl || url; a.download = fname;
+    a.href = surfaces[cur].blobUrl || surfaces[cur].url; a.download = surfaces[cur].fname;
     document.body.appendChild(a); a.click(); a.remove();
   };
   document.getElementById('bCp').onclick = () => {
     const msg = document.getElementById('cpMsg');
-    const text = shareText(won);
+    const text = surfaces[cur].text;
+    const badgeBlob = surfaces[cur].blob;
     const ok = () => msg.textContent = 'post copied ✓ — now SAVE BADGE and attach it';
     const manual = () => { // last resort: visible readonly textarea, still shippable
       msg.textContent = 'copy blocked — select all + copy manually:';

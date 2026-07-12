@@ -222,7 +222,8 @@ async function start(page){
     const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
     const msg = await page.evaluate(() => document.getElementById('cpMsg').textContent);
     check('COPY puts the post on the clipboard (ends with GAME_URL)',
-          clip.includes('FOUNDER MODE') && clip.trim().endsWith('https://founder-mode-kit.vercel.app'), msg);
+          (clip.includes('FOUNDER MODE') || clip.includes('Hypergrowth Daily')) // loss default = the obituary post
+          && clip.trim().endsWith('https://founder-mode-kit.vercel.app'), msg);
     check('no page errors (copy block)', errors.length === 0, errors.join(' | '));
     await ctx.close();
   }
