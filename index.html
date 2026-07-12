@@ -108,6 +108,22 @@ window.addEventListener('keydown', e => {
     if (k === 'c') cycleLook('s');
     else if (k === 'h') cycleLook('h');
     else if (k === 'v') cycleLook('v');
+    // item 10 eggs: type CORGI / SLOP on the title (sticky for the session)
+    if (k.length === 1 && k >= 'a' && k <= 'z'){
+      typed = (typed + k).slice(-5);
+      if (typed.endsWith('corgi')){ pendingCorgi = true; sPow(); }
+      if (typed.endsWith('slop')){ pendingSlop = true; sPow(); }
+    }
+  }
+  // the classic cheat-code sequence — tracked anywhere, never rendered in-game
+  if (!konamiDone){
+    const kk = e.key.toLowerCase();
+    konamiIdx = kk === KONAMI[konamiIdx] ? konamiIdx + 1 : (kk === KONAMI[0] ? 1 : 0);
+    if (konamiIdx >= KONAMI.length){
+      konamiDone = true; moodLock = true;        // the meter reads FOUNDER MODE, permanently
+      window.FOUNDER_LOOK = resolveLook();       // gray zip-up takes effect immediately
+      beep(660, .3, 'square', .08);
+    }
   }
   if (e.key.toLowerCase() === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
   if (e.key.toLowerCase() === 'r' && (state === ST.DEAD || state === ST.WIN)){
@@ -318,13 +334,18 @@ const powerDefs = [
 const signs = [
   {x:70,  l:['SOMA','← nothing  glory →']},
   {x:250, l:['$8 ARTISANAL','TOAST']},
+  {x:460, l:['DEFAULT ALIVE?','(survey pending)']},
   {x:640, l:['CHURN GREMLINS','stomp on sight']},
+  {x:830, l:['SAFE NOTES','money now,','math later']},
   {x:1040,l:['HIRING: 10X ENGINEER','pay: exposure','(to churn gremlins)']},
   {x:1500,l:['COWORKING','space available','(all of it)']},
+  {x:1770,l:['STEALTH STARTUP','9 employees, 4 years','"almost ready"']},
   {x:1930,l:['THE MISSION','beware: standing','meetings']},
   {x:2120,l:['CAFÉ SEMICOLON','laptops allowed','working discouraged']},
   {x:2720,l:['VALENCIA ST','4 coffee shops','0 profits']},
+  {x:2830,l:['COFFEE LINE: 25 MIN','all founders,','no meetings']},
   {x:3050,l:['PIVOT AHEAD','(the road,','and you)']},
+  {x:3600,l:['DOLORES PARK','3PM STANDUP','(blanket)']},
   // ---- CEREBRAL VALLEY (design/level-cerebral-valley.js CV_SIGNS) ----
   {x:3958,l:['CEREBRAL VALLEY','11 founders/house','1 GPU']},
   {x:4340,l:['DEMO DAY 5PM','pitch: 2 min','trauma: lifetime']}, // 4180 sat inside the thought leader's patrol — sign-readers got THREAD-bombed
@@ -343,6 +364,7 @@ const signs = [
   {x:7210,l:['THE CLOUD','99.99% uptime*']},
   {x:7380,l:['FOUNDERS ETC.','a fort.','actually a fort.']},
   {x:7490,l:['MIND THE GAPS',"(that's the 0.01%)"]},
+  {x:7940,l:['409A VALUATION:','vibes']},
   {x:8260,l:['FINAL BOSS','SYNERGY.AI','"basically AGI"']},
   {x:8400,l:['SYNERGY.AI CAMPUS','humans welcome','(as training data)']}
 ];
@@ -433,6 +455,12 @@ let room = { active: false, t: 0, px: 0, cans: [], done: false };
 // HUMOR PATCH item 9: THE VIBES CMO — pass her ring light once per run and YOU
 // become content for 1.5 seconds. Non-lethal. Deeply lethal.
 let cmoT = 0, cmoDone = false;
+// HUMOR PATCH item 10 eggs: title-typed codes (sticky for the session), the
+// classic cheat-code sequence (never rendered in-game), and café loyalty.
+let typed = '', pendingCorgi = false, pendingSlop = false, slopStyle = false;
+let cafeRegular = false, cafeStill = 0;          // session-scoped: once a regular, always a regular
+const KONAMI = ['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
+let konamiIdx = 0, konamiDone = false;
 
 function roomUpdate(){
   room.t--;
@@ -524,12 +552,16 @@ function reset(fromCheckpoint){
         dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'CHAD CAPITAL',
         quips:["WHAT'S YOUR MOAT?","COME BACK AT $1M ARR","A FEATURE, NOT A COMPANY.","LOVE IT. PASSING.","MY VEST IS LOAD-BEARING","I NEED 10X, KID",
                // v0.2 additions (MASTER-PLAN §1.4) + the fund-district tie-in (BIBLE §8)
-               "SEND ME A DECK","WHO ELSE IS IN?","MY LPs ARE NERVOUS","IS THERE AI IN THIS?","I'M ALSO IN A17Z'S NEW FUND"] },
+               "SEND ME A DECK","WHO ELSE IS IN?","MY LPs ARE NERVOUS","IS THERE AI IN THIS?","I'M ALSO IN A17Z'S NEW FUND",
+               // HUMOR PATCH item 10: the ball-knowledge layer
+               "WHAT'S YOUR CAC TO LTV?","IS THIS VENTURE SCALE?","I ONLY DO PRE-SEED NOW","MY ANALYST LOVED IT. I DIDN'T ASK MY ANALYST."] },
       { id:'ai', x:8780, y:GROUND_Y-44, w:32, h:44, hp:5, maxhp:5, trigger:8460, wall:9040, active:false, dead:false,
         dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'SYNERGY.AI',
         quips:["I AM AGENTIC.","YOUR STARTUP IS A PROMPT","DEPLOYING SYNERGY...","I RAISED $2B ON A DECK","HUMANS ARE LEGACY CODE",
                // v0.2 additions (MASTER-PLAN §1.4)
-               "I AM AI-NATIVE. YOU ARE AI-NAIVE.","YOUR MOAT IS MY FEATURE","GENERATING SLOP...","I PIVOTED 14 TIMES TODAY","THIS CONVERSATION IS TRAINING DATA"] }
+               "I AM AI-NATIVE. YOU ARE AI-NAIVE.","YOUR MOAT IS MY FEATURE","GENERATING SLOP...","I PIVOTED 14 TIMES TODAY","THIS CONVERSATION IS TRAINING DATA",
+               // HUMOR PATCH item 10: the ball-knowledge layer
+               "I HAVE 40 IDENTICAL COMPETITORS","MY CONTEXT WINDOW REMEMBERS EVERYTHING","YOU WILL BE A CASE STUDY"] }
     ];
     bosses.forEach(b => { b.x0 = b.x; b.y0 = b.y; });
     crates = [];                                            // SDK crates (Platform boss)
@@ -550,6 +582,11 @@ function reset(fromCheckpoint){
     slops = []; slopN = 0;
     room = { active: false, t: 0, px: 0, cans: [], done: false };
     cmoT = 0; cmoDone = false;
+    slopStyle = pendingSlop;                          // egg: cosmetic chaos, same hitboxes
+    if (pendingCorgi){                                // egg: the corgi is already at your desk
+      corgi.x = 34; corgi.following = true; corgi.followT = 1800;
+      moodTier = 3; moodChangedAt = 0;                // run starts with morale high
+    }
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
     hearts = 3; player.hurtT = 120;
@@ -1003,6 +1040,16 @@ function update(){
   }
   shots = shots.filter(s => !s.gone);
 
+  // -------- HUMOR PATCH item 10 egg: café loyalty (idle 10s at the corgi café) --------
+  if (!cafeRegular){
+    if (Math.abs(p.x - 2596) < 44 && p.onGround && Math.abs(p.vx) < 0.3){
+      if (++cafeStill >= 600){
+        cafeRegular = true;                            // +nothing, forever
+        addPop(p.x - 20, p.y - 20, 'you are now a regular', '#d9748f');
+      }
+    } else cafeStill = 0;
+  }
+
   // -------- HUMOR PATCH item 9: the vibes CMO catches you in frame --------
   if (cmoT > 0) cmoT--;
   if (!cmoDone && Math.abs(p.x - 2506) < 30){
@@ -1144,7 +1191,10 @@ try {
 
 // resolved colors consumed by every draw site (incl. makeBadge & sprites.js)
 function resolveLook(){
-  const S = SKINS[look.s], V = HOODIES[look.v];
+  const S = SKINS[look.s];
+  // Konami egg: the gray zip-up. Founder mode is a state of mind and one garment.
+  const V = (typeof konamiDone !== 'undefined' && konamiDone)
+    ? { main:'#6e7787', pocket:'#5a6272' } : HOODIES[look.v];
   return { skin:S.skin, hair:S.hair, hairDk:S.hairDk,
            hood:V.main, pocket:V.pocket, hairStyle:look.h };
 }
@@ -1202,7 +1252,11 @@ function drawFounder(ctx2, x, y, s, face, runF, yc, lk){
 }
 
 function drawEnemy(e){
-  const x = e.x - cam, y = e.y;
+  // item 10 egg: SLOP mode — every enemy drawn slightly wrong (jitter + fade);
+  // hitboxes untouched, chaos purely cosmetic
+  const slopJit = slopStyle ? Math.round(Math.sin((frame + e.x) * 0.6)) : 0;
+  if (slopStyle) cx.globalAlpha = 0.82;
+  const x = e.x - cam + slopJit, y = e.y;
   if (e.t === 'g'){ // churn gremlin
     px(x, y+3, 14, 11, '#d64550');
     px(x+2, y, 3, 4, '#d64550'); px(x+9, y, 3, 4, '#d64550'); // ears
@@ -1247,6 +1301,7 @@ function drawEnemy(e){
     px(x, y+11, 16, 1, '#aaa');            // deck
     px(x+1, y+12, 2, 2, '#eee'); px(x+13, y+12, 2, 2, '#eee'); // wheels
   }
+  if (slopStyle) cx.globalAlpha = 1;
 }
 
 function drawBoss(b){
@@ -2138,6 +2193,17 @@ function drawTitle(){
   px(0, GROUND_Y, W, 5, '#8a8f9e'); px(0, GROUND_Y + 5, W, H - GROUND_Y, '#33323f');
   // s=3 live preview — walks in place, re-renders the chosen look every frame (it IS the preview)
   drawFounder(cx, 56, GROUND_Y - 48, 3, 1, frame % 24 < 12 ? 1 : 0, false);
+  if (pendingCorgi){ // item 10 egg feedback: the corgi is already waiting at the title desk
+    const cy = GROUND_Y - 8;
+    px(104, cy, 8, 5, '#e8a04c'); px(110, cy - 2, 4, 4, '#e8a04c');
+    px(112, cy - 1, 1, 1, '#111'); px(110, cy - 3, 1, 2, '#c77f33'); px(112, cy - 3, 1, 2, '#c77f33');
+    px(103, cy + (frame % 10 < 5 ? 0 : 1), 1, 2, '#e8a04c');
+    px(105, cy + 5, 1, 3, '#c77f33'); px(110, cy + 5, 1, 3, '#c77f33');
+  }
+  if (pendingSlop){
+    cx.fillStyle = '#8fd18f'; cx.font = 'bold 6px monospace';
+    cx.fillText('slop mode queued', 12, 250);
+  }
   // EGG: THE REVERSE PITCH — ignore the founder for 60s and they pitch YOU, deck loops
   // from slide one (a founder circling back and re-pitching IS the joke). textAlign is
   // still 'left' here (required: measureText + left-anchored fillText, boss-bubble style).
