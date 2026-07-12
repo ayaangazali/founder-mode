@@ -1359,7 +1359,9 @@ function update(){
     if (bellPhase === 0){
       bellPhase = 1;
       shakeT = 2; sHurt();
-      addPop(9020, GROUND_Y - 64, "INFRA WASN'T READY TO SCALE", '#ff5a5a');
+      addPop(9020, GROUND_Y - 64, "INFRA WASN'T READY TO SCALE", '#ff5a5a', 150);
+      // playtest: owner stood at the bell mashing — the joke needs a stage direction
+      addPop(9020, GROUND_Y - 52, '(walk it off — the rig reboots behind you)', '#8d99ae', 150);
       moodDown(); // of course it's so over. you're AT the bell.
     } else if (bellPhase === 2){
       bellDone = true;
