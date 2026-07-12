@@ -60,9 +60,12 @@ if (/^https?:$/.test(location.protocol)){
          display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
          font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
   #rot span { color:#8d99ae; font-size:11px; display:block; margin-top:4px; }
-  #credit { position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:14px; z-index:6;
-            font:bold 13px "Courier New",monospace; color:#8d99ae; display:none; }
-  #credit a { color:#7ce0ff; text-decoration:underline; }
+  #credit { position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); right:16px; z-index:6;
+            font:bold 17px "Courier New",monospace; color:#cfd6e4; display:none;
+            background:rgba(8,8,20,.85); border:3px solid #ffd94a; padding:8px 14px;
+            box-shadow:0 4px 0 #8a6d00; }
+  #credit a { color:#ffd94a; text-decoration:underline; }
+  #credit a:hover { color:#fff; background:#ffd94a22; }
 </style>
 </head>
 <body>
