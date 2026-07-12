@@ -10,7 +10,7 @@
 //   create table founder_scores (
 //     id bigint generated always as identity primary key,
 //     created_at timestamptz default now(),
-//     name text not null check (char_length(name) <= 3),
+//     name text not null check (char_length(name) <= 14),
 //     val int not null, raised int not null, time_ms int not null,
 //     won boolean not null, seed int not null
 //   );
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       let raw = ''; for await (const c of req) raw += c;
       try { body = JSON.parse(raw); } catch { body = {}; }
     }
-    const name = (String(body.name || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)) || 'YOU';
+    const name = (String(body.name || '').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14)) || 'YOU';
     const val = body.val | 0, raised = body.raised | 0, timeMs = body.timeMs | 0;
     const won = !!body.won, seed = body.seed | 0;
     // plausibility gate — max multiple is 2.0 speed x 1.75 discipline x 1.1 corgi

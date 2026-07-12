@@ -3172,8 +3172,8 @@ function showEndUI(won){
   // leaderboard row — only when served over http(s); file:// keeps local bests
   const lbHtml = LB_ON ? `
     <div style="margin-top:6px">
-      <input id="lbName" maxlength="3" placeholder="AAA" value="${(() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })()}"
-        style="width:56px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 4px; text-align:center; border:3px solid #1a1a2e">
+      <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${(() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })()}"
+        style="width:170px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
       <button id="lbGo" class="alt">🏆 POST VALUATION</button>
     </div>
     <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:12px; margin-top:4px; line-height:1.5"></div>` : '';
@@ -3198,7 +3198,7 @@ function showEndUI(won){
     nameEl.onkeydown = e => e.stopPropagation();      // typing initials must not steer the game
     document.getElementById('lbGo').onclick = () => {
       if (lbSent) return;
-      const nm = (nameEl.value || 'YOU').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'YOU';
+      const nm = (nameEl.value || 'YOU').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14) || 'YOU';
       try { localStorage.setItem('fm_name', nm); } catch(e){}
       lbSent = true;
       const btn = document.getElementById('lbGo');
