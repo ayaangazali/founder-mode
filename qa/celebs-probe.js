@@ -18,7 +18,8 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
   const gate = await p.evaluate(() => {
     const src = makeBadge.toString() + makeObituary.toString() + shareText.toString()
               + JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join('');
-    return /teal|barry gan|tusk|waltman/i.test(src);
+    // incl. the IS CODE DEAD panel cast (pol gram / xandr wing / dareo)
+    return /teal|barry gan|tusk|waltman|pol gram|xandr wing|dareo/i.test(src);
   });
   check('GREP GATE: no celeb names in makeBadge/makeObituary/shareText', gate === false);
   const flagged = await p.evaluate(() => typeof RISKY_CAMEOS === 'boolean' && RISKY_CAMEOS === true);
