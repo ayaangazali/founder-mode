@@ -32,9 +32,9 @@ const MAX_RECOVERIES = CASUAL ? 12 : 6; // solid undersides removed the bot's ho
                                        // (§2.1 budgeted 2 deaths across 4 zones; 5 denser zones earn 6)
 // tourist behavior stops (casual mode): sign posts get read, coin platforms get
 // attempted. Pauses stay ≤3s — always under the 4s minimum burn-rate tick.
-const SIGN_STOPS = [70, 250, 640, 1040, 1500, 1930, 2120, 2720, 3050, 3958, 4340,
-                    4450, 4640, 5062, 5270, 5690, 5880, 6000, 6180, 6350, 7032,
-                    7210, 7380, 7490, 8260, 8400];
+// trimmed to the post-cull sign set (owner: signs read as text noise; 31 → 15)
+const SIGN_STOPS = [70, 250, 640, 1930, 3958, 4450, 5270, 5690, 6180, 6350,
+                    7210, 7490, 8400];
 const COIN_DETOURS = [420, 1060, 2170, 2550, 3260, 4164, 4680, 5114, 5928, 7460, 7750];
 // city platforms with solid undersides (x, y, w) — jumping beneath one bonks,
 // so the bot never hops with a block overhead (clouds >7160 excluded; the
