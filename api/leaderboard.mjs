@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   if (!SB || !KEY) return res.status(200).json({ ok: false, reason: 'leaderboard not configured yet' });
 
   if (req.method === 'GET') {
-    const { searchParams } = new URL(req.url, 'https://founder-mode-kit.vercel.app');
+    const { searchParams } = new URL(req.url, 'https://foundermode.vercel.app');
     const seed = parseInt(searchParams.get('seed') || '0', 10) | 0;
     const q = `${SB}/rest/v1/founder_scores?seed=eq.${seed}` +
               `&order=val.desc,time_ms.asc&limit=10&select=name,val,raised,time_ms,won`;

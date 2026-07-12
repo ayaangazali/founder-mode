@@ -7,7 +7,7 @@ import { ImageResponse } from '@vercel/og';
 const el = (type, style, children) => ({ type, props: { style, children } });
 
 export default async function handler(req, res) {
-  const { searchParams } = new URL(req.url, 'https://founder-mode-kit.vercel.app');
+  const { searchParams } = new URL(req.url, 'https://foundermode.vercel.app');
   const raised = searchParams.get('raised') ?? '0';
   const time = searchParams.get('time') ?? '??:??';
   const won = searchParams.get('won') === '1';
