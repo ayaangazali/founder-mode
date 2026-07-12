@@ -60,6 +60,9 @@ if (/^https?:$/.test(location.protocol)){
          display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
          font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
   #rot span { color:#8d99ae; font-size:11px; display:block; margin-top:4px; }
+  #credit { position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:14px; z-index:6;
+            font:bold 13px "Courier New",monospace; color:#8d99ae; display:none; }
+  #credit a { color:#7ce0ff; text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -67,6 +70,7 @@ if (/^https?:$/.test(location.protocol)){
 <div id="ui"><div class="card" id="uicard"></div></div>
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">⏸</div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
+<div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener">ayaan gazali</a></div>
 <script>
 "use strict";
 /* ============================================================
@@ -2748,6 +2752,7 @@ function drawHUD(){
 }
 
 function drawTitle(){
+  document.getElementById('credit').style.display = 'block'; // title-only chrome
   // ground strip
   px(0, GROUND_Y, W, 5, '#8a8f9e'); px(0, GROUND_Y + 5, W, H - GROUND_Y, '#33323f');
   // s=3 live preview — walks in place, re-renders the chosen look every frame (it IS the preview)
@@ -2802,11 +2807,8 @@ function drawTitle(){
   } }
   cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
   cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 132);
-  // daily market conditions ticker (ROADMAP §7) — same run for everyone today
-  cx.fillStyle = '#ffd94a'; cx.font = 'bold 7px monospace';
-  cx.fillText(MARKET.s, W/2, 147);
-  cx.fillStyle = '#8d99ae'; cx.font = 'bold 6px monospace';
-  cx.fillText('daily seed #' + SEED_N, W/2, 156);
+  // (owner call: market-conditions ticker + seed number dropped from the title —
+  //  the daily seed system itself is untouched; MARKET.s still feeds the obituary)
   // CTA: alpha pulse, never fully gone (a blink leaves screenshots CTA-less 1/3 of the time)
   cx.globalAlpha = 0.65 + 0.35 * Math.sin(frame * 0.1);
   cx.fillStyle = '#7cffa5'; cx.font = 'bold 12px monospace';
@@ -3220,6 +3222,7 @@ const STEP = 1000 / 60;
 let last = 0, acc = 0;
 function stepGame(){
   if (state === ST.TITLE && (JUMP()) && frame > 30){
+    document.getElementById('credit').style.display = 'none';
     reset(false); state = ST.PLAY;
   }
   if (hitstopT > 0){ hitstopT--; return; } // hurt hitstop: freeze sim, keep drawing
