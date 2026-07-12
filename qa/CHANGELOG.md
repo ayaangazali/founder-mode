@@ -404,3 +404,33 @@ GitHub (private).
   verdict; the bot cannot time hopping meetings under the now-solid crates the way a
   sighted human does). Human playtest should rule on CV difficulty; levers-table knobs
   (enemy density) are the sanctioned response if it feels brutal.
+
+## 2026-07-12 — [FUN PATCH: minigames + valuation + leaderboard] (owner playtest verdict on humor-patch: "like it, expand it")
+
+- CRISP TEXT OVERLAY: second canvas at devicePixelRatio stacked over the 480×270 game
+  canvas; every cx.fillText mirrors there at native resolution (layout math stays in
+  game units; maxWidth pins runs to the measured width). Backing boxes punch out the
+  overlay beneath them (occlude()) to keep draw-order occlusion. Sprites stay chunky.
+  This answers the third legibility complaint; 8px-at-2x was the single-canvas ceiling.
+- POWER-UP CLARITY: pickup popups hold 2.5s and say the effect in plain words; the
+  PITCHING HUD line names the fire key; first 6s of a run show a bottom controls strip.
+- VALUATION: end-of-run score = RAISED × growth story (speed) × capital discipline
+  (runway) × chief morale officer (corgi); loss = ×0.5 down round. Breakdown card under
+  the badge, number in share texts. This is the leaderboard metric.
+- MINI-GAME, COFFEE CHAT: three funder archetypes at sidewalk tables (x1150/5100/6480),
+  press C (touch: stand still); 3 timed A/B questions; right answer = the archetype's
+  bias. 3/3 their check, 2/3 small check, else deadpan pass. World pauses; pays once/run.
+- MINI-GAME, THE ACCELERATOR INTERVIEW: door at x900; seven questions, ten seconds
+  TOTAL; the short answer is always right. 5/7 = DEMO DAY LETTER (8s invincible +$150K).
+- GAG BATCH (deferred CLIP-REPORT items): run-club wave sweeps Dolores every 45s and
+  laps the laggard; tokenmaxxer in THE CLOUD flips WAGMI→NGMI the frame you get hit;
+  PAD 39-B sign (departures hourly, arrivals every 10th — the real rocket mechanic).
+- LEADERBOARD: api/leaderboard.mjs (Supabase REST, env-gated, plausibility checks);
+  client posts {initials, valuation} per daily seed, renders today's top-5 on the end
+  card, "today's top exit — beat it" on the title. file:// falls back to localStorage
+  best. Game remains one file. NOT LIVE until SUPABASE_URL/SUPABASE_SERVICE_KEY are set
+  in Vercel and the founder_scores table exists (SQL in the endpoint header comment).
+- QA: moments-probe scans both canvases (glyphs live on the overlay now); end-badge
+  height capped so the taller card fits 667×375; fullrun bot checked against a
+  pre-session baseline worktree — both hover at the 6-death budget on today's DOWN
+  ROUND SEASON seed; no session regression. All probe suites + test trio green.
