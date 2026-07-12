@@ -518,7 +518,6 @@ let hitstopT = 0, shakeT = 0, prevJump = false;
 let paused = false; // ESC / the ⏸ touch button — sim + playMs freeze, draw keeps running
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
-let bellPhase = 0;      // HUMOR PATCH item 3: 0 untouched · 1 rope snapped · 2 re-armed (mash to ring)
 let bellRing = null;    // ringing ceremony: {meter, done, celeT} — mash R (touch: A) to fill, then confetti
 let ringHeld = false;   // edge detector for the mash
 let barrySawIt = false, barryShownT = 0; // item 4: Barry watched you die near him
@@ -811,7 +810,6 @@ function reset(fromCheckpoint){
     checkpoint = 20; bellDone = false;
     playMs = 0; endTime = 0;
     quoteRoll = Math.random();
-    bellPhase = 0; // the rope gets to snap again next run
     bellRing = null; ringHeld = false;
     barrySawIt = false; barryShownT = 0; witnessStill = 0; witnessed = false;
     meetlyT = 0; actionItems = null;
@@ -1403,27 +1401,12 @@ function update(){
   popups = popups.filter(q => q.t > 0);
 
   // -------- IPO bell (win) --------
-  // HUMOR PATCH item 3: the first pull SNAPS THE ROPE. Walk it off (back past
-  // x=9060), come back, pull again — that one works. Every winner gets exactly
-  // one beat of pure panic. bellPhase: 0 untouched · 1 snapped · 2 re-armed.
+  // Owner cut the rope-snap joke (v2 of humor item 3): reach the bell and the
+  // ceremony arms immediately — no fake-out, straight to earning the swing.
   const finalBoss = bosses[2];
-  if (state === ST.PLAY && finalBoss.dead && !bellDone && p.x > 9100){
-    if (bellPhase === 0){
-      bellPhase = 1;
-      shakeT = 2; sHurt();
-      addPop(9020, GROUND_Y - 64, "INFRA WASN'T READY TO SCALE", '#ff5a5a', 150);
-      // playtest: owner stood at the bell mashing — the joke needs a stage direction
-      addPop(9020, GROUND_Y - 52, '(walk it off — the rig reboots behind you)', '#8d99ae', 150);
-      moodDown(); // of course it's so over. you're AT the bell.
-    } else if (bellPhase === 2 && !bellRing){
-      // the ceremony arms: you don't tap an IPO bell, you EARN the swing
-      bellRing = { meter: 0, done: false, celeT: 0 };
-      addPop(9040, GROUND_Y - 70, ('ontouchstart' in window) ? 'MASH A — RING THE BELL' : 'MASH R — RING THE BELL', '#ffd94a', 200);
-    }
-  }
-  if (bellPhase === 1 && p.x < 9060){
-    bellPhase = 2;
-    addPop(p.x, p.y - 20, 'ROPE RE-RIGGED. TRY AGAIN.', '#7cffa5');
+  if (state === ST.PLAY && finalBoss.dead && !bellDone && !bellRing && p.x > 9100){
+    bellRing = { meter: 0, done: false, celeT: 0 };
+    addPop(9040, GROUND_Y - 70, ('ontouchstart' in window) ? 'MASH A — RING THE BELL' : 'MASH R — RING THE BELL', '#ffd94a', 200);
   }
   // the ringing ceremony — every press yanks the rope; the meter decays, the
   // bell only gives when you mean it. Then: chime + confetti + the badge.
@@ -2026,12 +2009,36 @@ function drawBG(){
   // cam>9435 with cam now clamped at 8720: unreachable dead code again. 7700 keeps
   // the bridge sweeping across the finale, red against the void.)
   const ggx = 7700 - cam * 0.85;
-  if (ggx > -300 && ggx < W + 100){
-    cx.fillStyle = '#c0402a';
-    cx.fillRect(ggx, 70, 10, 170); cx.fillRect(ggx - 6, 88, 22, 6); cx.fillRect(ggx - 6, 130, 22, 6);
-    cx.fillRect(ggx + 150, 70, 10, 170); cx.fillRect(ggx + 144, 88, 22, 6); cx.fillRect(ggx + 144, 130, 22, 6);
-    cx.strokeStyle = '#c0402a'; cx.lineWidth = 2;
-    cx.beginPath(); cx.moveTo(ggx - 80, 120); cx.quadraticCurveTo(ggx + 80, 190, ggx + 155, 74); cx.stroke();
+  if (ggx > -320 && ggx < W + 320){
+    // v2 (owner: "the bridge needs to be CLEAR"): full structure in bright
+    // international orange — deck, twin towers with three crossbeams, sagging
+    // main cables with suspenders. Still background; still no hitboxes.
+    const ORANGE = '#f04e23', DARK = '#b03318';
+    const deckY = 196, topY = 58;
+    // road deck
+    cx.fillStyle = DARK;  cx.fillRect(ggx - 170, deckY + 4, 500, 3);
+    cx.fillStyle = ORANGE; cx.fillRect(ggx - 170, deckY, 500, 4);
+    // towers (above and below deck) with crossbeams
+    for (const tx of [ggx, ggx + 150]){
+      cx.fillStyle = ORANGE;
+      cx.fillRect(tx, topY, 5, 178); cx.fillRect(tx + 9, topY, 5, 178);
+      for (const by of [topY + 14, topY + 52, topY + 96]) cx.fillRect(tx - 2, by, 18, 5);
+      cx.fillStyle = DARK; cx.fillRect(tx + 5, topY, 4, 178);   // inner shade
+    }
+    // main cables: approach — sag — approach, then suspenders down to the deck
+    const cy = (x0, y0, cxm, cym, x1, y1) => { // one quadratic run + its suspenders
+      cx.strokeStyle = ORANGE; cx.lineWidth = 2;
+      cx.beginPath(); cx.moveTo(x0, y0); cx.quadraticCurveTo(cxm, cym, x1, y1); cx.stroke();
+      cx.lineWidth = 1; cx.strokeStyle = DARK;
+      for (let t = 0.15; t < 0.95; t += 0.16){
+        const qx = (1-t)*(1-t)*x0 + 2*(1-t)*t*cxm + t*t*x1;
+        const qy = (1-t)*(1-t)*y0 + 2*(1-t)*t*cym + t*t*y1;
+        if (qy < deckY - 2){ cx.beginPath(); cx.moveTo(qx, qy); cx.lineTo(qx, deckY); cx.stroke(); }
+      }
+    };
+    cy(ggx - 170, deckY, ggx - 80, deckY - 30, ggx + 7, topY);            // left approach
+    cy(ggx + 7, topY, ggx + 82, deckY - 26, ggx + 157, topY);             // the sag
+    cy(ggx + 157, topY, ggx + 250, deckY - 30, ggx + 330, deckY);         // right approach
   }
 }
 

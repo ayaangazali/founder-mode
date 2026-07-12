@@ -133,10 +133,9 @@ const lipDist = x => {                      // distance from player x to the cur
     if (s.x < prevX - 150) pitSetbacks++;                       // checkpoint snap-back = pit fall
     prevX = s.x;
 
-    // ringing ceremony: once re-armed (bellPhase 2), park at the bell and mash
-    // R until the meter fills, then let the confetti beat play out
-    if (s.bosses.every(b => b.dead) && !s.bellDone && s.x > 9050 &&
-        (await page.evaluate(() => bellPhase)) === 2){
+    // ringing ceremony: park at the bell and mash R until the meter fills,
+    // then let the confetti beat play out
+    if (s.bosses.every(b => b.dead) && !s.bellDone && s.x > 9080){
       await setRight(false);
       for (let m = 0; m < 24; m++){
         await page.keyboard.down('r'); await page.waitForTimeout(60);
@@ -146,22 +145,6 @@ const lipDist = x => {                      // distance from player x to the cur
       await page.waitForTimeout(2600);
       continue;
     }
-
-    // bell-rope snap (humor patch): first pull fails; walk back past 9060 and
-    // pull again — exactly what a panicking human does
-    if (s.bosses.every(b => b.dead) && !s.bellDone && s.x > 9050){
-      await setRight(false);
-      await page.keyboard.down('ArrowLeft');
-      for (let w = 0; w < 30; w++){           // walk back BY SENSOR (edge-clamp makes timing lie)
-        await page.waitForTimeout(120);
-        if (await page.evaluate(() => player.x) < 9035) break;
-      }
-      await page.keyboard.up('ArrowLeft');
-      await setRight(true);
-      await page.waitForTimeout(900);
-      continue;
-    }
-
     if (!zonesShot.has(s.zone) && s.og){
       zonesShot.add(s.zone);
       await snap(page, `${TAG}-zone-${s.zone.toLowerCase().replace(/ /g, '')}.png`);

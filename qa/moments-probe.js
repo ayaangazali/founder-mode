@@ -18,15 +18,9 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
     await p.waitForTimeout(300);
     await p.evaluate(() => { bosses.forEach(bb => { bb.dead = true; }); player.x = 9080; player.y = 180; cam = 8720; });
     await p.keyboard.down('ArrowRight'); await p.waitForTimeout(1200); await p.keyboard.up('ArrowRight');
-    const snap = await p.evaluate(() => ({ phase: bellPhase, state, bellDone }));
-    check('first pull snaps the rope (no win)', snap.phase === 1 && snap.state === 1 && !snap.bellDone, JSON.stringify(snap));
-    await p.screenshot({ path: path.resolve(__dirname, 'overnight', 'moment-ropesnap.png') });
-    await p.keyboard.down('ArrowLeft'); await p.waitForTimeout(2000); await p.keyboard.up('ArrowLeft');
-    const rearmed = await p.evaluate(() => bellPhase);
-    check('retreat past 9060 re-rigs the rope', rearmed === 2);
-    await p.keyboard.down('ArrowRight'); await p.waitForTimeout(1500); await p.keyboard.up('ArrowRight');
-    const armed = await p.evaluate(() => !!bellRing);
-    check('second approach arms the ringing ceremony', armed);
+    const armed = await p.evaluate(() => ({ armed: !!bellRing, state, bellDone }));
+    check('reaching the bell arms the ringing ceremony (no instant win)', armed.armed && armed.state === 1 && !armed.bellDone, JSON.stringify(armed));
+    await p.screenshot({ path: path.resolve(__dirname, 'overnight', 'moment-bellceremony.png') });
     for (let i = 0; i < 12; i++){ await p.keyboard.down('r'); await p.waitForTimeout(60); await p.keyboard.up('r'); await p.waitForTimeout(70); }
     await p.waitForTimeout(2400);
     const win = await p.evaluate(() => ({ state, bellDone }));

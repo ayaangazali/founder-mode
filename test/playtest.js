@@ -56,14 +56,10 @@ const { chromium } = require('playwright');
 
   await page.keyboard.up('ArrowRight');
   await page.evaluate(() => { player.x = 9080; player.y = 180; });
-  // HUMOR PATCH: the first bell pull snaps the rope — walk back past 9060 to
-  // re-rig, then pull again
+  // walk to the bell — the ceremony arms on arrival; mash R, confetti plays out
   await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1200); await page.keyboard.up('ArrowRight');
-  const snap = await page.evaluate(() => ({ bellPhase, state }));
-  console.log('rope snap:', JSON.stringify(snap));
-  await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(2000); await page.keyboard.up('ArrowLeft');
-  await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowRight');
-  // ceremony: mash R to fill the ring meter, then the confetti beat plays out
+  const armed = await page.evaluate(() => ({ armed: !!bellRing, state }));
+  console.log('ceremony armed:', JSON.stringify(armed));
   for (let i = 0; i < 12; i++){ await page.keyboard.down('r'); await page.waitForTimeout(60); await page.keyboard.up('r'); await page.waitForTimeout(70); }
   await page.waitForTimeout(2400);
   const s5 = await page.evaluate(() => ({ state, bellDone, raised }));
