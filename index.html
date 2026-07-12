@@ -372,6 +372,7 @@ const signs = [
   {x:2720,l:['VALENCIA ST','4 coffee shops','0 profits']},
   {x:2830,l:['COFFEE LINE: 25 MIN','all founders,','no meetings']},
   {x:3050,l:['PIVOT AHEAD','(the road,','and you)']},
+  {x:3240,l:['PAD 39-B','departures: hourly','(arrivals: every 10th)']},
   {x:3600,l:['DOLORES PARK','3PM STANDUP','(blanket)']},
   // ---- CEREBRAL VALLEY (design/level-cerebral-valley.js CV_SIGNS) ----
   {x:3958,l:['CEREBRAL VALLEY','11 founders/house','1 GPU']},
@@ -541,6 +542,7 @@ const ACC_QS = [
 ];
 let interview = null; // {qi, t, score, held, phase, flash}
 let accDone = false;
+let wave = null;      // the run club: {x} sweeping Dolores left-to-right every ~45s
 
 function interviewStart(){
   interview = { qi: 0, t: 600, score: 0, held: true, phase: 'q', flash: 0 };
@@ -1309,6 +1311,10 @@ function update(){
     if (aabb(p, ai2)) p.x += (p.x < ai2.x ? -0.8 : 0.8);      // blocks like a board member; never hurts
     if (--ai2.t <= 0) actionItems = null;                     // statute of limitations
   }
+
+  // -------- run-club wave (cosmetic; spawns on the playMs clock) --------
+  if (!wave && playMs % 45000 < 17 && playMs > 1000) wave = { x: 3040 };
+  if (wave){ wave.x += 2.4; if (wave.x > 3980) wave = null; }
 
   // -------- SDK crates (Platform boss) — fall, land, platform for 8s, deprecate --------
   for (const c of crates){
@@ -2093,6 +2099,46 @@ function draw(){
       px(x + 6, y + 16, 3, 1, '#fff'); px(x + 10, y + 16, 3, 1, '#fff');
     }
   }
+  // the run club itself — a pack of four in matching merch, 5:45 pace, sweeps
+  // Dolores every ~45s and laps the laggard. pure background; touches nothing.
+  if (wave){
+    for (let i = 0; i < 4; i++){
+      const rx = wave.x - i * 24 - cam;
+      if (rx < -30 || rx > W + 30) continue;
+      const y = GROUND_Y - 15, step = (frame >> 2 + i) % 2;
+      px(rx + 3, y, 6, 2, '#39c46d');                            // club cap
+      px(rx + 3, y + 2, 6, 4, ['#e8c39a','#b5825a','#f2c9a0','#8a5a3a'][i]);
+      px(rx + 2, y + 6, 8, 5, '#39c46d');                        // club tee
+      if (step){ px(rx + 2, y + 11, 3, 4, '#2b2d42'); px(rx + 7, y + 11, 3, 3, '#2b2d42'); }
+      else { px(rx + 2, y + 11, 3, 3, '#2b2d42'); px(rx + 7, y + 11, 3, 4, '#2b2d42'); }
+      px(rx + 2, y + 14, 3, 1, '#fff'); px(rx + 7, y + 14, 3, 1, '#fff');
+    }
+    if (Math.abs(player.x - wave.x) <= 70 && state === ST.PLAY)
+      celebBubble(wave.x - cam, GROUND_Y - 16, 'conversational pace. this IS the conversation.');
+  }
+
+  // the tokenmaxxer — THE CLOUD resident. flips WAGMI to NGMI the instant
+  // you take a hit; claims credit if you win. decoration; cannot be argued with.
+  {
+    const TX = 7700;
+    const x = TX - cam;
+    if (x > -40 && x < W + 40){
+      const y = GROUND_Y - 16, bob = Math.round(Math.sin(frame / 9) * 1.5);
+      px(x + 2, y + bob, 8, 4, '#e8c39a');                       // face
+      px(x + 2, y + 1 + bob, 8, 1, '#111');                      // shades
+      px(x + 1, y + 4 + bob, 10, 7, '#39ffb0');                  // neon windbreaker
+      px(x + 10, y + 2 + bob, 2, 3, '#39ffb0'); px(x + 11, y + bob, 2, 3, '#e8c39a'); // arm up. always up.
+      px(x + 2, y + 11, 3, 4, '#0e1020'); px(x + 7, y + 11, 3, 4, '#0e1020');
+      px(x + 2, y + 15, 3, 1, '#fff'); px(x + 7, y + 15, 3, 1, '#fff');
+      if (Math.abs(player.x - TX) <= 60 && state === ST.PLAY){
+        const line = bosses[2].dead ? 'told you. WAGMI.'
+          : (playMs - lastHitAt < 3000 || moodTier === 0) ? 'NGMI.'
+          : (frame % 640 < 320 ? 'WAGMI.' : 'the chart? the chart is a feeling.');
+        celebBubble(x + 6, y, line);
+      }
+    }
+  }
+
   // HUMOR PATCH item 9: the run-club laggard (the wave itself is v1.0; he IS the joke)
   {
     const lx = 3350 + Math.sin(frame * 0.012) * 45;              // forever behind the group
