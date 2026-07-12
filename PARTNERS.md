@@ -13,7 +13,6 @@
 | INSFORGE | insforge.dev, YC P26 | your network (Warp tab) | REAL | ping for verbal yes | — |
 | HYPERSPELL | YC F25 (agent memory) | reachable | REAL | DM founder | — |
 | CALLIX | callix.io (GTM agents) | your network? | REAL | ping for verbal yes | — |
-| GOJIBERRY | YC P26 | reachable | REAL | DM founder | — |
 | AGENTMAIL | YC | reachable | REAL | DM founder | — |
 | FIRECRAWL | firecrawl.dev | meme-fluent | REAL | DM @firecrawl_dev | — |
 | BROWSER USE | YC W25 | reachable | REAL | DM | — |
@@ -23,10 +22,15 @@
 | RESEND | resend.com | dev-darling | REAL | DM | — |
 | SUPERSET | YC P26 (agent IDE) | reachable | REAL | DM founder | — |
 | VERCEL | vercel.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
-| SUPABASE | supabase.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
 | WARP | warp.dev | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
-| REPLIT | replit.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
 | DEEL | deel.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
+
+## Removed in the v2 owner pass (2026-07-12)
+GOJIBERRY, REPLIT, SUPABASE — owner call ("remove some, make it less cramped").
+Any of them can return on a written yes; there are free slots in every zone.
+Panels also shrank 180×40 → 132×30 with a steel frame/rivets/catwalk detail
+pass, and spacing widened to ≥290px (same-height neighbors ≥590px). CALLIX
+moved back to the Sand Hill GTM row (x6060) — the slot GOJIBERRY vacated.
 
 ## Placement deviations from docs/BILLBOARDS-FINAL.md (owner told Claude Code to nudge + note)
 The spec's ≥900px spacing is geometrically impossible for 19 boards in a 9,200px

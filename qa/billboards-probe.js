@@ -14,9 +14,11 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
 
 // mirrors PARTNERS.md — owner's locked 19 (2026-07-12). Add here when a new
 // real board lands a yes.
-const ALLOWED_REAL = ['SUPERSET','VERCEL','SUPABASE','WARP','REPLIT','RESEND','EXA',
-  'FIRECRAWL','BROWSER USE','MANUFACT','CLEAN','GOJIBERRY','INSFORGE','CALLIX',
+const ALLOWED_REAL = ['SUPERSET','VERCEL','WARP','RESEND','EXA',
+  'FIRECRAWL','BROWSER USE','MANUFACT','CLEAN','INSFORGE','CALLIX',
   'SUPERMEMORY','HYPERSPELL','AGENTMAIL','KINECT','DEEL'];
+// v2 owner pass removed GOJIBERRY / REPLIT / SUPABASE (the latter two stay on
+// the denylist: parody boards may never use those marks either)
 // real brands a PARODY-tier board must never equal (extend freely)
 const DENYLIST = /vercel|supabase|warp|replit|resend|firecrawl|deel|exa|stripe|openai|anthropic|brex|ramp|notion|figma|linear|cursor|baseten|whop/i;
 
@@ -59,26 +61,26 @@ const DENYLIST = /vercel|supabase|warp|replit|resend|firecrawl|deel|exa|stripe|o
     const outOfWorld = BILLBOARDS.filter(bb => bb.x < 100 || bb.x > 8450).map(bb => bb.name);
     return { count: BILLBOARDS.length, minGap, sameYBad, inArena, outOfWorld };
   });
-  check('19 boards', inv.count === 19, String(inv.count));
+  check('16 boards (v2 owner pass)', inv.count === 16, String(inv.count));
   check('every board outside all three boss arenas', inv.inArena.length === 0, inv.inArena.join(','));
-  check('board spacing >=240 world px', inv.minGap >= 240, 'min gap ' + inv.minGap);
+  check('board spacing >=290 world px', inv.minGap >= 290, 'min gap ' + inv.minGap);
   check('same-height neighbors >=400px (no panel overlap at .5 parallax)', inv.sameYBad.length === 0, inv.sameYBad.join(','));
   check('boards inside the reachable world', inv.outOfWorld.length === 0, inv.outOfWorld.join(','));
 
   // ---- (5) boards render: panel pixels present at a board ----
   await p.evaluate(() => { bosses.forEach(bb => bb.dead = true);
-    player.x = 1150; player.y = 100; cam = 910;
-    for (const e of enemies) if (Math.abs(e.x - 1150) < 400) e.dead = true; });
+    player.x = 1400; player.y = 100; cam = 1160;
+    for (const e of enemies) if (Math.abs(e.x - 1400) < 400) e.dead = true; });
   await p.waitForTimeout(400);
   const drawn = await p.evaluate(() => {
-    const bb = BILLBOARDS.find(x => x.name === 'SUPABASE');
-    const sx = Math.round((bb.x - cam) * 0.5) - 90;
-    const d = cx.getImageData(sx + 90, bb.y + 20, 1, 1).data;   // panel body
-    const s = cx.getImageData(sx + 90, bb.y + 1, 1, 1).data;    // accent stripe
+    const bb = BILLBOARDS.find(x => x.name === 'WARP');
+    const sx = Math.round((bb.x - cam) * 0.5) - 66;
+    const d = cx.getImageData(sx + 66, bb.y + 15, 1, 1).data;   // panel body
+    const s = cx.getImageData(sx + 66, bb.y, 1, 1).data;        // accent stripe
     return { panel: [d[0], d[1], d[2]], stripe: [s[0], s[1], s[2]] };
   });
-  check('panel renders (SUPABASE body dark)', drawn.panel[0] < 60 && drawn.panel[1] < 60, JSON.stringify(drawn.panel));
-  check('accent stripe renders (SUPABASE green)', drawn.stripe[1] > 120 && drawn.stripe[1] > drawn.stripe[0], JSON.stringify(drawn.stripe));
+  check('panel renders (WARP body dark)', drawn.panel[0] < 60 && drawn.panel[1] < 60, JSON.stringify(drawn.panel));
+  check('accent stripe renders (WARP blue)', drawn.stripe[2] > 150 && drawn.stripe[2] > drawn.stripe[0], JSON.stringify(drawn.stripe));
 
   // ---- (3) SPOTTED: partner-only, once, +$5K ----
   const r0 = await p.evaluate(() => raised);
@@ -90,8 +92,8 @@ const DENYLIST = /vercel|supabase|warp|replit|resend|firecrawl|deel|exa|stripe|o
   check('only partner boards trigger SPOTTED', spot.others.length === 1 && spot.others[0] === 'CLEAN', spot.others.join(','));
   await p.evaluate(() => { player.x = 6060; player.y = 200; cam = 5960; });
   await p.waitForTimeout(400);
-  const goji = await p.evaluate(() => BILLBOARDS.find(x => x.name === 'GOJIBERRY').spotted);
-  check('non-partner board never triggers SPOTTED', !goji);
+  const nonP = await p.evaluate(() => BILLBOARDS.find(x => x.name === 'CALLIX').spotted);
+  check('non-partner board never triggers SPOTTED', !nonP);
   const r1 = await p.evaluate(() => raised);
   await p.evaluate(() => { player.x = 5758; cam = 5660; });
   await p.waitForTimeout(300);
