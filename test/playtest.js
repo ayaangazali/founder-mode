@@ -63,6 +63,9 @@ const { chromium } = require('playwright');
   console.log('rope snap:', JSON.stringify(snap));
   await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(2000); await page.keyboard.up('ArrowLeft');
   await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowRight');
+  // ceremony: mash R to fill the ring meter, then the confetti beat plays out
+  for (let i = 0; i < 12; i++){ await page.keyboard.down('r'); await page.waitForTimeout(60); await page.keyboard.up('r'); await page.waitForTimeout(70); }
+  await page.waitForTimeout(2400);
   const s5 = await page.evaluate(() => ({ state, bellDone, raised }));
   console.log('win check:', JSON.stringify(s5));
   await page.waitForTimeout(600);

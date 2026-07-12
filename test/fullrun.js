@@ -133,6 +133,20 @@ const lipDist = x => {                      // distance from player x to the cur
     if (s.x < prevX - 150) pitSetbacks++;                       // checkpoint snap-back = pit fall
     prevX = s.x;
 
+    // ringing ceremony: once re-armed (bellPhase 2), park at the bell and mash
+    // R until the meter fills, then let the confetti beat play out
+    if (s.bosses.every(b => b.dead) && !s.bellDone && s.x > 9050 &&
+        (await page.evaluate(() => bellPhase)) === 2){
+      await setRight(false);
+      for (let m = 0; m < 24; m++){
+        await page.keyboard.down('r'); await page.waitForTimeout(60);
+        await page.keyboard.up('r'); await page.waitForTimeout(70);
+        if (await page.evaluate(() => bellRing && bellRing.done)) break;
+      }
+      await page.waitForTimeout(2600);
+      continue;
+    }
+
     // bell-rope snap (humor patch): first pull fails; walk back past 9060 and
     // pull again — exactly what a panicking human does
     if (s.bosses.every(b => b.dead) && !s.bellDone && s.x > 9050){

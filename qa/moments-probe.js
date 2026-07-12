@@ -25,8 +25,12 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
     const rearmed = await p.evaluate(() => bellPhase);
     check('retreat past 9060 re-rigs the rope', rearmed === 2);
     await p.keyboard.down('ArrowRight'); await p.waitForTimeout(1500); await p.keyboard.up('ArrowRight');
+    const armed = await p.evaluate(() => !!bellRing);
+    check('second approach arms the ringing ceremony', armed);
+    for (let i = 0; i < 12; i++){ await p.keyboard.down('r'); await p.waitForTimeout(60); await p.keyboard.up('r'); await p.waitForTimeout(70); }
+    await p.waitForTimeout(2400);
     const win = await p.evaluate(() => ({ state, bellDone }));
-    check('second pull wins', win.state === 2 && win.bellDone, JSON.stringify(win));
+    check('mashing rings the bell (confetti, then WIN)', win.state === 2 && win.bellDone, JSON.stringify(win));
     check('no page errors (bell block)', errors.length === 0, errors.join(' | '));
     await p.close();
   }

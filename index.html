@@ -518,7 +518,9 @@ let hitstopT = 0, shakeT = 0, prevJump = false;
 let paused = false; // ESC / the ⏸ touch button — sim + playMs freeze, draw keeps running
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
 let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable across re-renders + checkpoint respawns)
-let bellPhase = 0;      // HUMOR PATCH item 3: 0 untouched · 1 rope snapped · 2 re-armed (next pull wins)
+let bellPhase = 0;      // HUMOR PATCH item 3: 0 untouched · 1 rope snapped · 2 re-armed (mash to ring)
+let bellRing = null;    // ringing ceremony: {meter, done, celeT} — mash R (touch: A) to fill, then confetti
+let ringHeld = false;   // edge detector for the mash
 let barrySawIt = false, barryShownT = 0; // item 4: Barry watched you die near him
 let meetlyT = 0, actionItems = null;     // item 5: MEETLY.AI recap overlay + the ACTION ITEMS that chase you
 // HUMOR PATCH item 6: THE CORGI (10x8, devastating). It cannot die. It has no
@@ -810,6 +812,7 @@ function reset(fromCheckpoint){
     playMs = 0; endTime = 0;
     quoteRoll = Math.random();
     bellPhase = 0; // the rope gets to snap again next run
+    bellRing = null; ringHeld = false;
     barrySawIt = false; barryShownT = 0; witnessStill = 0; witnessed = false;
     meetlyT = 0; actionItems = null;
     corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
@@ -1412,17 +1415,47 @@ function update(){
       // playtest: owner stood at the bell mashing — the joke needs a stage direction
       addPop(9020, GROUND_Y - 52, '(walk it off — the rig reboots behind you)', '#8d99ae', 150);
       moodDown(); // of course it's so over. you're AT the bell.
-    } else if (bellPhase === 2){
-      bellDone = true;
-      endTime = playMs;
-      raised += 1000;
-      state = ST.WIN; sWin();
-      showEndUI(true);
+    } else if (bellPhase === 2 && !bellRing){
+      // the ceremony arms: you don't tap an IPO bell, you EARN the swing
+      bellRing = { meter: 0, done: false, celeT: 0 };
+      addPop(9040, GROUND_Y - 70, ('ontouchstart' in window) ? 'MASH A — RING THE BELL' : 'MASH R — RING THE BELL', '#ffd94a', 200);
     }
   }
   if (bellPhase === 1 && p.x < 9060){
     bellPhase = 2;
     addPop(p.x, p.y - 20, 'ROPE RE-RIGGED. TRY AGAIN.', '#7cffa5');
+  }
+  // the ringing ceremony — every press yanks the rope; the meter decays, the
+  // bell only gives when you mean it. Then: chime + confetti + the badge.
+  if (bellRing && !bellRing.done && state === ST.PLAY){
+    bellRing.meter = Math.max(0, bellRing.meter - 0.005);
+    const down = keys['r'] || keys['space'] || touch.J;
+    if (down && !ringHeld && p.x > 9060){
+      bellRing.meter = Math.min(1, bellRing.meter + 0.16);
+      shakeT = 2;
+      beep(700 + bellRing.meter * 700, .07, 'triangle', .12);   // rope creak, rising
+      addParts(9125 + Math.random() * 12, GROUND_Y - 34, '#ffd94a', 3);
+    }
+    ringHeld = down;
+    if (bellRing.meter >= 1){
+      bellRing.done = true; bellRing.celeT = 110;
+      endTime = playMs; raised += 1000; moodUp();
+      // the chime: three overlapping bell partials, long tails
+      beep(1568, .9, 'triangle', .16); beep(1046, 1.3, 'triangle', .12); beep(784, 1.8, 'sine', .09);
+      addPop(9070, GROUND_Y - 84, 'THE BELL RINGS. IPO!', '#ffd94a', 110);
+    }
+  } else if (bellRing && bellRing.done && state === ST.PLAY){
+    // confetti over the podium, then the badge
+    if (--bellRing.celeT > 0){
+      if (bellRing.celeT % 4 === 0){
+        const cols = ['#ffd94a', '#7cffa5', '#7ce0ff', '#d9748f', '#fff'];
+        addParts(9030 + Math.random() * 170, 90 + Math.random() * 70, cols[bellRing.celeT % 5], 6);
+      }
+    } else {
+      bellDone = true;
+      state = ST.WIN; sWin();
+      showEndUI(true);
+    }
   }
 }
 // ------------------------- SPRITES -------------------------
@@ -2600,6 +2633,13 @@ function draw(){
       px(bx + 11, GROUND_Y - 16, 4, 4, '#8a6d00');
       cx.fillStyle = '#fff'; cx.font = 'bold 6px monospace'; cx.fillText('IPO', Math.round(bx + 6), Math.round(GROUND_Y - 24));
       cx.fillText('→ RING IT', Math.round(bx - 8), Math.round(GROUND_Y - 44));
+      // ceremony meter — fills with each yank, drains while you hesitate
+      if (bellRing && !bellRing.done){
+        px(bx - 18, GROUND_Y - 56, 62, 8, '#0e1020');
+        px(bx - 16, GROUND_Y - 54, Math.round(58 * bellRing.meter), 4, bellRing.meter > 0.7 ? '#ffd94a' : '#7cffa5');
+        cx.fillStyle = '#fff'; cx.font = 'bold 7px monospace';
+        cx.fillText(('ontouchstart' in window) ? 'MASH A!' : 'MASH R!', Math.round(bx - 4), Math.round(GROUND_Y - 60));
+      }
     }
   }
 
