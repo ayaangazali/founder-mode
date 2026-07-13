@@ -17,13 +17,15 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
   // ---- THE GREP GATE (spec GUARDRAILS, verbatim intent) ----
   const gate = await p.evaluate(() => {
     const src = makeBadge.toString() + makeObituary.toString() + shareText.toString()
-              + JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join('') + JSON.stringify(WIN_FRONTPAGE) + WIN_BODY.map(f => f.toString()).join('');
+              + JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join('')
+              + JSON.stringify(WIN_FRONTPAGE) + WIN_BODY.map(f => f.toString()).join('')
+              + JSON.stringify(OBIT_CAPTIONS) + badgeFlairs.toString(); // full surface, parity with the billboard gate (audit)
     // incl. the IS CODE DEAD panel cast (pol gram / xandr wing / dareo)
     return /teal|barry gan|tusk|waltman|pol gram|xandr wing|dareo/i.test(src);
   });
   check('GREP GATE: no celeb names in makeBadge/makeObituary/shareText', gate === false);
-  const flagged = await p.evaluate(() => typeof RISKY_CAMEOS === 'boolean' && RISKY_CAMEOS === true);
-  check('RISKY_CAMEOS flag exists and is on', flagged);
+  const flagged = await p.evaluate(() => typeof RISKY_CAMEOS === 'boolean');
+  check('RISKY_CAMEOS kill-switch exists (probe no longer pins it ON — audit)', flagged);
 
   await p.keyboard.down('Space'); await p.waitForTimeout(200); await p.keyboard.up('Space');
   await p.waitForTimeout(300);

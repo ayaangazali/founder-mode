@@ -1,4 +1,5 @@
-// moments-probe.js — HUMOR PATCH item 3 acceptance: bell-rope snap sequence,
+// moments-probe.js — flagship moments: the bell MASH ceremony (the rope-snap
+// joke was retired by the owner),
 // the posthumous CHAD.AI sign, and the FAILURE COACH summoning ritual.
 const { chromium } = require('playwright');
 const path = require('path');

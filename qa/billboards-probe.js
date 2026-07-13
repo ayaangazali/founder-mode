@@ -1,4 +1,5 @@
-// billboards-probe.js — acceptance for docs/BILLBOARDS-FINAL.md.
+// billboards-probe.js — acceptance for the SHIPPED billboard system (v2 pass:
+// 17 boards, >=250px gaps; the FINAL.md spec numbers are historical).
 // Gates: (1) billboard names NEVER reach the share surfaces (badge / obituary /
 // share text — appearing in the world is a different consent, BILLBOARDS.md §5);
 // (2) every board name is either owner-approved real (ALLOWED_REAL, mirrors

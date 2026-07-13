@@ -35,7 +35,7 @@ const MAX_RECOVERIES = CASUAL ? 12 : 6; // solid undersides removed the bot's ho
 // trimmed to the post-cull sign set (owner: signs read as text noise; 31 → 15)
 const SIGN_STOPS = [70, 250, 640, 1930, 3958, 4450, 5270, 5690, 6180, 6350,
                     7210, 7490, 8400];
-const COIN_DETOURS = [420, 1060, 2170, 2550, 3260, 4164, 4680, 5114, 5928, 7460, 7750];
+const COIN_DETOURS = [410, 1070, 2170, 2550, 3260, 4164, 4680, 5114, 5928, 7460, 7750];
 // city platforms with solid undersides (x, y, w) — jumping beneath one bonks,
 // so the bot never hops with a block overhead (clouds >7160 excluded; the
 // y<130 high deck is above hop reach)

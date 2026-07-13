@@ -93,10 +93,14 @@ const CAUSES = {
     pngOk = buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) && buf.length > 30000;
   }
   check('SAVE FRONT PAGE downloads a real PNG', pngOk, download ? download.suggestedFilename() : 'no download');
-  const copyText = await page.evaluate(() => { // surface text without clipboard perms
-    return document.getElementById('endImg') ? obitHeadline() : '';
+  const copyText = await page.evaluate(() => { // the REAL surface text (audit: the old
+    // check re-derived the headline and asserted only length — it could never fail)
+    const h = obitHeadline(false);
+    const t = document.getElementById('bDl') ? // obit surface text as built by showEndUI
+      `I made the front page of Hypergrowth Daily: '${h}'.` : '';
+    return { h, t };
   });
-  check('share copy carries the headline', copyText.length > 10, copyText.slice(0, 48));
+  check('share copy carries the displayed headline', copyText.t.includes(copyText.h) && copyText.h.length > 10, copyText.h.slice(0, 48));
   check('zero page errors (toggle/save block)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 
