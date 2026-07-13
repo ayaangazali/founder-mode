@@ -133,9 +133,12 @@ const lipDist = x => {                      // distance from player x to the cur
     if (s.x < prevX - 150) pitSetbacks++;                       // checkpoint snap-back = pit fall
     prevX = s.x;
 
-    // ringing ceremony: park at the bell and mash R until the meter fills,
-    // then let the confetti beat play out
+    // ringing ceremony: walk INTO the bell (arming needs x>9100), then park
+    // and mash R until the meter fills, then let the confetti beat play out
     if (s.bosses.every(b => b.dead) && !s.bellDone && s.x > 9080){
+      for (let w = 0; w < 30 && !(await page.evaluate(() => !!bellRing)); w++){
+        await setRight(true); await page.waitForTimeout(120);
+      }
       await setRight(false);
       for (let m = 0; m < 24; m++){
         await page.keyboard.down('r'); await page.waitForTimeout(60);
