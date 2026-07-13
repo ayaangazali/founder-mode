@@ -906,6 +906,8 @@ function reset(fromCheckpoint){
     cofX = 0; cofFace = 1; cofSaid = 0; cofBubT = 0;
     aiNudgeT = 0; aiNudgeAt = cof().id === 'ai' ? 25000 + quoteRoll * 60000 : Infinity;
     momRoundUsed = false; momBacked = cof().id === 'mom';
+    if (pedIdx > 0) addPop(60, GROUND_Y - 60, 'PEDIGREE: ' + ped().label + ' ×' + ped().mult, '#ff8c37', 200);
+    if (cof().id !== 'none') addPop(60, GROUND_Y - 48, 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label), '#7cffa5', 200);
     listHeatAt = ped().id === 'thirty' ? 40000 : Infinity;           // the list is watching
     bmX = 0;
     if (ped().id === 'exsyn'){ bosses[2].hp += 2; bosses[2].maxhp += 2; } // "we know what you did"
@@ -1457,7 +1459,7 @@ function update(){
 
   // -------- HUMOR PATCH item 9: the vibes CMO catches you in frame --------
   if (cmoT > 0) cmoT--;
-  if (!cmoDone && Math.abs(p.x - 2506) < 30){
+  if (!cmoDone && Math.abs(p.x - 2320) < 30){ // moved off the café block (owner: Mission too cramped); spec wanted her near the matcha anyway
     cmoDone = true; cmoT = 90;
   }
 
@@ -1736,7 +1738,30 @@ function cycleLook(k){                       // k: 's' | 'h' | 'v' | 'x' (cofoun
   beep(880, .05, 'square', .05);             // picker tick
 }
 
-// hoodie founder sprite (12x16 at s=1)
+// PEDIGREE gear (v1.3 owner pass): the résumé is VISIBLE on the founder —
+// drawn over drawFounder wherever the player appears (world, badge, newsprint).
+function drawPedGear(ctx2, x, y, s){
+  if (pedIdx === 0) return;
+  const R = (px2, py2, w, h, c) => { ctx2.fillStyle = c;
+    ctx2.fillRect(Math.round(x + px2*s), Math.round(y + py2*s), w*s, h*s); };
+  const id = ped().id;
+  if (id === 'serial'){                       // two dead startups: the eye bags + the old briefcase
+    R(4, 5, 1, 1, '#6a7183'); R(8, 5, 1, 1, '#6a7183');
+    R(-4, 9, 4, 4, '#5a4632'); R(-3, 8, 2, 1, '#3d2e1f');
+  } else if (id === 'drop'){                  // STANFURD: the cardinal cap
+    R(2, -1, 8, 2, '#b31b1b'); R(4, -2, 4, 1, '#b31b1b');
+  } else if (id === 'thirty'){                // the laurel (the list is cursed)
+    R(1, 1, 2, 1, '#ffd94a'); R(9, 1, 2, 1, '#ffd94a'); R(5, -1, 2, 1, '#ffd94a');
+  } else if (id === 'teal'){                  // the teal beanie ($100K not to graduate)
+    R(2, -1, 8, 2, '#0f8b8d'); R(2, 1, 8, 1, '#0a6466');
+  } else if (id === 'nepo'){                  // the little crown (warm intro from birth)
+    R(3, -3, 6, 2, '#ffd94a'); R(3, -5, 1, 2, '#ffd94a'); R(6, -6, 1, 3, '#ffd94a'); R(8, -5, 1, 2, '#ffd94a');
+  } else if (id === 'exsyn'){                 // the ex-employee lanyard, never returned
+    R(5, 6, 1, 4, '#41f2ff'); R(4, 10, 4, 3, '#e8ecf5'); R(4, 10, 4, 1, '#41f2ff');
+  }
+}
+
+// hoodie founder sprite (12x16 at s=1)// hoodie founder sprite (12x16 at s=1)
 // lk (optional): resolved look object; defaults to the player's chosen look.
 function drawFounder(ctx2, x, y, s, face, runF, yc, lk){
   const L = lk || window.FOUNDER_LOOK ||
@@ -2496,7 +2521,7 @@ function draw(){
 
   // HUMOR PATCH item 9: THE VIBES CMO — ring light, tripod, permanent content
   {
-    const x = 2500 - cam;
+    const x = 2314 - cam;
     if (x > -40 && x < W + 40){
       const y = GROUND_Y - 16;
       // the ring light (a square halo — pixel art forgives)
@@ -2511,7 +2536,7 @@ function draw(){
       px(x + 6, y + 13, 3, 3, '#e8e0c9'); px(x + 10, y + 13, 3, 3, '#e8e0c9');
       px(x + 6, y + 16, 3, 1, '#fff'); px(x + 10, y + 16, 3, 1, '#fff');
       // B5: she narrates the strategy now (one line at a time, proximity-gated)
-      if (Math.abs(player.x - 2506) <= 60 && state === ST.PLAY && cmoT === 0){
+      if (Math.abs(player.x - 2320) <= 60 && state === ST.PLAY && cmoT === 0){
         const CMO_LINES = ['we did a brand moment.', 'the deck has a vibe.',
           '2M views. zero signups. worth it.', 'the product? the *brand* is done.', 'pre-revenue, post-aesthetic.'];
         celebBubble(x + 8, y + 2, CMO_LINES[Math.floor(playMs / 2600) % CMO_LINES.length]);
@@ -3072,6 +3097,7 @@ function draw(){
       cx.strokeRect(Math.round(player.x - cam - 3) + 0.5, Math.round(player.y - 3) + 0.5, player.w + 6, player.h + 6);
     }
     drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
+    drawPedGear(cx, player.x - cam, player.y, 1);
     if (player.coffeeT > 0 && frame % 5 === 0) parts.push({x:player.x - 2 + Math.random()*4, y:player.y + 14, vx:-player.face, vy:-0.5, t:14, c:'#c58bff'});
   }
 
@@ -3095,7 +3121,7 @@ function draw(){
   // popups + HUD only during play (end screens keep the frame clean behind the card)
   if (state === ST.PLAY){
     cx.font = 'bold 8px monospace'; // readable at 1-2x (playtest)
-    for (const q of popups){
+    for (const q of (chat || interview || room.active ? [] : popups)){
       cx.fillStyle = 'rgba(0,0,0,.55)';
       const tw = cx.measureText(q.txt).width;
       cx.fillRect(Math.round(q.x - cam - 2), Math.round(q.y - 9), tw + 4, 12);
@@ -3162,14 +3188,23 @@ function drawHUD(){
   }
   cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14); occlude(W - 62, 6, 56, 14);
   cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 56, 16);
-  // active powers
+  // active powers — hidden inside mini-games (chat/interview/room): the world
+  // is paused there and the ticking labels read as a visual bug (owner report)
+  const inOverlay = chat || interview || room.active;
   cx.font = 'bold 7px monospace';
+  if (!inOverlay){
   if (player.ycT > 0){ cx.fillStyle = '#ff8c37'; cx.fillText('DEMO DAY MODE ' + Math.ceil(player.ycT/60) + 's', 12, 44); }
   else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
   else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', 12, 44); }
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
   if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText((('ontouchstart' in window) ? 'PITCHING · tap fires · ' : 'PITCHING · X fires · ') + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
+  // interns on payroll: a small ledger line (owner: the hires need presence)
+  if (interns.length){
+    cx.fillStyle = '#7cffa5';
+    cx.fillText('TEAM: ' + interns.map(i2 => INTERN_TYPES.find(T => T.id === i2.id).name + (i2.t > 0 ? ' ' + Math.ceil(i2.t / 60) + 's' : '')).join(' · '), 12, 74);
+  }
+  } // end !inOverlay
   // first 6s of a run: controls strip along the bottom (playtest: powers went
   // unread; new players never learned X existed)
   if (playMs < 6000 && !chat && !interview){
@@ -3181,7 +3216,7 @@ function drawHUD(){
     occlude(W/2 - ctw/2 - 5, H - 20, ctw + 10, 12);
     cx.fillStyle = '#cfd6e4'; cx.fillText(ct, Math.round(W/2 - ctw/2), H - 11);
   }
-  if (corgi.following && !corgi.sitting){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', 12, 74); }
+  if (corgi.following && !corgi.sitting && !inOverlay){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', 12, 84); }
 }
 
 function drawTitle(){
@@ -3190,6 +3225,7 @@ function drawTitle(){
   px(0, GROUND_Y, W, 5, '#8a8f9e'); px(0, GROUND_Y + 5, W, H - GROUND_Y, '#33323f');
   // s=3 live preview — walks in place, re-renders the chosen look every frame (it IS the preview)
   drawFounder(cx, 56, GROUND_Y - 48, 3, 1, frame % 24 < 12 ? 1 : 0, false);
+  drawPedGear(cx, 56, GROUND_Y - 48, 3); // the picker shows the gear live
   if (pendingCorgi){ // item 10 egg feedback: the corgi is already waiting at the title desk
     const cy = GROUND_Y - 8;
     px(104, cy, 8, 5, '#e8a04c'); px(110, cy - 2, 4, 4, '#e8a04c');
@@ -3321,6 +3357,7 @@ function makeBadge(won){
   for (let i = 0; i < 30; i++){ b.fillRect(20 + i * 40, 24, 12, 12); b.fillRect(20 + i * 40, 594, 12, 12); }
   // sprite
   drawFounder(b, 80, 200, 14, 1, 0, won);
+  drawPedGear(b, 80, 200, 14);
   // text
   b.textAlign = 'left';
   b.fillStyle = won ? '#ffd94a' : '#ff5a5a';
@@ -3329,12 +3366,6 @@ function makeBadge(won){
   b.fillStyle = '#fff'; b.font = 'bold 34px monospace';
   b.fillText(won ? 'survived SF · defeated SYNERGY.AI' : 'SF claims another founder', 320, 205);
   if (playerName()){ b.fillStyle = '#7ce0ff'; b.font = 'bold 30px monospace'; b.fillText('FOUNDER: ' + playerName().toUpperCase(), 320, 245); }
-  if (won && momBacked){ b.fillStyle = '#d9748f'; b.font = 'bold 26px monospace'; b.fillText('SEED LED BY: MOM (undisclosed)', 320, 508); }
-  if (won && accBatch){ b.fillStyle = '#d97706'; b.font = 'bold 24px monospace'; b.fillText('ACCELERATOR · BATCH F26', 320, 272); }
-  if (pedIdx > 0){ b.fillStyle = '#ff8c37'; b.font = 'bold 24px monospace';
-    b.fillText('PEDIGREE: ' + ped().label + ' (×' + ped().mult + ') — "' + ped().badge + '"', 320, 435, 840); }
-  else if (won){ b.fillStyle = '#8d99ae'; b.font = 'bold 24px monospace';
-    b.fillText('"' + ped().badge + '"', 320, 435, 840); }
   const t = fmtTime(endTime || playMs);
   b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';
   b.fillText('RAISED  ' + fmtMoney(raised), 320, 295);
@@ -3347,11 +3378,7 @@ function makeBadge(won){
   } else {
     b.fillText('DIED IN  ' + zoneName(player.x), 320, 399); // loss badges differ by death point
   }
-  const flairs = badgeFlairs(won); // egg rail: verified empty band between stats and the quote
-  if (flairs.length){
-    b.fillStyle = '#ff8c37'; b.font = 'bold 30px monospace';
-    b.fillText('FLAIR: ' + flairs.join('  ·  '), 320, 462);
-  }
+
   b.fillStyle = '#cfd6e4';
   // v0.2 rotating one-liner pools (MASTER-PLAN §1.6) — quote rotates per run;
   // the loss badge's zone line (DIED IN {zone}, above) stays regardless
@@ -3367,14 +3394,30 @@ function makeBadge(won){
     '"the market wasn\'t ready" — the market, ready',
     '"pivoting to consulting" — 40% of your batch',
   ];
+  // ---- lower band: flair / batch / pedigree / mom / quote stack dynamically
+  // (fixed-y lines collided the moment a run earned more than two of them —
+  //  owner screenshot, v1.3 review) ----
+  const rows = [];
+  const flairs = badgeFlairs(won);
+  if (flairs.length) rows.push({ t: 'FLAIR: ' + flairs.join('  ·  '), c: '#ff8c37', s: 28 });
+  if (won && accBatch) rows.push({ t: 'ACCELERATOR · BATCH F26', c: '#d97706', s: 24 });
+  if (pedIdx > 0) rows.push({ t: 'PEDIGREE: ' + ped().label + ' (×' + ped().mult + ') — "' + ped().badge + '"', c: '#ff8c37', s: 24 });
+  else if (won) rows.push({ t: '"' + ped().badge + '"', c: '#8d99ae', s: 24 });
+  if (won && momBacked) rows.push({ t: 'SEED LED BY: MOM (undisclosed)', c: '#d9748f', s: 24 });
   const pool = won ? WIN_QUOTES : LOSS_QUOTES;
-  const quote = pool[Math.floor(quoteRoll * pool.length) % pool.length];
-  let qs = 36; // 36px target, full row below the sprite; shrink only if a future quote overflows
-  b.font = 'bold ' + qs + 'px monospace';
-  while (qs > 24 && b.measureText(quote).width > 1080){ qs -= 2; b.font = 'bold ' + qs + 'px monospace'; }
-  b.fillText(quote, 60, 495);
-  b.fillStyle = '#ffd94a'; b.font = 'bold 34px monospace';
-  b.fillText('FOUNDER MODE · ' + GAME_URL.replace('https://',''), 320, 565);
+  rows.push({ t: pool[Math.floor(quoteRoll * pool.length) % pool.length], c: '#cfd6e4', s: 28 });
+  let ry = 442;
+  const step = Math.min(42, Math.floor((578 - 442) / rows.length)); // band always ends above the footer
+  for (const r of rows){
+    let fs = Math.min(r.s, step - 6);
+    b.font = 'bold ' + fs + 'px monospace';
+    while (fs > 18 && b.measureText(r.t).width > 1080){ fs -= 2; b.font = 'bold ' + fs + 'px monospace'; }
+    b.fillStyle = r.c;
+    b.fillText(r.t, 60, ry, 1080);
+    ry += step;
+  }
+  b.fillStyle = '#ffd94a'; b.font = 'bold 30px monospace';
+  b.fillText('FOUNDER MODE · ' + GAME_URL.replace('https://',''), 320, 586);
   return bc;
 }
 
@@ -3504,6 +3547,7 @@ function makeObituary(won){
   b.beginPath(); b.rect(848, 234, 302, 258); b.clip();
   b.translate(999, 355); b.rotate(-0.055);
   drawFounder(b, -60, -85, 10, 1, 0, false);
+  drawPedGear(b, -60, -85, 10);
   b.restore();
   b.font = 'bold 14px monospace'; b.fillStyle = FAINT; b.textAlign = 'center';
   b.fillText(playerName()
