@@ -33,9 +33,10 @@ if (/^https?:$/.test(location.protocol)){
   }
   #stack { position:relative; line-height:0; }
   canvas#txt { position:absolute; left:0; top:0; pointer-events:none; }
-  #ui { position:fixed; inset:0; pointer-events:none; display:none; align-items:center; justify-content:center;
-        background:rgba(8,8,20,.78); z-index:10; }
-  #ui .card { pointer-events:auto; text-align:center; font-family:"Courier New",monospace; }
+  #ui { position:fixed; inset:0; pointer-events:none; display:none; align-items:flex-start; justify-content:center;
+        background:rgba(8,8,20,.78); z-index:10; overflow-y:auto; }
+  #ui .card { pointer-events:auto; text-align:center; font-family:"Courier New",monospace;
+              margin:auto; padding:14px 0; } /* auto-margins center short cards; tall cards scroll */
   #ui button {
     font-family:"Courier New",monospace; font-weight:bold; font-size:16px;
     background:#ffd94a; color:#1a1a2e; border:3px solid #1a1a2e; padding:10px 18px;
@@ -66,6 +67,21 @@ if (/^https?:$/.test(location.protocol)){
             box-shadow:0 4px 0 #8a6d00; }
   #credit a { color:#ffd94a; text-decoration:underline; }
   #credit a:hover { color:#fff; background:#ffd94a22; }
+  #lbChip { position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); left:16px; z-index:6;
+            font:bold 13px "Courier New",monospace; color:#ffd94a; display:none; cursor:pointer;
+            background:rgba(8,8,20,.85); border:2px solid #ffd94a; padding:6px 10px; box-shadow:0 3px 0 #8a6d00; }
+  #lbChip:active { transform:translateY(2px); box-shadow:0 1px 0 #8a6d00; }
+  #lbPanel { position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center;
+             background:rgba(8,8,20,.8); }
+  #lbPanelCard { background:#141433; border:3px solid #ffd94a; box-shadow:0 6px 0 #8a6d00; padding:14px 18px;
+                 font-family:"Courier New",monospace; font-weight:bold; color:#cfd6e4; text-align:center;
+                 width:min(480px, 88vw); }
+  #lbPanelHead { color:#ffd94a; font-size:14px; margin-bottom:8px; }
+  #lbPanelList { max-height:56vh; overflow:auto; text-align:left; font-size:14px; line-height:1.6;
+                 background:rgba(0,0,0,.35); padding:8px 12px; }
+  #lbPanelClose { margin-top:10px; font-family:"Courier New",monospace; font-weight:bold; font-size:13px;
+                  background:#ffd94a; color:#1a1a2e; border:2px solid #1a1a2e; padding:6px 14px; cursor:pointer;
+                  box-shadow:0 3px 0 #8a6d00; }
 </style>
 </head>
 <body>
@@ -74,6 +90,8 @@ if (/^https?:$/.test(location.protocol)){
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">⏸</div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
 <div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener">ayaan gazali</a></div>
+<div id="lbChip">🏆 LEADERBOARD</div>
+<div id="lbPanel"><div id="lbPanelCard"><div id="lbPanelHead"></div><div id="lbPanelList"></div><button id="lbPanelClose">close</button></div></div>
 <script>
 "use strict";
 /* ============================================================
@@ -139,6 +157,23 @@ function fit() {
   document.getElementById('rot').style.display = (portrait && !rotDismissed) ? 'block' : 'none';
 }
 window.addEventListener('resize', fit); fit();
+// title-screen leaderboard panel (chip shows only on the title, like #credit)
+document.getElementById('lbChip').addEventListener('click', () => {
+  const panel = document.getElementById('lbPanel');
+  panel.style.display = 'flex';
+  document.getElementById('lbPanelHead').textContent = 'loading the cap tables…';
+  document.getElementById('lbPanelList').innerHTML = '';
+  lbLoad(100, (rows, label) => {
+    document.getElementById('lbPanelHead').textContent = label + (rows.length ? ' · top ' + rows.length : '');
+    document.getElementById('lbPanelList').innerHTML = rows.length ? lbRowsHtml(rows) : 'nobody yet. glory awaits.';
+  });
+});
+document.getElementById('lbPanelClose').addEventListener('click', () => {
+  document.getElementById('lbPanel').style.display = 'none';
+});
+document.getElementById('lbPanel').addEventListener('click', e => {
+  if (e.target.id === 'lbPanel') document.getElementById('lbPanel').style.display = 'none';
+});
 document.getElementById('rot').addEventListener('touchstart', e => { e.preventDefault(); rotDismissed = true; fit(); }, {passive:false});
 document.getElementById('rot').addEventListener('mousedown', () => { rotDismissed = true; fit(); });
 
@@ -501,6 +536,20 @@ function lbFetch(after){
 }
 lbFetch();
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
+function lbRowsHtml(rows){
+  return rows.map((r, i) =>
+    `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
+}
+// load a board; if today is empty (fresh daily seed), fall back to yesterday's
+function lbLoad(limit, cb){
+  fetch('/api/leaderboard?seed=' + SEED_N + '&limit=' + limit).then(r => r.json()).then(j => {
+    if (j && j.ok && j.top.length) return cb(j.top, "TODAY'S BOARD — seed #" + SEED_N);
+    fetch('/api/leaderboard?seed=' + (SEED_N - 1) + '&limit=' + limit).then(r2 => r2.json()).then(k => {
+      if (k && k.ok && k.top.length) cb(k.top, "no exits yet today — YESTERDAY'S BOARD (seed #" + (SEED_N - 1) + ')');
+      else cb([], 'no exits yet — be the first');
+    }).catch(() => cb([], 'board unreachable'));
+  }).catch(() => cb([], 'board unreachable'));
+}
 function playerName(){ try { return (localStorage.getItem('fm_name') || '').trim(); } catch(e){ return ''; } }
 // the 10 market conditions (MASTER-PLAN §1.6, exact strings) + the lever each pulls
 const MARKETS = [
@@ -3218,6 +3267,7 @@ function drawHUD(){
 
 function drawTitle(){
   document.getElementById('credit').style.display = 'block'; // title-only chrome
+  document.getElementById('lbChip').style.display = LB_ON ? 'block' : 'none';
   // ground strip
   px(0, GROUND_Y, W, 5, '#8a8f9e'); px(0, GROUND_Y + 5, W, H - GROUND_Y, '#33323f');
   // s=3 live preview — walks in place, re-renders the chosen look every frame (it IS the preview)
@@ -3687,23 +3737,19 @@ function showEndUI(won){
   };
   if (LB_ON){
     const listEl = document.getElementById('lbList');
-    const renderRows = rows => rows.map((r, i) =>
-      `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
     const renderTop = () => {
-      listEl.innerHTML = lbTop && lbTop.length
-        ? "TODAY'S BOARD — seed #" + SEED_N + '<br>' + renderRows(lbTop.slice(0, 5)) +
-          '<br><button id="lbAll" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">🏆 VIEW TOP 100</button>'
-        : '';
-      const all = document.getElementById('lbAll');
-      if (all) all.onclick = () => {
-        fetch('/api/leaderboard?seed=' + SEED_N + '&limit=100').then(r => r.json()).then(j => {
-          if (!j || !j.ok) return;
-          listEl.innerHTML = "TODAY'S BOARD — seed #" + SEED_N + ' · top ' + j.top.length +
-            `<div style="max-height:220px; overflow:auto; margin:6px auto 0; width:min(520px,84vw); padding:6px 12px; background:rgba(0,0,0,.35); text-align:left">${renderRows(j.top)}</div>` +
+      lbLoad(5, (rows, label) => {
+        listEl.innerHTML = label + (rows.length ? '<br>' + lbRowsHtml(rows) : '') +
+          (rows.length ? '<br><button id="lbAll" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">🏆 VIEW TOP 100</button>' : '');
+        const all = document.getElementById('lbAll');
+        if (all) all.onclick = () => lbLoad(100, (rows2, label2) => {
+          listEl.innerHTML = label2 + ' · top ' + rows2.length +
+            `<div style="max-height:220px; overflow:auto; margin:6px auto 0; width:min(520px,84vw); padding:6px 12px; background:rgba(0,0,0,.35); text-align:left">${lbRowsHtml(rows2)}</div>` +
             '<button id="lbLess" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">show top 5 ↑</button>';
           document.getElementById('lbLess').onclick = () => renderTop();
-        }).catch(() => {});
-      };
+          listEl.scrollIntoView({ block: 'nearest' }); // the expand must be SEEN (fold bug, owner report)
+        });
+      });
     };
     renderTop();
     document.getElementById('lbGo').onclick = () => {
@@ -3787,6 +3833,8 @@ let last = 0, acc = 0;
 function stepGame(){
   if (state === ST.TITLE && (JUMP()) && frame > 30){
     document.getElementById('credit').style.display = 'none';
+    document.getElementById('lbChip').style.display = 'none';
+    document.getElementById('lbPanel').style.display = 'none';
     reset(false); state = ST.PLAY;
   }
   if (hitstopT > 0){ hitstopT--; return; } // hurt hitstop: freeze sim, keep drawing
