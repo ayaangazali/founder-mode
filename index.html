@@ -1161,11 +1161,16 @@ function update(){
     if (!c.got && aabb(p, c)){
       // NEPO intern on payroll: +20% per coin (his dad knows everyone)
       const cv2 = interns.some(i2 => i2.id === 'nepo') ? Math.round(COIN_VALUE * 1.2) : COIN_VALUE;
-      c.got = true; raised += cv2; sCoin(); // rate environment sets the coin (ROADMAP §7)
-      moodUp(); // every coin lifts the mood, even when the popup dedupes
-      // one popup per coin cluster, not per coin — a full row was 5 stacked labels (playtest)
-      if (!popups.some(q2 => q2.txt.startsWith('+$') && Math.abs(q2.x - c.x) < 56))
-        addPop(c.x, c.y - 6, '+$' + cv2 + 'K', '#ffd94a');
+      c.got = true;
+      if (cmoT > 0){ // in the vertical-video frame, money is impressions (B5)
+        addPop(c.x, c.y - 6, '+0 REAL DOLLARS (impressions)', '#8d99ae');
+      } else {
+        raised += cv2; sCoin(); // rate environment sets the coin (ROADMAP §7)
+        moodUp(); // every coin lifts the mood, even when the popup dedupes
+        // one popup per coin cluster, not per coin — a full row was 5 stacked labels (playtest)
+        if (!popups.some(q2 => q2.txt.startsWith('+$') && Math.abs(q2.x - c.x) < 56))
+          addPop(c.x, c.y - 6, '+$' + cv2 + 'K', '#ffd94a');
+      }
     }
   }
 
@@ -2437,6 +2442,12 @@ function draw(){
       px(x + 13, y + 7, 2, 3, '#39c46d');                        // iced matcha, of course
       px(x + 6, y + 13, 3, 3, '#e8e0c9'); px(x + 10, y + 13, 3, 3, '#e8e0c9');
       px(x + 6, y + 16, 3, 1, '#fff'); px(x + 10, y + 16, 3, 1, '#fff');
+      // B5: she narrates the strategy now (one line at a time, proximity-gated)
+      if (Math.abs(player.x - 2506) <= 60 && state === ST.PLAY && cmoT === 0){
+        const CMO_LINES = ['we did a brand moment.', 'the deck has a vibe.',
+          '2M views. zero signups. worth it.', 'the product? the *brand* is done.', 'pre-revenue, post-aesthetic.'];
+        celebBubble(x + 8, y + 2, CMO_LINES[Math.floor(playMs / 2600) % CMO_LINES.length]);
+      }
     }
   }
   // the run club itself — a pack of four in matching merch, 5:45 pace, sweeps
@@ -3019,8 +3030,15 @@ function draw(){
     cx.strokeRect(150.5, 4.5, 179, H - 9);
     cx.font = 'bold 8px monospace'; cx.fillStyle = '#fff'; cx.textAlign = 'center';
     cx.fillText('✨ day in my life as an obstacle ✨', 240, 22);
-    cx.fillText('2.1M views · ♥ 402K', 240, H - 16);
+    // the counter ticks LIVE while you're content (B5) — engagement is a verb now
+    const vBase = 2100000 + (90 - cmoT) * 4137, lBase = 402000 + (90 - cmoT) * 619;
+    cx.fillText((vBase / 1000000).toFixed(2) + 'M views · ♥ ' + Math.round(lBase / 1000) + 'K', 240, H - 16);
     if (frame % 20 < 10){ cx.fillStyle = '#ff5a5a'; cx.fillRect(156, 10, 5, 5); }
+    // a LIKE floats off you. you are the content.
+    const hy = (90 - cmoT) * 0.6;
+    cx.fillStyle = '#ff5a7a'; cx.font = 'bold 9px monospace';
+    cx.fillText('♥', Math.round(player.x - cam + 4), Math.round(player.y - 8 - hy));
+    if (cmoT > 45) cx.fillText('♥', Math.round(player.x - cam - 6), Math.round(player.y - 2 - hy * 1.4));
     cx.textAlign = 'left';
   }
 
