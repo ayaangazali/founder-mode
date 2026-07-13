@@ -633,16 +633,20 @@ let chatStill = 0;    // touch trigger: frames stood still at a table
 // run; a fail is an invitation to "apply again" (that's the next run).
 const ACC_X = 900; // SOMA storefront; scanned clear of enemies, signs, cameos, pits
 const ACC_QS = [
-  { q:'what does your company do?', a:'we sell rocks online', b:"we're reimagining the paradigm of mineral commerce" },
-  { q:'how do you make money?', a:'people pay us', b:'monetization is a phase-two conversation' },
-  { q:'why will you win?', a:'we ship faster', b:'our culture deck has ninety slides' },
-  { q:'who are your competitors?', a:"everyone. we're scared.", b:'we have no competitors' },
-  { q:"what's your growth?", a:'20% week over week', b:'the hockey stick is pending' },
-  { q:'why this idea?', a:'we had the problem', b:'a vision came to our CEO in Big Sur' },
-  { q:'what do you want from us?', a:'money', b:'mentorship, mostly, and the vibes' },
+  // v1.2 bank (B4). Two options per question (the engine's ←/→ mechanic —
+  // smaller diff than the spec's 4-option cards; funniest wrong kept, noted
+  // in CLIP-REPORT). The short, concrete answer is always the right one.
+  { q:'what does your company do?', a:'we help founders dodge VCs.', b:"honestly? it's a movement." },
+  { q:'how big is the market?', a:'$4B and growing.', b:'everyone is the market.' },
+  { q:'why you two?', a:"we've shipped this before.", b:'i have the gene.' },
+  { q:"who's your competition?", a:"CHAD CAPITAL and SYNERGY — we're faster.", b:"google. they don't know yet." },
+  { q:"what's your revenue?", a:'$12K MRR, up 40%.', b:'vibes are up.' },
+  { q:'are you default alive?', a:'yes — 18 months runway.', b:'my mom is backing us.', momAlt:1 },
+  { q:"what'll you do with the money?", a:'hire two engineers.', b:'a bigger billboard.' },
 ];
-let interview = null; // {qi, t, score, held, phase, flash}
+let interview = null; // {qi, t, score, held, phase, flash, respectT}
 let accDone = false;
+let accBatch = false; // won the interview this run — BATCH F26 stamps badge + newspaper
 let wave = null;      // the run club: {x} sweeping Dolores left-to-right every ~45s
 
 function interviewStart(){
@@ -661,7 +665,11 @@ function interviewUpdate(){
     if (pick >= 0){
       interview.held = true;
       const swap = interview.qi % 2 === 1;
-      const good = (swap ? 1 - pick : pick) === 0;    // the short answer is always answer a
+      const chose = swap ? 1 - pick : pick;
+      let good = chose === 0;                          // the short answer is always answer a
+      if (!good && ACC_QS[interview.qi].momAlt && (cof().id === 'mom' || momBacked)){
+        good = true; interview.respectT = 40;          // "my mom is backing us." ...respect.
+      }
       if (good) interview.score++;
       interview.flash = good ? 14 : -14; // brief ✓/✗ tick; the questions do not wait
       if (interview.flash < 0) interview.flash = 14, interview.flashBad = true; else interview.flashBad = false;
@@ -671,7 +679,11 @@ function interviewUpdate(){
       interview.phase = 'end'; interview.t = 240;
       if (cof().id === 'biz' && interview.score < ACC_QS.length){ interview.score++; } // one on the house
       interview.won = interview.score >= 5;
-      if (interview.won){ raised += 150; player.ycT = 60 * 8; moodUp(); sPow(); }
+      if (interview.won){
+        raised += 150; player.ycT = 60 * 8; moodUp(); sPow();
+        accBatch = true;                               // stamped for the run
+        try { localStorage.setItem('fm_alum', '1'); } catch(e){} // title flair, forever
+      }
       else moodDown();
     }
   } else if (--interview.t <= 0){
@@ -872,7 +884,7 @@ function reset(fromCheckpoint){
     interns = []; internHiredCount = 0; internTypesHired = []; internDwell = 0;
     BOOTHS[0].type = pickInternType(quoteRoll); BOOTHS[0].hired = false;
     BOOTHS[1].type = pickInternType((quoteRoll * 7919) % 1); BOOTHS[1].hired = false;
-    interview = null; accDone = false;
+    interview = null; accDone = false; accBatch = false;
     for (const bb of BILLBOARDS) bb.spotted = false;  // partner shout-outs re-arm per run
     slops = []; slopN = 0;
     room = { active: false, t: 0, px: 0, cans: [], done: false };
@@ -1966,13 +1978,18 @@ function drawInterview(){
       cx.font = 'bold 10px monospace'; cx.fillStyle = interview.flashBad ? '#d64550' : '#1d9e50';
       cx.fillText(interview.flashBad ? '✗' : '✓', 452, 60);
     }
+    if (interview.respectT > 0){ interview.respectT--;
+      cx.font = 'bold 8px monospace'; cx.fillStyle = '#1d9e50';
+      cx.fillText('...respect.', 400, 76);
+    }
   } else {
     cx.font = 'bold 9px monospace';
     cx.fillStyle = interview.won ? '#1d9e50' : '#d64550';
     cx.fillText(interview.won ? '"we\'d like you to be in the batch."' : '"we suggest applying again. everyone should apply. always."', 16, 60);
     cx.font = 'bold 8px monospace'; cx.fillStyle = '#1a1a2e';
     cx.fillText(interview.score + '/7 answered like an operator', 16, 76);
-    if (interview.won){ cx.fillStyle = '#d97706'; cx.fillText('DEMO DAY LETTER: +$150K · INVINCIBLE 8s', 16, 92); }
+    if (interview.won){ cx.fillStyle = '#d97706'; cx.fillText('DEMO DAY LETTER: +$150K · INVINCIBLE 8s', 16, 92);
+      cx.fillStyle = '#1a1a2e'; cx.fillText('stamped: ACCELERATOR · BATCH F26', 16, 106); }
   }
   drawHUD();
 }
@@ -3083,6 +3100,10 @@ function drawTitle(){
     cx.fillStyle = '#8fd18f'; cx.font = 'bold 6px monospace';
     cx.fillText('slop mode queued', 12, 250);
   }
+  try { if (localStorage.getItem('fm_alum')){                     // B4: the batch payoff, forever
+    cx.fillStyle = '#d97706'; cx.font = 'bold 7px monospace';
+    cx.fillText('▸ ACCELERATOR ALUM', 12, 242);
+  } } catch(e){}
   // EGG: THE REVERSE PITCH — ignore the founder for 60s and they pitch YOU, deck loops
   // from slide one (a founder circling back and re-pitching IS the joke). textAlign is
   // still 'left' here (required: measureText + left-anchored fillText, boss-bubble style).
@@ -3206,6 +3227,7 @@ function makeBadge(won){
   b.fillText(won ? 'survived SF · defeated SYNERGY.AI' : 'SF claims another founder', 320, 205);
   if (playerName()){ b.fillStyle = '#7ce0ff'; b.font = 'bold 30px monospace'; b.fillText('FOUNDER: ' + playerName().toUpperCase(), 320, 245); }
   if (won && momBacked){ b.fillStyle = '#d9748f'; b.font = 'bold 26px monospace'; b.fillText('SEED LED BY: MOM (undisclosed)', 320, 508); }
+  if (won && accBatch){ b.fillStyle = '#d97706'; b.font = 'bold 24px monospace'; b.fillText('ACCELERATOR · BATCH F26', 320, 272); }
   const t = fmtTime(endTime || playMs);
   b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';
   b.fillText('RAISED  ' + fmtMoney(raised), 320, 295);
@@ -3354,7 +3376,10 @@ function makeObituary(won){
   const MOM_LOSS = "The company's sole investor — the founder's mom — released a statement: 'I'm still proud of you.' The cap table was, in the end, a family matter.";
   [[48, i1], [440, i2]].forEach(([cx2, bi]) => {
     b.fillStyle = INK;
-    const bodyText = (momBacked && !won && cx2 === 440) ? MOM_LOSS : POOL[bi](rM, tM);
+    let bodyText = (momBacked && !won && cx2 === 440) ? MOM_LOSS : POOL[bi](rM, tM);
+    if (accBatch && cx2 === 48)
+      bodyText += won ? ' The company is, it will tell you unprompted, BATCH F26.'
+                      : ' He was, it should be noted, BATCH F26.';
     wrap(bodyText, 356).slice(0, 3).forEach((ln, li) => b.fillText(ln, cx2, 246 + li * 25));
     b.fillStyle = GREEK;
     for (let g = 0; g < 6; g++) b.fillRect(cx2, 332 + g * 22, g % 3 === 2 ? 250 : 352, 12);
