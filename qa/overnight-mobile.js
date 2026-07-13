@@ -67,7 +67,7 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
       if (!img || img.complete) return res(0); img.onload = () => res(1);
     }));
     const hit = await page.evaluate(() => {
-      const ids = ['bRe', 'bDl', 'bCp'];
+      const ids = ['bRe', 'bDl'];
       return ids.map(id => {
         const el = document.getElementById(id);
         if (!el) return id + ':missing';

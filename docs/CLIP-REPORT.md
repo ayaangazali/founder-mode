@@ -45,3 +45,21 @@ This branch is `humor-patch`, 11 commits ahead of main, awaiting owner review.
 | "SPOTTED: CLEAN (a real startup, unlike yours) +$5K" under the one partner board | qa/overnight/billboards-sandhill.png | the game dunks on you while paying you to notice the sponsor — partner gets a clip that flatters them at the player's expense |
 
 Spec deviations for this batch are recorded in PARTNERS.md (anchored-parallax formula; height-stagger instead of the impossible >=900px spacing; CALLIX moved out of CHAD's arena).
+
+## BUILD v1.2 (branch `build-v1.2`, 2026-07-13)
+| Moment | Screenshot | Why someone clips this |
+|---|---|---|
+| The mom round: 0 runway → the world freezes → 📞 INCOMING: MOM → +2 RUNWAY, "I believe in you, sweetie" | qa/overnight/mom-round.png | the single most repostable beat in the game — everyone tags their mom |
+| SEED LED BY: MOM (undisclosed) on the win badge + "'he's always been very driven' — the founder's mother" on the front page | qa/overnight/win-frontpage.png | the badge itself becomes the joke; LinkedIn eats it |
+| INTERN FAIR: hire THE UNPAID INTERN, watch him take your coins "for exposure," then the LABOR BOARD phantom arrives | qa/overnight/intern-fair.png | mechanical karma; the compliance phantom finally has a cause |
+| THE 10X INTERN tanks one hit, demands equity + a title + to lead eng, quits | (in-run) | the exact arc of every 10x hire, in four seconds |
+| AI cofounder: "I have deleted the database." → "I have restored the database." | qa/overnight/cof-mom-follow.png | the two-bubble arc IS the meme |
+| Accelerator 2.0: answer "my mom is backing us." while mom-backed — "...respect." | qa/overnight/interview-v2.png | the crossover payoff between two features |
+| CMO frame: view counter ticks live, hearts float off you, coins pay +0 REAL DOLLARS (impressions) | qa/overnight/cmo-frame-live.png | vanity metrics made literal |
+
+### Spec conflicts (smaller-diff rule invoked)
+- **Part A billboards**: the spec's list predates the owner's live cuts (GOJIBERRY/REPLIT/SUPABASE stay cut) and the v2 renderer. Net-new delta only: IMAGINE AI added (spec x8500 sat inside SYNERGY.AI's arena → x8150). See PARTNERS.md.
+- **B2 booths**: spec x1400 sat 20px off a pit lip → x1330; CV booth at x4380. Hiring is dwell-gated (~0.5s standing) so the sense-act bots can't staff up at sprint speed — spec's "walk into" reads as instant, dwell is the bot-safe smaller diff.
+- **B3 pull quote**: the mom quote is too long for the 30px pull-quote line; split across quote + attribution, full sentence intact. The 1-in-6 rescue also requires playMs > 20s so die-on-purpose QA probes stay deterministic (MOM-cofounder rescues are always guaranteed).
+- **B4 questions**: spec's 4-option cards trimmed to the engine's two-option ←/→ mechanic; funniest wrong answer kept per question. "Where in ten years?" dropped to hold the 7-question format.
+- **B1 TECHNICAL +8% speed**: an opt-in run modifier — flagged here for the speedrun contract; default NONE keeps the baseline untouched.
