@@ -69,3 +69,19 @@ Sense-act bot: clean PASS 02:59, tourist PASS 04:33 — both in the 3–6 minute
 band. First clean run exposed a bot bug (parked at x9080 mashing before the
 ceremony arms at x9100 — fixed: bot walks in first). All 3 suites + 9 probe
 files green; canon greps empty.
+
+## BUILD v1.3 — THE PEDIGREE (branch `pedigree`, 2026-07-13)
+| Moment | Screenshot | Why someone clips this |
+|---|---|---|
+| The end-card math with the résumé on it: RAISED × growth × discipline × corgi × **PEDIGREE ×100** — same run, $4.35M self-made vs $435M ex-SYNERGY.AI | qa/overnight/pedigree-card-none.png vs -exsyn.png | the side-by-side IS the discourse; performance barely moved the number |
+| Chad Capital reads the résumé: "oh, you were at SYNERGY.AI? here's the check" (-1 HP before the fight) vs "and who are you?" | (arena door) | fund-the-pedigree made mechanical |
+| NEPO FOUNDER's board member trailing you all run — gray suit, coffee, "your father says hi.", physically blocks you | qa/overnight/pedigree-boardmember.png | the warm intro has a body |
+| Win with NO PEDIGREE: subhead "Nobody can explain how." + SELF-MADE (unfundable) flair | qa/overnight/pedigree-card-none.png | the hardest flex in the game |
+
+### Spec notes
+- Baggage all reuses existing systems per guardrail: −1 heart (reset), compliance
+  phantom dispatch (LABOR BOARD pattern), deck pickup no-op, actionItems-style
+  block-push follower, boss maxhp bump. No new physics.
+- "×20+" investor shift keys off `ped().mult >= 20` (TEAL FELLOW, NEPO, ex-SYNERGY.AI).
+- Server caps: plausibility widened ×100 (raised×390) + absolute $1.2B ceiling;
+  theoretical max legit run ($3M raised, all multiples) = $1.155B, inside the ceiling.
