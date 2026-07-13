@@ -63,3 +63,9 @@ Spec deviations for this batch are recorded in PARTNERS.md (anchored-parallax fo
 - **B3 pull quote**: the mom quote is too long for the 30px pull-quote line; split across quote + attribution, full sentence intact. The 1-in-6 rescue also requires playMs > 20s so die-on-purpose QA probes stay deterministic (MOM-cofounder rescues are always guaranteed).
 - **B4 questions**: spec's 4-option cards trimmed to the engine's two-option ←/→ mechanic; funniest wrong answer kept per question. "Where in ten years?" dropped to hold the 7-question format.
 - **B1 TECHNICAL +8% speed**: an opt-in run modifier — flagged here for the speedrun contract; default NONE keeps the baseline untouched.
+
+### v1.2 final regression (item 7)
+Sense-act bot: clean PASS 02:59, tourist PASS 04:33 — both in the 3–6 minute
+band. First clean run exposed a bot bug (parked at x9080 mashing before the
+ceremony arms at x9100 — fixed: bot walks in first). All 3 suites + 9 probe
+files green; canon greps empty.
