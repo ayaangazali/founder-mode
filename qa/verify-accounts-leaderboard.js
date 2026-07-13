@@ -62,10 +62,23 @@ const check = (name, ok, detail='') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await file.evaluate(() => localStorage.clear());
   await file.reload(); await file.waitForTimeout(250);
   await file.keyboard.press('l'); await file.waitForTimeout(50);
-  check('file mode hides uncached leaderboard', await file.evaluate(() => !LB_ON && ui.style.display === 'none'));
+  // #ui is hidden by the stylesheet (display:none), so the inline style stays ''
+  // until something opens the panel - assert computed visibility + the open flag.
+  check('file mode hides uncached leaderboard', await file.evaluate(() => !LB_ON && !homePanelOpen && getComputedStyle(ui).display === 'none'));
   await file.keyboard.press('n'); await file.waitForSelector('#identityName');
   check('file mode keeps local identity claim available', await file.locator('#identitySave').count() === 1);
   check('file mode makes no leaderboard request', !requests.some(u => u.includes('/api/leaderboard')), requests.join(' | '));
+  // Degradation path 2: a board cached from a prior online session still opens
+  // offline, is labeled cached, and still triggers no network request.
+  const seed = await file.evaluate(() => SEED_N);
+  await file.evaluate(s => localStorage.setItem('fm_board_' + s,
+    JSON.stringify([{ name:'CACHED CARL', val:1234, raised:12, time_ms:99000, won:false }])), seed);
+  const before = requests.length;
+  await file.reload(); await file.waitForTimeout(250);
+  await file.keyboard.press('l'); await file.waitForSelector('#lbClose');
+  const cachedText = await file.locator('#uicard').innerText();
+  check('file mode shows cached board when present', cachedText.includes('CACHED CARL') && cachedText.toLowerCase().includes('cached'), cachedText.replace(/\n/g, ' '));
+  check('cached board still makes no leaderboard request', !requests.slice(before).some(u => u.includes('/api/leaderboard')));
   await offline.close();
   server.close();
   console.log(process.exitCode ? 'ACCOUNT/BOARD CHECKS FAILED' : 'ALL ACCOUNT/BOARD CHECKS PASS');

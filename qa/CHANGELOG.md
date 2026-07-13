@@ -8,6 +8,10 @@
   `api/leaderboard.mjs` contract, caches successful daily reads locally, and hides when offline without a cache.
 - Added `qa/verify-accounts-leaderboard.js` with mocked API, title-entry, identity-claim, finished-run-post,
   and `file://` degradation coverage.
+- Probe follow-up (test env now runs Playwright): corrected the offline-hide assertion (`#ui` is hidden by the
+  stylesheet, so the inline `style.display` stays `''` until a panel opens - the check now asserts computed
+  visibility + `homePanelOpen`), and added a "cached board shows offline" degradation case. All ten checks pass.
+- Completed the pnpm migration: removed the now-redundant `package-lock.json` (`pnpm-lock.yaml` is the lockfile).
 
 ## 2026-07-11 — [FIX-BUGS] pass (FINAL-REVIEW.md §5, items 1-33) — /home/claude/game/index.html
 
