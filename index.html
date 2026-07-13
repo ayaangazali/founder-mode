@@ -374,7 +374,8 @@ const powerDefs = [
   {x:5410,y:150,t:'deck'},                                   // on the arena perch: fight THE PLATFORM by air or by deck
   {x:5730,y:196,t:'deck'},                                   // second deck before the fund gauntlet
   {x:6390,y:196,t:'deck'},                                   // at Chad's door — every boss offers both options
-  {x:8430,y:196,t:'deck'},                                   // at SYNERGY.AI's door
+  // (owner call: no staged deck at SYNERGY.AI's door — the final boss is a stomp fight
+  //  unless you carried a deck in; decks remain at THE PLATFORM and CHAD doors)
   {x:5970,y:132,t:'yc'},
   {x:6270,y:196,t:'contract'},                               // v1.0: big logo, heavy process
   {x:7475,y:126,t:'coffee'},
@@ -495,7 +496,7 @@ const LB_ON = /^https?:$/.test(location.protocol);
 let lbTop = null, lbPostedRun = -1; // runId already on the board (marked only on a CONFIRMED post)
 function lbFetch(after){
   if (!LB_ON) return;
-  fetch('/api/leaderboard?seed=' + SEED_N).then(r => r.json())
+  fetch('/api/leaderboard?seed=' + SEED_N + '&limit=200').then(r => r.json())
     .then(j => { if (j && j.ok){ lbTop = j.top; if (after) after(); } }).catch(() => {});
 }
 lbFetch();
@@ -3690,20 +3691,9 @@ function showEndUI(won){
       `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
     const renderTop = () => {
       listEl.innerHTML = lbTop && lbTop.length
-        ? "TODAY'S BOARD — seed #" + SEED_N + '<br>' + renderRows(lbTop.slice(0, 5)) +
-          '<br><a id="lbAll" href="#" style="color:#7ce0ff">view full board ↓</a>'
+        ? "TODAY'S BOARD — seed #" + SEED_N + ' · ' + lbTop.length + (lbTop.length === 1 ? ' founder' : ' founders') +
+          `<div style="max-height:210px; overflow:auto; margin:6px auto 0; width:min(520px,84vw); padding:6px 12px; background:rgba(0,0,0,.35); text-align:left">${renderRows(lbTop)}</div>`
         : '';
-      const all = document.getElementById('lbAll');
-      if (all) all.onclick = e => {
-        e.preventDefault();
-        fetch('/api/leaderboard?seed=' + SEED_N + '&limit=200').then(r => r.json()).then(j => {
-          if (!j || !j.ok) return;
-          listEl.innerHTML = "TODAY'S BOARD — seed #" + SEED_N + ' · all ' + j.top.length +
-            `<div style="max-height:170px; overflow:auto; margin:4px auto 0; width:min(440px,84vw); padding:4px 10px; background:rgba(0,0,0,.35); text-align:left">${renderRows(j.top)}</div>` +
-            '<a id="lbLess" href="#" style="color:#7ce0ff">show top 5 ↑</a>';
-          document.getElementById('lbLess').onclick = ev => { ev.preventDefault(); renderTop(); };
-        }).catch(() => {});
-      };
     };
     renderTop();
     document.getElementById('lbGo').onclick = () => {
