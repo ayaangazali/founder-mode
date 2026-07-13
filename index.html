@@ -160,6 +160,8 @@ window.addEventListener('keydown', e => {
     else if (k === 'v') cycleLook('v');
     else if (k === 'x') cycleLook('x');
     else if (k === 'p') cycleLook('p');
+    else if (k === 'l') showLeaderboard();
+    else if (k === 'n') showIdentityClaim();
     // item 10 eggs: type CORGI / SLOP on the title (sticky for the session)
     if (k.length === 1 && k >= 'a' && k <= 'z'){
       typed = (typed + k).slice(-5);
@@ -222,6 +224,9 @@ if ('ontouchstart' in window) {
     if (state === ST.TITLE){
       const k = pickerHit(e.touches[0].clientX, e.touches[0].clientY);
       if (k){ cycleLook(k); return; }             // tap chip = cycle, not start
+      const home = homeHit(e.touches[0].clientX, e.touches[0].clientY);
+      if (home === 'board'){ showLeaderboard(); return; }
+      if (home === 'identity'){ showIdentityClaim(); return; }
     }
     if (state !== ST.PLAY){ touch.J = true; setTimeout(() => touch.J = false, 120); }
     else throwDeck(); // in play, a canvas tap pitches — if you're holding a deck
@@ -236,6 +241,10 @@ const PICKER_ZONES = [
   { x:112, y:234, w:104, h:12, k:'x' },
   { x:224, y:234, w:118, h:12, k:'p' },
 ];
+const HOME_ZONES = [
+  { x:74, y:138, w:154, h:14, k:'board' },
+  { x:244, y:138, w:164, h:14, k:'identity' },
+];
 function pickerHit(clientX, clientY){
   const r = cv.getBoundingClientRect();
   const mx = (clientX - r.left) * W / r.width;
@@ -245,11 +254,22 @@ function pickerHit(clientX, clientY){
       return z.k;
   return null;
 }
+function homeHit(clientX, clientY){
+  const r = cv.getBoundingClientRect();
+  const mx = (clientX - r.left) * W / r.width;
+  const my = (clientY - r.top) * H / r.height;
+  for (const z of HOME_ZONES)
+    if (mx > z.x && mx < z.x + z.w && my > z.y && my < z.y + z.h) return z.k;
+  return null;
+}
 cv.addEventListener('mousedown', e => {
   idleT = 0;
   if (state !== ST.TITLE) return;
   const k = pickerHit(e.clientX, e.clientY);
-  if (k) cycleLook(k);
+  if (k) { cycleLook(k); return; }
+  const home = homeHit(e.clientX, e.clientY);
+  if (home === 'board') showLeaderboard();
+  if (home === 'identity') showIdentityClaim();
 });
 
 // ------------------------- AUDIO -------------------------
@@ -493,15 +513,31 @@ const dailyRng = mulberry32(SEED_N);
 // http(s) only; on file:// the game never touches the network and falls back
 // to the localStorage personal best. The board is garnish, never load-bearing.
 const LB_ON = /^https?:$/.test(location.protocol);
+// Deployments can override this before this script runs; file:// deliberately
+// never calls it. The Vercel default remains the sibling serverless route.
+const LB_ENDPOINT = window.FOUNDER_MODE_LEADERBOARD_URL || '/api/leaderboard';
 let lbTop = null, lbPostedRun = -1; // runId already on the board (marked only on a CONFIRMED post)
+let lbCached = null;
+try { lbCached = JSON.parse(localStorage.getItem('fm_board_' + SEED_N) || 'null'); } catch(e){}
 function lbFetch(after){
   if (!LB_ON) return;
-  fetch('/api/leaderboard?seed=' + SEED_N + '&limit=200').then(r => r.json())
-    .then(j => { if (j && j.ok){ lbTop = j.top; if (after) after(); } }).catch(() => {});
+  fetch(LB_ENDPOINT + '?seed=' + SEED_N + '&limit=200').then(r => r.json())
+    .then(j => { if (j && j.ok){
+      lbTop = Array.isArray(j.top) ? j.top : [];
+      try { localStorage.setItem('fm_board_' + SEED_N, JSON.stringify(lbTop)); } catch(e){}
+      if (after) after();
+    } }).catch(() => {});
 }
 lbFetch();
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
 function playerName(){ try { return (localStorage.getItem('fm_name') || '').trim(); } catch(e){ return ''; } }
+function normalizeName(value){ return String(value || '').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14); }
+function claimIdentity(value){
+  const name = normalizeName(value);
+  if (!name) return '';
+  try { localStorage.setItem('fm_name', name); } catch(e){}
+  return name;
+}
 // the 10 market conditions (MASTER-PLAN §1.6, exact strings) + the lever each pulls
 const MARKETS = [
   { s:'AI HYPE CYCLE: PEAK — SYNERGY.AI +1 HP',                                  k:'aihype' },
@@ -3277,6 +3313,14 @@ function drawTitle(){
   } }
   cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
   cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 132);
+  // Optional, local-first identity: no signup wall before the first jump.
+  cx.font = 'bold 7px monospace';
+  if (LB_ON || lbCached){
+    cx.fillStyle = '#ffd94a'; cx.fillText('[L] TODAY\'S BOARD', 151, 148);
+  }
+  const identity = playerName();
+  cx.fillStyle = identity ? '#7ce0ff' : '#8d99ae';
+  cx.fillText(identity ? '[N] ' + identity : '[N] CLAIM IDENTITY', 326, 148);
   // (owner call: market-conditions ticker + seed number dropped from the title —
   //  the daily seed system itself is untouched; MARKET.s still feeds the obituary)
   // CTA: alpha pulse, never fully gone (a blink leaves screenshots CTA-less 1/3 of the time)
@@ -3314,6 +3358,7 @@ function drawTitle(){
 // ------------------------- END SCREENS + BADGE -------------------------
 const ui = document.getElementById('ui');
 const uicard = document.getElementById('uicard');
+let homePanelOpen = false;
 // M2 deployed 2026-07-11: live on Vercel. Swap to the joke domain when bought
 // (foundermode.lol still unregistered). HARDCODED on purpose — location.href
 // inside LinkedIn webviews can be a tracking redirector (ruling §2 amendments).
@@ -3334,9 +3379,55 @@ function badgeFlairs(won){
 }
 
 function resumePlay(fromCheckpoint){
+  homePanelOpen = false;
   ui.style.display = 'none';
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
   reset(fromCheckpoint); state = ST.PLAY;
+}
+
+function closeHomePanel(){ homePanelOpen = false; ui.style.display = 'none'; }
+function boardRows(rows){
+  if (!rows || !rows.length) return '<div style="color:#8d99ae">no exits posted yet. enormous market opportunity.</div>';
+  return `<div style="max-height:300px; overflow:auto; margin:12px auto; padding:10px 14px; background:rgba(0,0,0,.35); text-align:left; line-height:1.7">` +
+    rows.slice(0, 10).map((r, i) => `${i + 1}. ${normalizeName(r.name) || 'YOU'} — ${fmtMoney(r.val | 0)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms | 0)}`).join('<br>') + '</div>';
+}
+function showLeaderboard(){
+  if (!LB_ON && !lbCached) return;
+  homePanelOpen = true;
+  const render = () => {
+    const live = lbTop !== null;
+    const rows = live ? lbTop : lbCached;
+    uicard.innerHTML = `<div style="max-width:min(540px,90vw); color:#cfd6e4; padding:20px; background:#141433; border:4px solid #ffd94a">
+      <div style="font:bold 22px 'Courier New',monospace; color:#ffd94a">TODAY'S BOARD</div>
+      <div style="margin-top:5px; font-weight:bold; color:#8d99ae">seed #${SEED_N}${live ? '' : ' · cached offline'}</div>
+      ${boardRows(rows)}
+      <button id="lbClose">← BACK TO PITCH</button>${playerName() ? '' : '<button id="lbClaimHome" class="alt">CLAIM IDENTITY</button>'}
+    </div>`;
+    document.getElementById('lbClose').onclick = closeHomePanel;
+    const claim = document.getElementById('lbClaimHome'); if (claim) claim.onclick = showIdentityClaim;
+  };
+  render(); ui.style.display = 'flex';
+  if (LB_ON) lbFetch(render);
+}
+function showIdentityClaim(){
+  homePanelOpen = true;
+  const current = playerName();
+  uicard.innerHTML = `<div style="max-width:min(480px,90vw); color:#cfd6e4; padding:20px; background:#141433; border:4px solid #7ce0ff">
+    <div style="font:bold 22px 'Courier New',monospace; color:#7ce0ff">CLAIM IDENTITY</div>
+    <p style="font-weight:bold; line-height:1.5; margin:10px 0">A display name lives on this device and signs your optional board posts. No login. No interruption to playing.</p>
+    <input id="identityName" maxlength="14" placeholder="YOUR NAME" value="${current}" style="width:190px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
+    <div><button id="identitySave" class="alt">CLAIM</button><button id="identityClose">← BACK</button></div>
+    <div id="identityMsg" style="min-height:20px; color:#ff8c37; font-weight:bold"></div>
+  </div>`;
+  ui.style.display = 'flex';
+  const input = document.getElementById('identityName');
+  input.onkeydown = e => e.stopPropagation();
+  document.getElementById('identityClose').onclick = closeHomePanel;
+  document.getElementById('identitySave').onclick = () => {
+    const name = claimIdentity(input.value);
+    document.getElementById('identityMsg').textContent = name ? 'identity claimed ✓' : 'enter a display name first';
+    if (name) input.value = name;
+  };
 }
 
 function makeBadge(won){
@@ -3647,12 +3738,13 @@ function showEndUI(won){
       ${val.lines.join('<br>')}<br>
       ${cof().id !== 'none' ? 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label) + '<br>' : ''}<span style="color:#ffd94a; font-size:19px">= ${val.final}</span>
     </div></div>`;
-  // name row always renders (the name stamps the badge + front page);
-  // the POST button needs the network, so it's http(s)-only
+  // Claimed identities remain local. Posting is optional and only possible
+  // after the player deliberately claims one; file:// never exposes a POST.
   const lbHtml = `
     <div style="margin-top:6px">
       <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${(() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })()}"
         style="width:170px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
+      <button id="lbClaim" class="alt">CLAIM IDENTITY</button>
       ${LB_ON ? '<button id="lbGo" class="alt">🏆 POST VALUATION</button>' : ''}
     </div>
     <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:15px; margin-top:6px; line-height:1.6"></div>`;
@@ -3668,10 +3760,11 @@ function showEndUI(won){
 
   const nameEl = document.getElementById('lbName');
   nameEl.onkeydown = e => e.stopPropagation();        // typing must not steer the game
-  nameEl.onchange = () => {                           // commit the name -> re-stamp in place
+  const refreshNameSurfaces = () => {
     // no full rebuild: replacing the card mid-click would eat the POST button
-    const nm = nameEl.value.toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14);
-    try { localStorage.setItem('fm_name', nm); } catch(e){}
+    const nm = claimIdentity(nameEl.value);
+    if (!nm) return false;
+    nameEl.value = nm;
     surfaces.badge.c = makeBadge(won);
     surfaces.obit.c = makeObituary(won);
     surfaces.obit.text = `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${GAME_URL}`;
@@ -3684,7 +3777,9 @@ function showEndUI(won){
       } }, 'image/png');
     }
     document.getElementById('endImg').src = surfaces[cur].url;
+    return true;
   };
+  document.getElementById('lbClaim').onclick = refreshNameSurfaces;
   if (LB_ON){
     const listEl = document.getElementById('lbList');
     const renderRows = rows => rows.map((r, i) =>
@@ -3698,11 +3793,11 @@ function showEndUI(won){
     renderTop();
     document.getElementById('lbGo').onclick = () => {
       if (lbPostedRun === runId) return;                 // this run is already on the board
-      const nm = (nameEl.value || 'YOU').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14) || 'YOU';
-      try { localStorage.setItem('fm_name', nm); } catch(e){}
+      const nm = playerName();
+      if (!nm){ document.getElementById('cpMsg').textContent = 'claim an identity before posting'; return; }
       const btn = document.getElementById('lbGo');
       btn.textContent = '…syndicating…';
-      fetch('/api/leaderboard', { method: 'POST', headers: { 'content-type': 'application/json' },
+      fetch(LB_ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ name: nm, val: lastVal, raised, timeMs: Math.round(endTime || playMs), won, seed: SEED_N }) })
         .then(r => r.json())
         .then(j => {
@@ -3711,7 +3806,7 @@ function showEndUI(won){
           if (j && j.ok){
             lbPostedRun = runId;                         // marked only when the board confirms
             // bust the 60s CDN cache so the board under the checkmark shows the new row
-            fetch('/api/leaderboard?seed=' + SEED_N + '&limit=10&b=' + Math.floor(Math.random() * 1e9))
+            fetch(LB_ENDPOINT + '?seed=' + SEED_N + '&limit=10&b=' + Math.floor(Math.random() * 1e9))
               .then(r => r.json()).then(k => { if (k && k.ok){ lbTop = k.top; renderTop(); } }).catch(() => {});
           }
         })
@@ -3775,7 +3870,7 @@ function showEndUI(won){
 const STEP = 1000 / 60;
 let last = 0, acc = 0;
 function stepGame(){
-  if (state === ST.TITLE && (JUMP()) && frame > 30){
+  if (state === ST.TITLE && !homePanelOpen && (JUMP()) && frame > 30){
     document.getElementById('credit').style.display = 'none';
     reset(false); state = ST.PLAY;
   }

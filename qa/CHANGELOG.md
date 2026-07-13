@@ -1,5 +1,14 @@
 # FOUNDER MODE — CHANGELOG
 
+## 2026-07-13 — [ACCOUNTS + HOME BOARD]
+
+- Added an optional, local-first claimed display identity. It is deliberately not a signup wall: names
+  persist in `localStorage`, remain usable from `file://`, and are required only before an optional score post.
+- Added title-screen `[L] TODAY'S BOARD` and `[N] CLAIM IDENTITY` entry points. The board uses the existing
+  `api/leaderboard.mjs` contract, caches successful daily reads locally, and hides when offline without a cache.
+- Added `qa/verify-accounts-leaderboard.js` with mocked API, title-entry, identity-claim, finished-run-post,
+  and `file://` degradation coverage.
+
 ## 2026-07-11 — [FIX-BUGS] pass (FINAL-REVIEW.md §5, items 1-33) — /home/claude/game/index.html
 
 Baseline preserved at /home/claude/game/index.v0.1.bak.html (untouched). All three game tests
