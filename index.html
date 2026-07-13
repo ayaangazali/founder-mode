@@ -572,7 +572,7 @@ let pedIdx = 0;
 try { pedIdx = clamp(parseInt(localStorage.getItem('fm_ped')) || 0, 0, PEDIGREES.length - 1); } catch(e){}
 const ped = () => PEDIGREES[pedIdx];
 let listHeatAt = Infinity;   // 30 UNDER 30: the list sends a compliance phantom, periodically
-let bmX = 0;                 // NEPO FOUNDER: the board member's position (dad's guy)
+let bmSyncAt = Infinity, bmSyncT = 0; // NEPO FOUNDER: the board member's recurring "quick sync"
 let aiNudgeAt = Infinity, aiNudgeT = 0;               // the AI cofounder "helps" once per run
 let momRoundUsed = false, momBacked = false;          // B3: the mom round — once per run; flavors every share surface
 
@@ -920,7 +920,7 @@ function reset(fromCheckpoint){
     if (pedIdx > 0) addPop(60, GROUND_Y - 60, 'PEDIGREE: ' + ped().label + ' ×' + ped().mult, '#ff8c37', 200);
     if (cof().id !== 'none') addPop(60, GROUND_Y - 48, 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label), '#7cffa5', 200);
     listHeatAt = ped().id === 'thirty' ? 40000 : Infinity;           // the list is watching
-    bmX = 0;
+    bmSyncAt = ped().id === 'nepo' ? 25000 : Infinity; bmSyncT = 0;
     if (ped().id === 'exsyn'){ bosses[2].hp += 2; bosses[2].maxhp += 2; } // "we know what you did"
     bosses.forEach(bb => { bb.pedApplied = false; });
     interns = []; internHiredCount = 0; internTypesHired = []; internDwell = 0;
@@ -1087,7 +1087,7 @@ function update(){
 
   // -------- player --------
   // cold brew boosts, enterprise process drags (×0.85, big logo heavy process)
-  const speed = (p.coffeeT > 0 ? 2.5 : 1.7) * (p.slowT > 0 ? 0.85 : 1) * (cof().id === 'tech' ? 1.08 : 1); // technical cofounder ships
+  const speed = (p.coffeeT > 0 ? 2.5 : 1.7) * (p.slowT > 0 ? 0.85 : 1) * (bmSyncT > 0 ? 0.8 : 1) * (cof().id === 'tech' ? 1.08 : 1); // technical cofounder ships; board syncs drag
   if (L()) { p.vx = -speed; p.face = -1; }
   else if (R()) { p.vx = speed; p.face = 1; }
   else p.vx *= 0.7;
@@ -1519,15 +1519,16 @@ function update(){
     corgi.face = corgi.x > CORGI_HOME ? -1 : 1;
   }
 
-  // -------- NEPO FOUNDER baggage: the board member (dad's guy) trails you --------
-  // Reuses the actionItems block-push: he never hurts, he just... governs.
-  if (ped().id === 'nepo'){
-    if (bmX === 0) bmX = p.x - 30;
-    const bdx = (p.x - 22 * p.face) - bmX;
-    bmX += clamp(bdx * 0.07, -2.4, 2.4);
-    const bmBox = { x: bmX, y: GROUND_Y - 18, w: 12, h: 18 };
-    if (aabb(p, bmBox)) p.x += (p.x < bmX ? -0.7 : 0.7);        // blocks like a board member
+  // -------- NEPO FOUNDER baggage: the board member calls (v1.3 owner pass:
+  // the trailing body made the game cramped — same governance, zero bodies).
+  // Every ~30s: a BOARD SYNC drags you to 0.8x speed for 1.5s. ----
+  if (ped().id === 'nepo' && state === ST.PLAY){
+    if (playMs > bmSyncAt){
+      bmSyncAt = playMs + 30000; bmSyncT = 90;
+      addPop(p.x, p.y - 24, 'BOARD SYNC — "quick one, promise"', '#8d99ae', 150);
+    }
   }
+  if (bmSyncT > 0) bmSyncT--;
 
   // -------- cofounder follower (reuses the corgi's lerp — no new physics) --------
   if (cof().id !== 'none'){
@@ -1565,15 +1566,12 @@ function update(){
       }
     } else internDwell = 0;
     for (const it of interns){
-      // trail: behind the player, behind the cofounder, single file
-      const slot = 1 + interns.indexOf(it) + (cof().id !== 'none' ? 1 : 0);
-      const tdx = (p.x - (14 + slot * 12) * p.face) - it.x;
-      it.x += clamp(tdx * 0.08, -2.6, 2.6);
-      if (Math.abs(tdx) > 2) it.face = tdx > 0 ? 1 : -1;
-      // coin magnetism: the grinder collects for you, the unpaid one collects "for exposure"
+      // v1.3 owner pass: interns work REMOTE — no trailing bodies (the follower
+      // parade made the game feel cramped). Effects anchor on the player; the
+      // TEAM line in the HUD is their whole physical presence.
       if ((it.id === 'grinder' || it.id === 'unpaid') && !it.invis){
         for (const c of coins){
-          if (!c.got && Math.abs(c.x - it.x) < 40 && Math.abs(c.y - (GROUND_Y - 20)) < 60){
+          if (!c.got && Math.abs(c.x - p.x) < 60 && Math.abs(c.y - (GROUND_Y - 20)) < 60){
             c.got = true;
             if (it.id === 'grinder'){ raised += COIN_VALUE; sCoin(); addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K (intern)', '#7cffa5'); }
             else addPop(c.x, c.y - 6, '+$0 (for exposure)', '#8d99ae');
@@ -2131,17 +2129,11 @@ function drawInternFair(){
         celebBubble(x + 25, y + 2, T.name + (T.cost ? ' — $' + T.cost + 'K. stand here to hire.' : ' — free. stand here to hire.'));
     }
   }
+  // interns work remote (owner pass) — the HUD TEAM line is their presence;
+  // the NEPO intern still phones in his one line
   for (const it of interns){
-    if (it.invis) continue;                                      // the ghost, famously
-    const x = it.x - cam;
-    if (x < -30 || x > W + 30) continue;
-    const y = GROUND_Y - 14, step = (frame >> 3) % 2;
-    px(x + 2, y - 2, 6, 2, '#4a3626'); px(x + 2, y, 6, 4, '#e8c39a');
-    px(x + 1, y + 4, 8, 6, INTERN_SHIRT[it.id]);
-    px(x + 4, y + 4, 2, 5, '#ffd94a');                           // lanyard
-    px(x + 2, y + 10, 3, 3 + step, '#2b2d42'); px(x + 6, y + 10, 3, 4 - step, '#2b2d42');
-    if (it.id === 'nepo' && state === ST.PLAY && frame % 620 < 130 && Math.abs(player.x - it.x) < 90)
-      celebBubble(x + 5, y + 2, 'my dad knows everyone at Sequoiadendron');
+    if (it.id === 'nepo' && state === ST.PLAY && frame % 620 < 130)
+      celebBubble(player.x - cam + 5, GROUND_Y - 12, 'my dad knows everyone at Sequoiadendron');
   }
 }
 
@@ -2686,21 +2678,6 @@ function draw(){
       cx.fillText('CORGI CAFÉ', Math.round(x + 6), Math.round(GROUND_Y - 24));
     }
   }
-  // NEPO FOUNDER's board member: gray suit, coffee, opinions
-  if (ped().id === 'nepo' && bmX !== 0 && state !== ST.TITLE){
-    const x = bmX - cam;
-    if (x > -30 && x < W + 30){
-      const y = GROUND_Y - 18;
-      px(x+2, y, 8, 2, '#b9b9b9'); px(x+3, y+2, 6, 4, '#e8d4b8');
-      px(x+1, y+6, 10, 8, '#3a3a44'); px(x+5, y+6, 2, 4, '#fff'); // gray suit, white shirt
-      px(x+11, y+8, 3, 4, '#8a5a2b');                             // the coffee
-      px(x+2, y+14, 3, 3, '#16161d'); px(x+7, y+14, 3, 3, '#16161d');
-      px(x+2, y+17, 3, 1, '#111'); px(x+7, y+17, 3, 1, '#111');
-      if (state === ST.PLAY && frame % 700 < 130 && Math.abs(player.x - bmX) < 80)
-        celebBubble(x + 6, y + 2, ['quick sync?', 'your father says hi.', 'the board has thoughts.'][Math.floor(playMs / 3000) % 3]);
-    }
-  }
-
   // the cofounder, trailing (draw-only follower; hitboxes belong to the player)
   if (cof().id !== 'none' && state !== ST.TITLE){
     const x = cofX - cam;
@@ -3217,6 +3194,7 @@ function drawHUD(){
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
   if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText((('ontouchstart' in window) ? 'PITCHING · tap fires · ' : 'PITCHING · X fires · ') + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
+  if (bmSyncT > 0){ cx.fillStyle = '#8d99ae'; cx.fillText('BOARD SYNC ' + Math.ceil(bmSyncT / 60) + 's', 12, 54); }
   // interns on payroll: a small ledger line (owner: the hires need presence)
   if (interns.length){
     cx.fillStyle = '#7cffa5';
