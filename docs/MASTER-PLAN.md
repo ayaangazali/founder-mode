@@ -1,4 +1,10 @@
 # FOUNDER MODE — The Master Plan
+
+> **STALE-DOC NOTICE (2026-07-13):** this document describes the v0.1 build
+> (~1,300 lines, 4 zones, no mini-games). The shipped game is ~3,900 lines with
+> 5 zones, mini-games, leaderboard, and the MASH-R finale. Read this as design
+> history; for current truth use CLAUDE.md, qa/CHANGELOG.md, and
+> docs/AUDIT-2026-07-13.md.
 ### Lore bible · progression design · Claude Code build plan
 
 **Strategy in one line:** ship the small game first (v0.2 → v0.3 → LAUNCH), with the big game (v1.0) fully designed now but built only if launch traction earns it.

@@ -462,3 +462,54 @@ GitHub (private).
   script injection (static tag 404'd on file:// and tripped playtest).
 - July 11 history compressed 37→26 commits (fixups folded into feature
   leaders), all branches rebased, tags remapped; content verified byte-identical.
+
+## 2026-07-13 — [AUDIT FIX PACK] (docs/AUDIT-2026-07-13.md §7 priority list, batches A–G)
+
+**Exploits (P0, live-board integrity):**
+- ZERO CHURN farm dead: list/labor phantom respawns carry `inj`+`noBounty` —
+  they count for the badge check (`dead || inj`) but pay $0 on stomp.
+- Valuation cap: server POST gate `val ≤ max(raised,1)×390+10` (max legit
+  multiplier chain) and ≤2.4M absolute; raised ≤ 6000. og/r endpoints clamp
+  the same bounds so forged share cards can't exceed a legit run.
+- Insert-race on the unique(seed,name) index: on conflict re-GET, compare,
+  PATCH once if better, else honest "board hiccup — try again".
+
+**Mechanics honesty:**
+- Bell finale commits the win the frame the meter fills (`bellDone` + endTime
+  snapshot + invulnerable celebration) — dying mid-confetti no longer eats a win.
+- Interview/chat answer sides randomized per-question via `swapFor()` (bit-mix
+  of the run's quoteRoll) — mash-left no longer clears either mini-game; probe
+  reads the same function to stay deterministic.
+- Chat opens with an 8s clock + intro beat; power timers (deck/coffee/matcha/
+  slow/yc) tick down during chats, interviews, and rooms instead of freezing.
+- throwDeck gated off during chat/interview/room/pause. Mom-round roll
+  decorrelated from the cosmetic quoteRoll. First gremlin moved to x650 and a
+  4-coin tutorial row added pre-contact.
+- lateDraws flush moved outside the hurt-flash gate (celebs/billboards no
+  longer vanish for a frame when hurt); occlude() rects now integer-aligned.
+
+**Share loop (dead code → wired):**
+- api/r.mjs result page: og tags point at /api/og with THAT RUN's params, meta
+  refresh into the game. shareText/share sheet now emit resultUrl(won).
+  api/og.mjs rewritten to the current badge surface (VALUATION, PEDIGREE,
+  FOUNDER name, bounded params, s-maxage=86400).
+- Analytics funnel: track('start'/'first_boss'/'badge_screen'/'win') on the
+  existing window.va shim.
+
+**Tests (were decorative, now load-bearing):**
+- smoketest/playtest/deathtest assert and exit nonzero. Playtest's new must()
+  gates immediately exposed the death leg silently idling on the TITLE screen
+  (state 0 logged as pass) — fixed with Space-retry after reload; deathtest
+  asserts state 3 + R-respawn to a fresh run.
+- NEW qa/minigames-probe.js: chats, interview+BATCH F26, cofounder passives,
+  mom-round paths, pedigree tiers (SERIAL check is seed-relative — bull days
+  give +1 base heart), interns (dwell/10X/sprint-safe), CMO frame, pause-
+  freezes-playMs. NEW qa/leaderboard-probe.js: http stub covering post/
+  confirm/double-post-block/XSS-escape/fold-expand/empty-day.
+- celebs-probe grep gate widened (+OBIT_CAPTIONS, +badgeFlairs); obituary
+  probe asserts the real share copy; fullrun COIN_DETOURS resynced.
+
+**Docs:** CLAUDE.md rewritten to current truth (owner-ruled celeb/billboard
+gates recorded); qa/design-cameos.md §4 thin-veil table stripped per its own
+instruction; stale-doc banners on the v0.1-era docs; CLIP-REPORT merge status
+corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.

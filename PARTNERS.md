@@ -6,6 +6,14 @@
 ### obituary, or share text (gated by qa/billboards-probe.js) — that's a separate
 ### consent from "appear in the world" (docs/BILLBOARDS.md §5).
 
+
+> **2026-07-13 status note:** the live board list is the `BILLBOARDS` array in
+> index.html (16 boards after the GOJIBERRY/REPLIT/SUPABASE cut) — this table
+> predates the cut, so rows here may not be in the game. The consent rule and
+> the share-surface gate are unchanged and still binding. No written yes has
+> been collected for ANY board yet (CLEAN included) — that outreach is the
+> owner's open TODO.
+
 | Board | Company | Relationship | Real or parody now | Status | Yes evidence |
 |---|---|---|---|---|---|
 | CLEAN | tryclean.ai | you know them | REAL (partner) | ✅ seed partner | owner-confirmed (record link/screenshot here) |

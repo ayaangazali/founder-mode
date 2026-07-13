@@ -1,48 +1,77 @@
-# 🍄 FOUNDER MODE — the SF startup platformer
+<div align="center">
 
-A single-file, pixel-art, Mario-style browser game satirizing SF tech / AI B2B SaaS culture.
-No frameworks, no assets, no build step — one HTML file. Built as a viral side project for LinkedIn.
+# 🦄 FOUNDER MODE
 
-**Play it right now:** double-click `index.html`. That's the whole install.
+**The SF startup platformer.** Stomp churn. Dodge VCs. Survive the accelerator interview. Ring the IPO bell.
 
-![title screen](screenshots/title.png)
+### [▶ &nbsp;PLAY NOW — foundermode.vercel.app](https://foundermode.vercel.app)
 
-## Current build
-This is the **QA-hardened war-room build** (post-v0.1): fixed-timestep engine (same speed on every
-display), checkpoint respawn with a −25% "bridge round" haircut, pick-your-founder customization
-(6 skin tones · 4 hair styles · 6 hoodie colors — C/H/V on the title screen, persists, shows on your
-badge), per-zone biomes, 6 background cameo legends, 3 discoverable easter eggs, zone-aware loss
-badges, and a hardened share loop (URL baked into the badge PNG, clipboard fallbacks, native share
-on mobile). All trademarks removed. `index.v0.1.bak.html` is the original v0.1, untouched.
+*One HTML file. No signup, no install, no loading screen. Arrow keys / WASD, Space to jump.*
 
-12 bugs were found by adversarial agents running live Playwright probes, independently re-verified,
-and fixed with tests green after every change — the paper trail is in `qa/`.
+<img src="og.png" width="640" alt="FOUNDER MODE">
 
-## What's in this kit
+*made by [ayaan gazali](https://www.linkedin.com/in/ayaangazali)*
 
-| Path | What it is |
-|---|---|
-| `index.html` | **The entire game.** The only file you need to ship. |
-| `index.v0.1.bak.html` | Pristine v0.1 backup. |
-| `CLAUDE.md` | Session brief for Claude Code — read first, every session. |
-| `og.png` | 1200×630 link-preview image (wire up per BUILD-GUIDE Step 4). |
-| `docs/FOUNDER-MODE-BIBLE.md` | **Start here.** The unified design bundle: routes, losses, eggs, speedruns, culture pack. |
-| `docs/MASTER-PLAN.md` | Lore bible, copy decks, progression, Claude Code milestones, traction gate. |
-| `docs/RESEARCH-REPORT.md` | Fact-checked research on why games like this go viral. |
-| `docs/BUILD-GUIDE.md` / `LAUNCH-PLAYBOOK.md` / `ROADMAP.md` / `GAME-DESIGN.md` | Deploy steps · distribution plan · v0.3 code · code map. |
-| `design/` | The design lab: animated sprite gallery, paste-ready draw functions, validated v1.0 level data (Cerebral Valley), world map, cameo designs. |
-| `qa/` | The war room: FINAL-REVIEW (adjudicated findings), CHANGELOG, 4 approved feature specs, proof screenshots. |
-| `test/` | Headless Playwright tests — `node test/playtest.js` from the kit root. |
-| `screenshots/` | v0.1-era screenshots (badges/bosses still representative). |
-
-## Controls
-← → or A/D move · SPACE / ↑ / W jump · **C/H/V customize your founder (title screen)** · M mute · R restart.
-Touch controls appear automatically on phones. Rotate to landscape — investors prefer landscape.
-
-## Before you launch (the short list)
-1. Replace the `GAME_URL` placeholder in `index.html` with your real URL (or register foundermode.lol).
-2. Strip the risky tier from `design/CAMEOS.md` before any public repo push (see `CLAUDE.md`).
-3. `docs/BUILD-GUIDE.md` Step 2 → public URL. Then `docs/LAUNCH-PLAYBOOK.md`, verbatim.
+</div>
 
 ---
-*a dumb side project. do not raise a round about it.*
+
+## What is this
+
+A Mario-style pixel platformer satirizing SF startup culture, built to be shared on LinkedIn. You are a hoodie-wearing founder sprinting from a SOMA garage to the IPO bell across five zones of the Bay Area. The satire lives in the mechanics, not the labels:
+
+- Money is **RAISED**. Health is **RUNWAY**. Death is **OUT OF RUNWAY**.
+- Coins are funding. Unless you picked the **CMO cofounder**, in which case they're *impressions* and pay $0 REAL DOLLARS.
+- The final ranking metric is **VALUATION** — RAISED times a stack of multipliers (speed, discipline, corgi, pedigree), because raising money and being worth money are famously different things.
+- Choosing **NEPO FOUNDER** pedigree multiplies your valuation ×50 and makes the game *easier*. That's the joke. It's also the leaderboard meta. That's also the joke.
+
+## The run
+
+**Five zones:** SOMA → The Mission → Sand Hill Road → Cerebral Valley → The Cloud. **Three bosses:** the Platform Shift, the VC (throws term sheets — sign one mid-air and see what happens), and the AI that was supposed to be your moat. Checkpoints between them.
+
+**Along the way:** coffee-chat trivia tables, the ACCELERATOR interview (7 questions, 10 seconds each, a batch stamp for your badge if you 7/7 it), an intern fair with dwell-to-hire booths, 16 real-startup billboards on the 101, six parody tech celebrities muttering about whether code is dead, three easter eggs, a corgi, and — if you go broke with a mom cofounder or good luck — **the mom round** ($2K and two hearts, she believes in you).
+
+**The end:** reach the bell, MASH R, confetti over the Golden Gate. Or die and get your startup's obituary as the front page of *HYPERGROWTH DAILY*, with your name in the headline, ready to save and post.
+
+**Every day is a new market.** A daily seed sets the conditions — bull runs, DOWN ROUND SEASON, AI hype cycles — and the leaderboard resets with it. Post your run under 14 characters of name; top 100 visible from the 🏆 chip on the title screen.
+
+## Can I play it inside GitHub?
+
+No — and that's a GitHub rule, not ours. GitHub strips every `<script>`, `<iframe>`, and `<canvas>` from README markdown for security, so no playable game can be embedded in any README, including profile READMEs. The links above are the closest legal thing: a big play button over the share card.
+
+If you want it on a GitHub **profile** (the `ayaangazali/ayaangazali` repo), the winning move is the same pattern — copy the block below into that repo's README. GIFs *are* allowed in READMEs, so a looping gameplay GIF as the click target is the strongest version of this.
+
+```markdown
+### 🦄 I made a game about being an SF founder
+**[▶ PLAY FOUNDER MODE](https://foundermode.vercel.app)** — stomp churn, dodge VCs,
+ring the IPO bell. One file, no signup, new market every day.
+```
+
+## Run it locally
+
+```bash
+git clone <this repo> && cd founder-mode-kit
+open index.html        # that's it — the game is one file
+```
+
+The leaderboard and share cards need the serverless functions, so for the full experience use `vercel dev` or just play the live URL.
+
+## Architecture (or: the absence of one)
+
+| Thing | Choice |
+|---|---|
+| The game | `index.html` — ~3,900 lines of vanilla JS. No framework, no bundler, no image assets. Every sprite is `fillRect` on a 480×270 canvas; text stays crisp via a devicePixelRatio overlay canvas. |
+| The engine | Fixed-timestep 60Hz accumulator with a simulated `playMs` clock — physics are a speedrun contract, identical on every machine. |
+| Determinism | One daily seed (mulberry32) drives market conditions; per-run rolls decide mini-game layouts. |
+| Server | Three functions in `api/` — `leaderboard.mjs` (Supabase, plausibility-gated POST, profanity filter), `og.mjs` (per-run share card via satori), `r.mjs` (result URL whose unfurl is *that run's* card). |
+| Tests | `test/` gates (smoke / full playthrough / death loop) + 11 `qa/` probes + a sense-act bot (`test/fullrun.js`) that plays the whole game and files a report. All asserting. |
+
+Design history, the audit, and the full build breakdown live in [`docs/`](docs/) — start with [`docs/WHATS-BUILT.md`](docs/WHATS-BUILT.md).
+
+---
+
+<div align="center">
+
+*99.99% uptime\** &nbsp;·&nbsp; *\*during business hours* &nbsp;·&nbsp; **[PLAY](https://foundermode.vercel.app)**
+
+</div>

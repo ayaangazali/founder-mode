@@ -1,5 +1,11 @@
 # Build & Deploy Guide — step by step
 
+> **STALE-DOC NOTICE (2026-07-13):** this document describes the v0.1 build
+> (~1,300 lines, 4 zones, no mini-games). The shipped game is ~3,900 lines with
+> 5 zones, mini-games, leaderboard, and the MASH-R finale. Read this as design
+> history; for current truth use CLAUDE.md, qa/CHANGELOG.md, and
+> docs/AUDIT-2026-07-13.md.
+
 The game is one HTML file with zero dependencies, so "building" is really just running and deploying. Total time to a public URL: ~15 minutes.
 
 ---

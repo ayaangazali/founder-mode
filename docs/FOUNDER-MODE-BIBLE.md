@@ -1,4 +1,10 @@
 # FOUNDER MODE — THE BIBLE
+
+> **STALE-DOC NOTICE (2026-07-13):** this document describes the v0.1 build
+> (~1,300 lines, 4 zones, no mini-games). The shipped game is ~3,900 lines with
+> 5 zones, mini-games, leaderboard, and the MASH-R finale. Read this as design
+> history; for current truth use CLAUDE.md, qa/CHANGELOG.md, and
+> docs/AUDIT-2026-07-13.md.
 ### One bundle. Everything from this entire project, stitched together.
 
 This document consolidates every piece of work produced across this project — the master plan, the lore, the design kit, the level data, the cameo file, the QA war-room — and answers, in one place: how it loads, how it plays, how it's stitched together, every route, every loss, every easter egg, every speedrun trick, and every way to break it.

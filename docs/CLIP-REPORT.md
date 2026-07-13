@@ -34,9 +34,11 @@ greps clean · celeb grep-gate enforced as a test.
 7. **Barry's memory radius** centers on Barry (4306) not the demo-day sign — the spec says "within 60px of HIM".
 8. **Konami is tracked during play**, not the title — ↑ on the title starts the game (it's a jump key), so the sequence physically can't be typed there.
 
-## Not merged, not deployed
-This branch is `humor-patch`, 11 commits ahead of main, awaiting owner review.
-`git checkout humor-patch` to play it; `git diff main..humor-patch -- index.html` for the full diff.
+## Status (corrected 2026-07-13)
+Everything in this report is MERGED TO MAIN and LIVE at foundermode.vercel.app.
+The branch names below (`humor-patch`, `billboards`, `build-v1.2`, `pedigree`) are
+kept as aliases of main after each review round — the "awaiting review" framing
+was true when each section was written and is preserved for history only.
 
 ## Billboards (branch `billboards`, 2026-07-12)
 | Moment | Screenshot | Why someone clips this |

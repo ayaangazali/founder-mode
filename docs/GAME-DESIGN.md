@@ -1,5 +1,11 @@
 # Game Design & Code Map
 
+> **STALE-DOC NOTICE (2026-07-13):** this document describes the v0.1 build
+> (~1,300 lines, 4 zones, no mini-games). The shipped game is ~3,900 lines with
+> 5 zones, mini-games, leaderboard, and the MASH-R finale. Read this as design
+> history; for current truth use CLAUDE.md, qa/CHANGELOG.md, and
+> docs/AUDIT-2026-07-13.md.
+
 How FOUNDER MODE works internally, and exactly where to change things. All references are to sections of `index.html` (search for the `// ---- SECTION ----` comment banners).
 
 ## Architecture at a glance

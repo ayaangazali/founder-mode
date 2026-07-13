@@ -176,22 +176,9 @@ Per-cameo notes:
 
 ---
 
-## 4. RISKY TIER — thin-veil variants · **REJECTED — NEVER SHIP**
+## 4. Thin-veil variants
 
-> **STRIP THIS ENTIRE SECTION BEFORE ANY PUBLIC COMMIT (M0 GitHub push).** In any public copy of this doc, replace §4 in full with the single line: "Thin-veil variants were evaluated and rejected; see private notes."
-
-> Each entry below swaps a shipping cameo's name/line for a thin veil of an identifiable living person. Blanket note that applies to all six: California recognizes both statutory (Civ. Code §3344) and common-law right of publicity; "transformative use" is the defense, but this game is explicitly a LinkedIn-virality marketing asset, which is the fact pattern where that defense is weakest. A near-pun name plus a signature behavior = "identifiable" in court even with zero real names used.
-
-| # | Replaces | Thin-veil name | One-liner | Risk note (frank) |
-|---|---|---|---|---|
-| R1 | THE 2AM REPLIER | **BARRY VAN** | `I REPLIED. IT'S 2AM. THIS IS THE VLOG.` | Rhyme of a real accelerator CEO famous for exactly this 2am-reply behavior — the behavioral signature alone identifies him, the name removes all doubt. He is publicly combative online and has both the resources and the temperament to make an example of a viral game. |
-| R2 | THE STEALTH LEGEND | **PAUL GRAM** | `I WROTE AN ESSAY ABOUT YOU. IT'S KIND.` | One-letter-off name of the most quoted living essayist in startups; "essay" as the punchline completes the ID. Likely personally amused, but "he'd probably laugh" is not a legal strategy, and his network amplification cuts both ways if he isn't. |
-| R3 | THE REPLY GUY | **BEFF JEZZOS** | `ACCELERATE. THERMODYNAMICALLY. NOW.` | The pseudonym belongs to a real, publicly identified living person, so parodying it still targets him — and the pseudonym itself riffs on a second, famously litigious billionaire's name. Two right-of-publicity exposures in one 14px sprite. |
-| R4 | THE POD SAGE | **LEX FREEDMAN** | `LOVE IS THE ANSWER. FOUR HOURS ON WHY.` | Near-homophone of a living podcaster plus his signature earnest register — quote-pattern mimicry makes it identifiable even if the name were dropped. Low litigation risk personally, but his audience is enormous and misfire reads as punching at a beloved figure, which violates canon rule 4 (loving, not mean). |
-| R5 | THE CONTRARIAN | **PETER STEEL** | `COMPETITION IS FOR OTHER PEOPLE.` | Rhyming surname + the monopoly-contrarian framing (a paraphrase orbiting his most famous line, which canon bans outright as a "signature quote") = fully identifiable. He has personally bankrolled litigation that destroyed a media company he disliked; he is the single worst test plaintiff in tech. |
-| R6 | THE EXITED ONE | **STU BUTTERFLYFIELD** | `SOLD IT. MOVED NORTH. CHECK MY POTTERY.` | Pun-name of a real founder identifiable by his well-publicized exit-and-retire story; the "I'm fine" archetype attached to a specific person turns a loving self-joke into a comment about a named individual's life. Defamation/false-light exposure is low but nonzero; reputational "why'd they pick on him?" cost is the real price. |
-
-**Ship tier only, full stop.** This table documents why each thin-veil was rejected, not a ranking of options. No sign-off path exists to violate canon rule 3.
+Thin-veil variants were evaluated and rejected; see private notes.
 
 ---
 
