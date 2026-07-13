@@ -25,6 +25,10 @@ export default async function handler(req, res) {
   if (!SB || !KEY) return res.status(200).json({ ok: false, reason: 'leaderboard not configured yet' });
 
   if (req.method === 'GET') {
+    // CDN absorbs the read traffic: every page load fetches the board, and a
+    // viral day would burn one function invocation per visitor for identical
+    // JSON. 60s staleness is invisible on a daily leaderboard.
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     const { searchParams } = new URL(req.url, 'https://foundermode.vercel.app');
     const seed = parseInt(searchParams.get('seed') || '0', 10) | 0;
     const q = `${SB}/rest/v1/founder_scores?seed=eq.${seed}` +
