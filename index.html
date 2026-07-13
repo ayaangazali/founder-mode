@@ -2326,7 +2326,7 @@ function drawBG(){
   }
 }
 
-function fmtMoney(k){ return k >= 1000 ? '$' + (k/1000).toFixed(2) + 'M' : '$' + k + 'K'; }
+function fmtMoney(k){ return k >= 1000000 ? '$' + (k/1000000).toFixed(2) + 'B' : k >= 1000 ? '$' + (k/1000).toFixed(2) + 'M' : '$' + k + 'K'; } // B-tier: pedigree math reaches billions by design
 function fmtTime(ms){ const s = Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
 
 // ------------------------- DRAW -------------------------
@@ -3294,6 +3294,7 @@ function badgeFlairs(won){
   if (!won) return f;
   if (enemies.every(e => e.dead)) f.push('ZERO CHURN');
   if ((endTime || playMs) < 180000) f.push('T2D3');
+  if (pedIdx === 0) f.push('SELF-MADE (unfundable)');
   if (internHiredCount >= 3) f.push('built a real team (allegedly)');
   if (internTypesHired.length && internTypesHired.every(t => t === 'ghost')) f.push('SERIAL DELEGATOR');
   return f;
@@ -3428,7 +3429,8 @@ function obitHeadline(won){
 function makeObituary(won){
   const cause = OBIT_HEADLINES[deathCause] ? deathCause : 'burn';
   const headline = obitHeadline(won);
-  const sub = won ? WIN_FRONTPAGE.s : OBIT_HEADLINES[cause].s;
+  const sub = (won && pedIdx === 0) ? 'Nobody can explain how.'   // the self-made egg
+            : won ? WIN_FRONTPAGE.s : OBIT_HEADLINES[cause].s;
   const INK = '#16130c', FAINT = '#4a4438', GREEK = '#c9c0aa', PAPER = '#ece5d3';
   const oc = document.createElement('canvas');
   oc.width = 1200; oc.height = 630;
@@ -3480,9 +3482,13 @@ function makeObituary(won){
   const rM = fmtMoney(raised), tM = fmtTime(endTime || playMs);
   b.font = 'bold 17px monospace';
   const MOM_LOSS = "The company's sole investor — the founder's mom — released a statement: 'I'm still proud of you.' The cap table was, in the end, a family matter.";
+  const PED_WIN  = `The round, sources say, was less about the product and more that the founder was ${ped().label}.`;
+  const PED_LOSS = `Despite being ${ped().label}, the company still died. 'We assumed the pedigree would carry it,' an investor said.`;
   [[48, i1], [440, i2]].forEach(([cx2, bi]) => {
     b.fillStyle = INK;
-    let bodyText = (momBacked && !won && cx2 === 440) ? MOM_LOSS : POOL[bi](rM, tM);
+    let bodyText = (momBacked && !won && cx2 === 440) ? MOM_LOSS
+                 : (pedIdx > 0 && cx2 === 440) ? (won ? PED_WIN : PED_LOSS)
+                 : POOL[bi](rM, tM);
     if (accBatch && cx2 === 48)
       bodyText += won ? ' The company is, it will tell you unprompted, BATCH F26.'
                       : ' He was, it should be noted, BATCH F26.';

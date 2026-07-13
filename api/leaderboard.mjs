@@ -64,7 +64,10 @@ export default async function handler(req, res) {
     const val = body.val | 0, raised = body.raised | 0, timeMs = body.timeMs | 0;
     const won = !!body.won, seed = body.seed | 0;
     // plausibility gate — max multiple is 2.0 speed x 1.75 discipline x 1.1 corgi
-    if (raised < 0 || raised > 3000 || val < 0 || val > Math.ceil(raised * 3.9) + 10 ||
+    // x 100 pedigree (BUILD v1.3: the resume multiplies the raise — by design),
+    // plus an absolute ceiling so nothing overflows the board or the badge.
+    if (raised < 0 || raised > 3000 || val < 0 || val > Math.ceil(raised * 390) + 10 ||
+        val > 1200000 ||
         (won && timeMs < 45000) || timeMs < 0 || timeMs > 6 * 3600 * 1000)
       return res.status(400).json({ ok: false, reason: 'diligence found irregularities' });
     if (nameBlocked(name))
