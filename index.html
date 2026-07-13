@@ -158,6 +158,7 @@ window.addEventListener('keydown', e => {
     if (k === 'c') cycleLook('s');
     else if (k === 'h') cycleLook('h');
     else if (k === 'v') cycleLook('v');
+    else if (k === 'x') cycleLook('x');
     // item 10 eggs: type CORGI / SLOP on the title (sticky for the session)
     if (k.length === 1 && k >= 'a' && k <= 'z'){
       typed = (typed + k).slice(-5);
@@ -230,6 +231,7 @@ const PICKER_ZONES = [
   { x:112, y:192, w:104, h:12, k:'s' },
   { x:112, y:206, w:104, h:12, k:'h' },
   { x:112, y:220, w:104, h:12, k:'v' },
+  { x:112, y:234, w:104, h:12, k:'x' },
 ];
 function pickerHit(clientX, clientY){
   const r = cv.getBoundingClientRect();
@@ -534,6 +536,22 @@ const CORGI_HOME = 2596;
 let corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
 let corgiHired = false; // ever adopted this run — worth a valuation multiple, obviously
 
+// -------- COFOUNDERS (BUILD-v1.2 B1) — picked on the title with [X] --------
+// A second sprite trails you all run. Passives are the joke: the technical one
+// ships, the business one talks, the AI one "helps", your mom believes in you.
+const COFOUNDERS = [
+  { id:'none', label:'NONE',      lines:[] },
+  { id:'tech', label:'TECHNICAL', lines:['pushed to prod.'] },
+  { id:'biz',  label:'BUSINESS',  lines:['I handle the business side.', "I'm basically the CEO.", "I found this game — that's the hard part."] },
+  { id:'ai',   label:'AI',        lines:['I have 200 IQ.', 'I do not sleep.', 'I have deleted the database.', 'I have restored the database.'] },
+  { id:'mom',  label:'YOUR MOM',  lines:['did you eat?'] },
+];
+let cofIdx = 0;
+try { cofIdx = clamp(parseInt(localStorage.getItem('fm_cof')) || 0, 0, COFOUNDERS.length - 1); } catch(e){}
+const cof = () => COFOUNDERS[cofIdx];
+let cofX = 0, cofFace = 1, cofSaid = 0, cofBubT = 0;  // follower + bubble rotation
+let aiNudgeAt = Infinity, aiNudgeT = 0;               // the AI cofounder "helps" once per run
+
 // -------- COFFEE CHATS — the investor-psychology mini-game --------
 // Three funder archetypes (canon rule 3: composites, never real people) hold
 // coffee chats at fixed tables. Press C at the table (touch: stand still).
@@ -629,6 +647,7 @@ function interviewUpdate(){
     }
     if (interview.qi >= ACC_QS.length || interview.t <= 0){
       interview.phase = 'end'; interview.t = 240;
+      if (cof().id === 'biz' && interview.score < ACC_QS.length){ interview.score++; } // one on the house
       interview.won = interview.score >= 5;
       if (interview.won){ raised += 150; player.ycT = 60 * 8; moodUp(); sPow(); }
       else moodDown();
@@ -670,6 +689,8 @@ function chatUpdate(){
       chat.qi++;
       if (chat.qi >= c.qs.length){
         chat.phase = 'end'; chat.t = 190;
+        if (cof().id === 'biz' && chat.score < 3){ chat.score++;    // the business cofounder handles one
+          addPop(player.x, player.y - 26, 'your cofounder handled the business side (+1)', '#7ce0ff', 150); }
         chat.amt = chat.score >= 3 ? c.amt : chat.score === 2 ? 50 : 0;
         chat.msg = chat.score >= 3 ? c.win : chat.score === 2 ? c.mid : c.lose;
         if (chat.amt){ raised += chat.amt; moodUp(); sPow(); } else moodDown();
@@ -811,7 +832,9 @@ function reset(fromCheckpoint){
     if (MK === 'layoffs'){ enemies.push(makeEnemy({x:5850,t:'s'}), makeEnemy({x:6130,t:'s'})); }
     if (MK === 'conf'){ let mi = 0; for (const e of enemies) if (e.t === 'm' && mi++ % 2) e.dead = true; }
     shots = []; parts = []; popups = [];
-    raised = 0; hearts = MK === 'bull' ? 4 : 3; maxHearts = hearts;
+    raised = 0;
+    hearts = (MK === 'bull' ? 4 : 3) + (cof().id === 'mom' ? 1 : 0); // mom believes in you (+1 RUNWAY)
+    maxHearts = hearts;
     checkpoint = 20; bellDone = false;
     playMs = 0; endTime = 0;
     quoteRoll = Math.random();
@@ -821,6 +844,8 @@ function reset(fromCheckpoint){
     corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
     corgiHired = false;
     chat = null; chatStill = 0; for (const cc of CHATS) cc.done = false;
+    cofX = 0; cofFace = 1; cofSaid = 0; cofBubT = 0;
+    aiNudgeT = 0; aiNudgeAt = cof().id === 'ai' ? 25000 + quoteRoll * 60000 : Infinity;
     interview = null; accDone = false;
     for (const bb of BILLBOARDS) bb.spotted = false;  // partner shout-outs re-arm per run
     slops = []; slopN = 0;
@@ -952,7 +977,7 @@ function update(){
 
   // -------- player --------
   // cold brew boosts, enterprise process drags (×0.85, big logo heavy process)
-  const speed = (p.coffeeT > 0 ? 2.5 : 1.7) * (p.slowT > 0 ? 0.85 : 1);
+  const speed = (p.coffeeT > 0 ? 2.5 : 1.7) * (p.slowT > 0 ? 0.85 : 1) * (cof().id === 'tech' ? 1.08 : 1); // technical cofounder ships
   if (L()) { p.vx = -speed; p.face = -1; }
   else if (R()) { p.vx = speed; p.face = 1; }
   else p.vx *= 0.7;
@@ -1359,6 +1384,21 @@ function update(){
     corgi.face = corgi.x > CORGI_HOME ? -1 : 1;
   }
 
+  // -------- cofounder follower (reuses the corgi's lerp — no new physics) --------
+  if (cof().id !== 'none'){
+    if (cofX === 0) cofX = p.x - 16;                        // first frame: fall in behind
+    const cdx2 = (p.x - 16 * p.face) - cofX;
+    cofX += clamp(cdx2 * 0.08, -2.6, 2.6);
+    if (Math.abs(cdx2) > 2) cofFace = cdx2 > 0 ? 1 : -1;
+    if (--cofBubT <= 0) cofBubT = 560;                      // a line every ~9s, shown for ~2s
+    // the AI cofounder "helps" exactly once per run
+    if (cof().id === 'ai' && playMs > aiNudgeAt && aiNudgeT === 0){
+      aiNudgeT = 30; aiNudgeAt = Infinity;
+      addPop(p.x, p.y - 24, 'your AI cofounder is "helping"', '#c58bff', 150);
+    }
+    if (aiNudgeT > 0){ aiNudgeT--; p.vx += p.face > 0 ? -0.3 : 0.3; } // gentle wrong-way tug
+  }
+
   // -------- HUMOR PATCH item 5: MEETLY.AI aftermath --------
   if (meetlyT > 0){
     meetlyT--;
@@ -1491,7 +1531,13 @@ function resolveLook(){
 }
 window.FOUNDER_LOOK = resolveLook();
 
-function cycleLook(k){                       // k: 's' | 'h' | 'v'
+function cycleLook(k){                       // k: 's' | 'h' | 'v' | 'x' (cofounder)
+  if (k === 'x'){
+    cofIdx = (cofIdx + 1) % COFOUNDERS.length;
+    try { localStorage.setItem('fm_cof', cofIdx); } catch(e){}
+    beep(880, .05, 'square', .05);
+    return;
+  }
   const n = k==='h' ? HAIRS.length : 6;
   look[k] = (look[k] + 1) % n;
   window.FOUNDER_LOOK = resolveLook();
@@ -2364,6 +2410,41 @@ function draw(){
       cx.fillText('CORGI CAFÉ', Math.round(x + 6), Math.round(GROUND_Y - 24));
     }
   }
+  // the cofounder, trailing (draw-only follower; hitboxes belong to the player)
+  if (cof().id !== 'none' && state !== ST.TITLE){
+    const x = cofX - cam;
+    if (x > -30 && x < W + 30){
+      const y = GROUND_Y - 15, id = cof().id, step = (frame >> 3) % 2;
+      if (id === 'tech'){
+        px(x+2, y, 6, 2, '#4a3626'); px(x+2, y+2, 6, 4, '#e8c39a');
+        px(x+1, y+6, 8, 6, '#5d647a');                       // gray hoodie
+        px(x+8, y+8, 4, 3, '#cfd6e4');                       // laptop under arm
+        px(x+2, y+12, 3, 2+step, '#2b2d42'); px(x+6, y+12, 3, 3-step, '#2b2d42');
+      } else if (id === 'biz'){
+        px(x+2, y, 6, 2, '#2b2118'); px(x+2, y+2, 6, 4, '#e8b98a');
+        px(x+1, y+6, 8, 6, '#2c3e6b'); px(x+4, y+6, 2, 3, '#fff'); // blazer + shirt
+        px(x+2, y+12, 3, 2+step, '#16161d'); px(x+6, y+12, 3, 3-step, '#16161d');
+      } else if (id === 'ai'){
+        px(x+2, y+1, 7, 6, '#aab4c4'); px(x+4, y-2, 1, 3, '#aab4c4'); px(x+3, y-3, 3, 1, '#41f2ff'); // antenna
+        px(x+3, y+3, 2, 2, frame % 40 < 20 ? '#41f2ff' : '#d64550'); // the eye. it blinks colors.
+        px(x+2, y+7, 7, 5, '#8d99ae');
+        px(x+2, y+12, 3, 3, '#6a7183'); px(x+6, y+12, 3, 3, '#6a7183');
+      } else { // mom
+        px(x+3, y-2, 4, 3, '#b9b9b9');                       // the bun
+        px(x+2, y, 6, 2, '#b9b9b9'); px(x+2, y+2, 6, 4, '#e8c39a');
+        px(x+3, y+3, 2, 1, '#555'); px(x+6, y+3, 2, 1, '#555'); // reading glasses
+        px(x+1, y+6, 8, 7, '#b8a0d0');                       // lavender cardigan
+        px(x+2, y+13, 3, 2, '#6a5a7a'); px(x+6, y+13, 3, 2, '#6a5a7a');
+      }
+      // a line every ~9s; TECH only ever says his once
+      if (state === ST.PLAY && cofBubT > 440 && cof().lines.length){
+        const li = cof().id === 'tech' ? 0 : (cofSaid % cof().lines.length);
+        if (cofBubT === 560) cofSaid++;
+        if (!(cof().id === 'tech' && cofSaid > 1)) celebBubble(x + 5, y + 2, cof().lines[li]);
+      }
+    }
+  }
+
   // the corgi itself (10x8, devastating) — never collides with anything, ever
   {
     const x = corgi.x - cam;
@@ -2916,6 +2997,7 @@ function drawTitle(){
     { y:192, c:'#ffd94a', txt:'[C] TONE '   + (look.s+1) + '/6' },
     { y:206, c:'#7ce0ff', txt:'[H] HAIR: '  + HAIRS[look.h] },
     { y:220, c:'#c58bff', txt:'[V] HOODIE: '+ HOODIES[look.v].name },
+    { y:234, c:'#7cffa5', txt:'[X] COFOUNDER: ' + COFOUNDERS[cofIdx].label },
   ];
   for (const ch of chipDefs){
     cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(112, ch.y, 104, 12);
@@ -3231,7 +3313,7 @@ function showEndUI(won){
   const valHtml = `
     <div><div style="display:inline-block; text-align:left; font-weight:bold; font-size:12px; color:#cfd6e4; margin-top:6px; line-height:1.55; background:rgba(0,0,0,.35); padding:6px 12px">
       ${val.lines.join('<br>')}<br>
-      <span style="color:#ffd94a; font-size:15px">= ${val.final}</span>
+      ${cof().id !== 'none' ? 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label) + '<br>' : ''}<span style="color:#ffd94a; font-size:15px">= ${val.final}</span>
     </div></div>`;
   // name row always renders (the name stamps the badge + front page);
   // the POST button needs the network, so it's http(s)-only
