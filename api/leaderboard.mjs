@@ -66,8 +66,12 @@ export default async function handler(req, res) {
     // plausibility gate — max multiple is 2.0 speed x 1.75 discipline x 1.1 corgi
     // x 100 pedigree (BUILD v1.3: the resume multiplies the raise — by design),
     // plus an absolute ceiling so nothing overflows the board or the badge.
-    if (raised < 0 || raised > 3000 || val < 0 || val > Math.ceil(raised * 390) + 10 ||
-        val > 1200000 ||
+    // raised cap 6000: a thorough full-clear legitimately crosses 3000 (coins +
+    // kills + bosses + chats + interview + bell ≈ 3900, and the 30-UNDER-30
+    // phantom is farmable). val allowance floors raised at 1 so $0-raised
+    // pedigree deaths (val = mult/2) still post. Ceiling: $2.4B.
+    if (raised < 0 || raised > 6000 || val < 0 ||
+        val > Math.ceil(Math.max(raised, 1) * 390) + 10 || val > 2400000 ||
         (won && timeMs < 45000) || timeMs < 0 || timeMs > 6 * 3600 * 1000)
       return res.status(400).json({ ok: false, reason: 'diligence found irregularities' });
     if (nameBlocked(name))

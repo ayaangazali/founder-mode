@@ -119,7 +119,10 @@ async function start(page){
     });
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(700); await page.keyboard.up('ArrowRight');
     const f2 = await page.evaluate(() => badgeFlairs(true));
-    check('no flair on slow win with a survivor (control)', f2.length === 0, JSON.stringify(f2));
+    // v1.3: winning with NO PEDIGREE always earns SELF-MADE (unfundable) — the
+    // control asserts no OTHER flair sneaks in
+    check('no earned flair on slow win with a survivor (control)',
+          f2.filter(x => x !== 'SELF-MADE (unfundable)').length === 0, JSON.stringify(f2));
     check('no page errors (control block)', errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

@@ -178,7 +178,7 @@ window.addEventListener('keydown', e => {
     }
   }
   if (e.key.toLowerCase() === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
-  if (e.key.toLowerCase() === 'r' && (state === ST.DEAD || state === ST.WIN)){
+  if (e.key.toLowerCase() === 'r' && !e.repeat && (state === ST.DEAD || state === ST.WIN)){
     resumePlay(state === ST.DEAD); // death retries from checkpoint; a win restart is a fresh run
   }
 });
@@ -212,6 +212,7 @@ if ('ontouchstart' in window) {
   };
   for (const ev of ['touchstart','touchmove','touchend','touchcancel'])
     tEl.addEventListener(ev, e => { e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio(); recompute(e); }, {passive:false});
+  document.getElementById('credit').style.right = '72px'; // clear of the ⏸ button on touch
   document.getElementById('tP').addEventListener('touchstart', e => {
     e.preventDefault(); e.stopPropagation();
     if (state === ST.PLAY) paused = !paused;
@@ -491,7 +492,7 @@ const dailyRng = mulberry32(SEED_N);
 // http(s) only; on file:// the game never touches the network and falls back
 // to the localStorage personal best. The board is garnish, never load-bearing.
 const LB_ON = /^https?:$/.test(location.protocol);
-let lbTop = null, lbPostedAt = -1; // endTime of the run already posted (name edits rebuild the card; a run still posts once)
+let lbTop = null, lbPostedRun = -1; // runId already on the board (marked only on a CONFIRMED post)
 function lbFetch(after){
   if (!LB_ON) return;
   fetch('/api/leaderboard?seed=' + SEED_N).then(r => r.json())
@@ -523,6 +524,7 @@ const ST = { TITLE:0, PLAY:1, WIN:2, DEAD:3 };
 let state = ST.TITLE;
 let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (backgrounded tabs don't count)
 let lastVal = 0;                          // valuation of the run that just ended (leaderboard submits this)
+let runId = 0;                            // increments per fresh run (leaderboard one-post key)
 let hitstopT = 0, shakeT = 0, prevJump = false;
 let paused = false; // ESC / the ⏸ touch button — sim + playMs freeze, draw keeps running
 let idleT = 0; // EGG: THE REVERSE PITCH — frames idle on the title screen (any input zeroes it)
@@ -675,6 +677,7 @@ function interviewStart(){
   sPow();
 }
 function interviewUpdate(){
+  if (playMs > aiNudgeAt) aiNudgeAt = playMs + 3000; // the AI cofounder doesn't ambush a mini-game exit
   if (interview.phase === 'q'){
     interview.t--;
     if (interview.flash > 0) interview.flash--;
@@ -721,6 +724,7 @@ function chatStart(ci){
   sPow();
 }
 function chatUpdate(){
+  if (playMs > aiNudgeAt) aiNudgeAt = playMs + 3000; // the AI cofounder doesn't ambush a mini-game exit
   const c = CHATS[chat.ci];
   if (chat.phase === 'q'){
     chat.t--;
@@ -782,6 +786,7 @@ const KONAMI = ['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowri
 let konamiIdx = 0, konamiDone = false;
 
 function roomUpdate(){
+  if (playMs > aiNudgeAt) aiNudgeAt = playMs + 3000; // the AI cofounder doesn't ambush a mini-game exit
   room.t--;
   if (L()) room.px -= 1.7;
   if (R()) room.px += 1.7;
@@ -794,8 +799,12 @@ function roomUpdate(){
   }
   if (room.px > 414){                                  // the exit pedestal, in time
     room.active = false; room.done = true;
-    player.deckT = 60 * 15;
-    addPop(player.x, player.y - 20, '1ST PLACE: a Notion template', '#ffd94a');
+    if (ped().id === 'teal'){ // the fellowship never taught you to pitch code either
+      addPop(player.x, player.y - 20, '1ST PLACE: a Notion template (deck unusable — TEAL FELLOW)', '#8d99ae', 180);
+    } else {
+      player.deckT = 60 * 15;
+      addPop(player.x, player.y - 20, '1ST PLACE: a Notion template', '#ffd94a');
+    }
     moodUp(); sWin();
   } else if (room.t <= 0){                             // ejected
     room.active = false; room.done = true;
@@ -895,7 +904,9 @@ function reset(fromCheckpoint){
            - (ped().id === 'serial' ? 1 : 0);                        // two dead startups: you start burned out
     hearts = Math.max(1, hearts); maxHearts = hearts;
     checkpoint = 20; bellDone = false;
-    playMs = 0; endTime = 0;
+    playMs = 0; endTime = 0; runId++;
+    moodTier = 2; moodChangedAt = 0; lastHitAt = -99999; // fresh run, fresh vibes (old timestamps froze the meter)
+    wave = null;                                          // no stale run club from the previous run
     quoteRoll = Math.random();
     bellRing = null; ringHeld = false;
     barrySawIt = false; barryShownT = 0; witnessStill = 0; witnessed = false;
@@ -927,8 +938,12 @@ function reset(fromCheckpoint){
     }
   } else {
     // checkpoint respawn: the run continues, with a haircut (BRIDGE ROUND)
-    hearts = 3; player.hurtT = 120;
+    hearts = Math.min(3, maxHearts); player.hurtT = 120;  // SERIAL FOUNDER stays burned out
     shots.length = 0; crates.length = 0;
+    slops = [];                                           // clones don't outlive the attempt
+    bellRing = null; ringHeld = false;                    // a death mid-confetti is still a death
+    meetlyT = 0; actionItems = null; cmoT = 0;            // paused-world theater ends with the run
+    bosses.forEach(bb => { if (!bb.dead){ bb.pedApplied = false; bb.slopped = false; } }); // Chad re-reads the résumé; slop phase re-announces
     for (const b of bosses){
       if (!b.dead){ // live boss back to its trigger state; dead bosses stay dead
         b.active = false; b.x = b.x0; b.y = b.y0; b.vy = 0;
@@ -1911,8 +1926,9 @@ function drawBoss(b){
   // quip bubble — anchored to the boss, only while the boss is actually on screen.
   // 8px face (playtest: 6px read as blur at 1-2x window scales); still anchored
   // per ruling 2.5, raised 4px for the taller line
-  if (b.active && !b.dead && x > -b.w && x < W){
-    celebBubble(x + b.w/2, y - 8, b.quips[b.quip]); // same anchor, now stack-aware
+  if (b.active && !b.dead && x > -b.w && x < W && state === ST.PLAY){
+    const qx = x + b.w/2, qy = y - 8, q = b.quips[b.quip];
+    lateDraws.push(() => celebBubble(qx, qy, q)); // deferred: renders over a stomping player
   }
 }
 
@@ -2163,6 +2179,7 @@ function drawChatTables(){
 // two talkers in range rendered on top of each other — both unreadable). A
 // white stem stretches from the raised box back down to the speaker.
 let bubbleRects = []; // cleared at the top of every draw()
+let lateDraws = [];   // deferred draw thunks: bubbles/signs that must render OVER the player
 function celebBubble(sxCenter, topY, line){
   cx.font = 'bold 8px monospace';
   const tw = cx.measureText(line).width;
@@ -2351,13 +2368,14 @@ function drawBG(){
   }
 }
 
-function fmtMoney(k){ return k >= 1000000 ? '$' + (k/1000000).toFixed(2) + 'B' : k >= 1000 ? '$' + (k/1000).toFixed(2) + 'M' : '$' + k + 'K'; } // B-tier: pedigree math reaches billions by design
+function fmtMoney(k){ return k >= 999995 ? '$' + (k/1000000).toFixed(2) + 'B' : k >= 1000 ? '$' + (k/1000).toFixed(2) + 'M' : '$' + k + 'K'; } // B-tier: pedigree math reaches billions (999995+ promotes early so toFixed can't print $1000.00M)
 function fmtTime(ms){ const s = Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
 
 // ------------------------- DRAW -------------------------
 function draw(){
   tcx.clearRect(0, 0, tv.width, tv.height); // text overlay redraws with every frame
   bubbleRects.length = 0;                   // speech-bubble stacking resets per frame
+  lateDraws.length = 0;                     // post-player deferred draws reset per frame
   // hurt juice: 2-frame camera shake
   if (shakeT > 0 && state === ST.PLAY){ cx.translate(frame % 2 ? 2 : -2, 0); shakeT--; }
 
@@ -2367,6 +2385,7 @@ function draw(){
 
   // HUMOR PATCH item 8: inside the hackathon house — full-frame interior
   if (state === ST.PLAY && room.active){
+    occlude(0, 0, W, H);                                          // billboards etc. stay outside
     px(0, 0, W, H, '#181322');                                    // 2am interior
     px(0, 232, W, H - 232, '#2a2338');                            // floor
     px(0, 0, W, 18, '#1f6feb');                                   // sponsor banner
@@ -2492,15 +2511,8 @@ function draw(){
       else { px(x+1, y+7, 2, 2, '#e8c39a'); px(x+9, y+7, 2, 2, '#e8c39a'); } // hands apart
       px(x+2, y+13, 3, 3, '#2b2d42'); px(x+7, y+13, 3, 3, '#2b2d42');
       px(x+2, y+16, 3, 1, '#fff'); px(x+7, y+16, 3, 1, '#fff');    // pristine trainers
-      if (Math.abs(player.x - coachX) <= 70 && state === ST.PLAY){
-        cx.font = 'bold 8px monospace';
-        const line = 'fail faster! this is great for you!';
-        const tw = cx.measureText(line).width;
-        const bx = clamp(x + 6 - tw/2 - 4, 2, W - tw - 10);
-        px(bx, y - 30, tw + 8, 12, '#fff'); occlude(bx, y - 30, tw + 8, 12);
-        px(bx + 6, y - 18, 4, 3, '#fff');
-        cx.fillStyle = '#111'; cx.fillText(line, Math.round(bx + 4), Math.round(y - 20.5));
-      }
+      if (Math.abs(player.x - coachX) <= 70 && state === ST.PLAY)
+        celebBubble(x + 6, y + 12, 'fail faster! this is great for you!'); // stack-aware like everyone else
     }
   }
 
@@ -2802,11 +2814,14 @@ function draw(){
         px(x+2, y+13, 3, 3, '#2b2d42'); px(x+7, y+13, 3, 3, '#2b2d42');
         px(x+2, y+16, 3, 1, '#fff'); px(x+7, y+16, 3, 1, '#fff');  // white sneakers
         const txt = bosses[2].dead ? 'it knew me' : 'it knows me';
-        cx.font = 'bold 8px monospace';
-        const tw = cx.measureText(txt).width;
-        px(x + 13, y + 2, tw + 6, 12, '#e8e0c9');                  // the tiny hand-held sign
-        px(x + 12, y + 8, 1, 8, '#8a5a2b');
-        cx.fillStyle = '#3a3a3a'; cx.fillText(txt, Math.round(x + 16), Math.round(y + 11));
+        lateDraws.push(() => { // deferred: the sign is held in FRONT of whoever stands there
+          cx.font = 'bold 8px monospace';
+          const tw = cx.measureText(txt).width;
+          px(x + 13, y + 2, tw + 6, 12, '#e8e0c9');                // the tiny hand-held sign
+          occlude(x + 13, y + 2, tw + 6, 12);
+          px(x + 12, y + 8, 1, 8, '#8a5a2b');
+          cx.fillStyle = '#3a3a3a'; cx.fillText(txt, Math.round(x + 16), Math.round(y + 11));
+        });
         if (Math.abs(player.x - 8426) <= 60 && state === ST.PLAY)
           celebBubble(x + 6, y, ['coding is over. i am calm about it.', 'very calm.'][Math.floor(playMs / 2600) % 2]);
       }
@@ -3098,6 +3113,7 @@ function draw(){
     }
     drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
     drawPedGear(cx, player.x - cam, player.y, 1);
+    for (const fn of lateDraws) fn(); // boss quips + held signs render over the player
     if (player.coffeeT > 0 && frame % 5 === 0) parts.push({x:player.x - 2 + Math.random()*4, y:player.y + 14, vx:-player.face, vy:-0.5, t:14, c:'#c58bff'});
   }
 
@@ -3135,6 +3151,7 @@ function draw(){
   if (cmoT > 0 && state === ST.PLAY){
     cx.fillStyle = 'rgba(8,8,16,.82)';
     cx.fillRect(0, 0, 150, H); cx.fillRect(330, 0, 150, H);       // vertical crop
+    occlude(0, 0, 150, H); occlude(330, 0, 150, H);               // HUD text stays out of frame
     cx.strokeStyle = '#fff'; cx.lineWidth = 2;
     cx.strokeRect(150.5, 4.5, 179, H - 9);
     cx.font = 'bold 8px monospace'; cx.fillStyle = '#fff'; cx.textAlign = 'center';
@@ -3154,6 +3171,7 @@ function draw(){
   // HUMOR PATCH item 5: the recap email — 5.5s of dimmed screen and assigned
   // blame. Drawn dead last: nothing outranks a calendar invite.
   if (meetlyT > 0 && state === ST.PLAY){
+    occlude(0, 0, W, H); // the recap owns the frame — no HUD/popup text floats over it
     cx.fillStyle = 'rgba(8,8,20,.72)'; cx.fillRect(0, 0, W, H);
     px(88, 64, 304, 128, '#f4f4f4');
     px(88, 64, 304, 22, '#3b5bdb');
@@ -3524,17 +3542,16 @@ function makeObituary(won){
            ? (i1 + 1) % POOL.length : (i1 + 1 + Math.floor(quoteRoll * 3)) % POOL.length;
   const rM = fmtMoney(raised), tM = fmtTime(endTime || playMs);
   b.font = 'bold 17px monospace';
-  const MOM_LOSS = "The company's sole investor — the founder's mom — released a statement: 'I'm still proud of you.' The cap table was, in the end, a family matter.";
-  const PED_WIN  = `The round, sources say, was less about the product and more that the founder was ${ped().label}.`;
-  const PED_LOSS = `Despite being ${ped().label}, the company still died. 'We assumed the pedigree would carry it,' an investor said.`;
+  // column bodies are sliced to 3 wrapped lines (356px @17px ≈ 35 chars/line):
+  // every override below must land its punchline inside ~105 characters
+  const MOM_LOSS = "The sole investor — the founder's mom — said: 'I'm still proud of you.'";
+  const PED_WIN  = `The round, sources say, was less the product, more that the founder was ${ped().label}.`;
+  const PED_LOSS = `Despite being ${ped().label}, it died. 'We assumed the pedigree would carry it.'`;
   [[48, i1], [440, i2]].forEach(([cx2, bi]) => {
     b.fillStyle = INK;
-    let bodyText = (momBacked && !won && cx2 === 440) ? MOM_LOSS
+    const bodyText = (momBacked && !won && cx2 === 440) ? MOM_LOSS
                  : (pedIdx > 0 && cx2 === 440) ? (won ? PED_WIN : PED_LOSS)
                  : POOL[bi](rM, tM);
-    if (accBatch && cx2 === 48)
-      bodyText += won ? ' The company is, it will tell you unprompted, BATCH F26.'
-                      : ' He was, it should be noted, BATCH F26.';
     wrap(bodyText, 356).slice(0, 3).forEach((ln, li) => b.fillText(ln, cx2, 246 + li * 25));
     b.fillStyle = GREEK;
     for (let g = 0; g < 6; g++) b.fillRect(cx2, 332 + g * 22, g % 3 === 2 ? 250 : 352, 12);
@@ -3553,6 +3570,8 @@ function makeObituary(won){
   b.fillText(playerName()
     ? playerName() + (won ? ', pictured at peak validation' : ', pictured at peak conviction')
     : OBIT_CAPTIONS[Math.floor(quoteRoll * 3) % 3], 999, 514, 300);
+  if (accBatch){ b.fillStyle = '#8a6d00'; b.font = 'bold 15px monospace'; b.textAlign = 'center';
+    b.fillText(won ? 'BATCH F26 (it will tell you)' : 'was, it should be noted, BATCH F26', 999, 534, 300); }
   b.textAlign = 'left';
 
   // pull quote
@@ -3680,7 +3699,10 @@ function showEndUI(won){
     for (const k in surfaces){
       const sf = surfaces[k];
       sf.url = sf.c.toDataURL('image/png');
-      sf.c.toBlob(blob => { if (blob){ sf.blob = blob; sf.file = new File([blob], sf.fname, {type:'image/png'}); sf.blobUrl = URL.createObjectURL(blob); } }, 'image/png');
+      sf.c.toBlob(blob => { if (blob){
+        if (sf.blobUrl) URL.revokeObjectURL(sf.blobUrl); // don't leak the previous stamp
+        sf.blob = blob; sf.file = new File([blob], sf.fname, {type:'image/png'}); sf.blobUrl = URL.createObjectURL(blob);
+      } }, 'image/png');
     }
     document.getElementById('endImg').src = surfaces[cur].url;
   };
@@ -3707,10 +3729,9 @@ function showEndUI(won){
     };
     renderTop();
     document.getElementById('lbGo').onclick = () => {
-      if (lbPostedAt === (endTime || playMs)) return;   // this run is already on the board
+      if (lbPostedRun === runId) return;                 // this run is already on the board
       const nm = (nameEl.value || 'YOU').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14) || 'YOU';
       try { localStorage.setItem('fm_name', nm); } catch(e){}
-      lbPostedAt = endTime || playMs;
       const btn = document.getElementById('lbGo');
       btn.textContent = '…syndicating…';
       fetch('/api/leaderboard', { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -3719,7 +3740,12 @@ function showEndUI(won){
         .then(j => {
           btn.textContent = j && j.ok ? (j.kept === 'existing' ? 'your earlier run was better ✓' : '✓ ON THE BOARD')
                                       : (j && j.reason ? '✗ ' + j.reason : 'board offline (very pre-seed)');
-          if (j && j.ok) lbFetch(renderTop);
+          if (j && j.ok){
+            lbPostedRun = runId;                         // marked only when the board confirms
+            // bust the 60s CDN cache so the board under the checkmark shows the new row
+            fetch('/api/leaderboard?seed=' + SEED_N + '&limit=10&b=' + Math.floor(Math.random() * 1e9))
+              .then(r => r.json()).then(k => { if (k && k.ok){ lbTop = k.top; renderTop(); } }).catch(() => {});
+          }
         })
         .catch(() => { btn.textContent = 'board offline (very pre-seed)'; });
     };
