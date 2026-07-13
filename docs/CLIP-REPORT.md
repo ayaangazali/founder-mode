@@ -85,3 +85,6 @@ files green; canon greps empty.
 - "×20+" investor shift keys off `ped().mult >= 20` (TEAL FELLOW, NEPO, ex-SYNERGY.AI).
 - Server caps: plausibility widened ×100 (raised×390) + absolute $1.2B ceiling;
   theoretical max legit run ($3M raised, all multiples) = $1.155B, inside the ceiling.
+- Final regression on `pedigree`: sense-act bot clean PASS 02:49, tourist PASS
+  04:52 (band held with NO PEDIGREE default); 3 suites + 7 probe files + 8
+  feature probes green; canon greps empty.
