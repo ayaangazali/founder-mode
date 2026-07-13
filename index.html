@@ -3642,9 +3642,9 @@ function showEndUI(won){
   try { const b = lbBest(); if (!b || lastVal > b.val)
     localStorage.setItem('fm_best', JSON.stringify({ val: lastVal, won, t: endTime || playMs })); } catch(e){}
   const valHtml = `
-    <div><div style="display:inline-block; text-align:left; font-weight:bold; font-size:12px; color:#cfd6e4; margin-top:6px; line-height:1.55; background:rgba(0,0,0,.35); padding:6px 12px">
+    <div><div style="display:inline-block; text-align:left; font-weight:bold; font-size:15px; color:#cfd6e4; margin-top:8px; line-height:1.6; background:rgba(0,0,0,.4); padding:8px 16px">
       ${val.lines.join('<br>')}<br>
-      ${cof().id !== 'none' ? 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label) + '<br>' : ''}<span style="color:#ffd94a; font-size:15px">= ${val.final}</span>
+      ${cof().id !== 'none' ? 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label) + '<br>' : ''}<span style="color:#ffd94a; font-size:19px">= ${val.final}</span>
     </div></div>`;
   // name row always renders (the name stamps the badge + front page);
   // the POST button needs the network, so it's http(s)-only
@@ -3654,9 +3654,9 @@ function showEndUI(won){
         style="width:170px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
       ${LB_ON ? '<button id="lbGo" class="alt">🏆 POST VALUATION</button>' : ''}
     </div>
-    <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:12px; margin-top:4px; line-height:1.5"></div>`;
+    <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:15px; margin-top:6px; line-height:1.6"></div>`;
   uicard.innerHTML = `
-    <img id="endImg" src="${surfaces[cur].url}" style="width:min(560px,86vw,calc((100vh - 250px)*1.9)); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
+    <img id="endImg" src="${surfaces[cur].url}" style="width:min(720px,86vw,calc((100vh - 250px)*1.9)); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
     ${valHtml}
     ${isTouch ? '<div style="color:#8d99ae; font-weight:bold; font-size:12px; margin-top:4px">press &amp; hold the badge to save it. yes, really.</div>' : ''}
     <div style="margin-top:8px">${btns}</div>
