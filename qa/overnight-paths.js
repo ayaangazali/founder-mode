@@ -220,7 +220,7 @@ async function start(page){
     await start(page);
     await page.evaluate(() => { hearts = 1; player.hurtT = 0; enemies.push(makeEnemy({x: player.x + 12, t: 'g'})); });
     await page.waitForTimeout(1200);
-    await page.click('#bCp');
+    await page.click('#bDl'); // SAVE+COPY merged into one button
     await page.waitForTimeout(600);
     const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
     const msg = await page.evaluate(() => document.getElementById('cpMsg').textContent);
@@ -240,7 +240,7 @@ async function start(page){
       hearts = 1; player.hurtT = 0; enemies.push(makeEnemy({x: player.x + 12, t: 'g'}));
     });
     await page.waitForTimeout(1200);
-    await page.click('#bCp');
+    await page.click('#bDl'); // SAVE+COPY merged into one button
     await page.waitForTimeout(500);
     const fb = await page.evaluate(() => ({
       msg: document.getElementById('cpMsg').textContent,
