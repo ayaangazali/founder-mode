@@ -569,6 +569,8 @@ const PEDIGREES = [
 let pedIdx = 0;
 try { pedIdx = clamp(parseInt(localStorage.getItem('fm_ped')) || 0, 0, PEDIGREES.length - 1); } catch(e){}
 const ped = () => PEDIGREES[pedIdx];
+let listHeatAt = Infinity;   // 30 UNDER 30: the list sends a compliance phantom, periodically
+let bmX = 0;                 // NEPO FOUNDER: the board member's position (dad's guy)
 let aiNudgeAt = Infinity, aiNudgeT = 0;               // the AI cofounder "helps" once per run
 let momRoundUsed = false, momBacked = false;          // B3: the mom round — once per run; flavors every share surface
 
@@ -697,6 +699,7 @@ function interviewUpdate(){
     if (interview.qi >= ACC_QS.length || interview.t <= 0){
       interview.phase = 'end'; interview.t = 240;
       if (cof().id === 'biz' && interview.score < ACC_QS.length){ interview.score++; } // one on the house
+      if (ped().mult >= 20 && interview.score < ACC_QS.length){ interview.score++; }   // the résumé answers one too
       interview.won = interview.score >= 5;
       if (interview.won){
         raised += 150; player.ycT = 60 * 8; moodUp(); sPow();
@@ -744,6 +747,8 @@ function chatUpdate(){
         chat.phase = 'end'; chat.t = 190;
         if (cof().id === 'biz' && chat.score < 3){ chat.score++;    // the business cofounder handles one
           addPop(player.x, player.y - 26, 'your cofounder handled the business side (+1)', '#7ce0ff', 150); }
+        if (ped().mult >= 20 && chat.score < 3){ chat.score++;      // they're funding the résumé anyway
+          addPop(player.x, player.y - 36, 'they liked the pedigree more than the answer (+1)', '#ff8c37', 150); }
         chat.amt = chat.score >= 3 ? c.amt : chat.score === 2 ? 50 : 0;
         chat.msg = chat.score >= 3 ? c.win : chat.score === 2 ? c.mid : c.lose;
         if (chat.amt){ raised += chat.amt; moodUp(); sPow(); } else moodDown();
@@ -886,8 +891,9 @@ function reset(fromCheckpoint){
     if (MK === 'conf'){ let mi = 0; for (const e of enemies) if (e.t === 'm' && mi++ % 2) e.dead = true; }
     shots = []; parts = []; popups = [];
     raised = 0;
-    hearts = (MK === 'bull' ? 4 : 3) + (cof().id === 'mom' ? 1 : 0); // mom believes in you (+1 RUNWAY)
-    maxHearts = hearts;
+    hearts = (MK === 'bull' ? 4 : 3) + (cof().id === 'mom' ? 1 : 0)  // mom believes in you (+1 RUNWAY)
+           - (ped().id === 'serial' ? 1 : 0);                        // two dead startups: you start burned out
+    hearts = Math.max(1, hearts); maxHearts = hearts;
     checkpoint = 20; bellDone = false;
     playMs = 0; endTime = 0;
     quoteRoll = Math.random();
@@ -900,6 +906,10 @@ function reset(fromCheckpoint){
     cofX = 0; cofFace = 1; cofSaid = 0; cofBubT = 0;
     aiNudgeT = 0; aiNudgeAt = cof().id === 'ai' ? 25000 + quoteRoll * 60000 : Infinity;
     momRoundUsed = false; momBacked = cof().id === 'mom';
+    listHeatAt = ped().id === 'thirty' ? 40000 : Infinity;           // the list is watching
+    bmX = 0;
+    if (ped().id === 'exsyn'){ bosses[2].hp += 2; bosses[2].maxhp += 2; } // "we know what you did"
+    bosses.forEach(bb => { bb.pedApplied = false; });
     interns = []; internHiredCount = 0; internTypesHired = []; internDwell = 0;
     BOOTHS[0].type = pickInternType(quoteRoll); BOOTHS[0].hired = false;
     BOOTHS[1].type = pickInternType((quoteRoll * 7919) % 1); BOOTHS[1].hired = false;
@@ -1206,9 +1216,13 @@ function update(){
       if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! auto +15% jump, 10s', '#39c46d', 150); }
       if (pw.t === 'press'){ p.shield = 1; addPop(pw.x, pw.y-8, 'GOOD PRESS! next hit is free (auto)', '#7ce0ff', 150); }
       if (pw.t === 'deck'){
-        p.deckT = 60*15; // 15s: covers a full boss fight (playtest)
-        addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! tap — pitch AT them (15s)'
-                                                        : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a', 150);
+        if (ped().id === 'teal'){ // paid $100K not to graduate; never learned to pitch code
+          addPop(pw.x, pw.y-8, 'PITCH DECK — unusable (TEAL FELLOW: you never learned to code)', '#8d99ae', 180);
+        } else {
+          p.deckT = 60*15; // 15s: covers a full boss fight (playtest)
+          addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! tap — pitch AT them (15s)'
+                                                          : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a', 150);
+        }
       }
       if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5', 150); }
       if (pw.t === 'contract'){ raised += 100; p.slowT = 60*8; addPop(pw.x, pw.y-8, 'ENTERPRISE CONTRACT! +$100K (slows you, 8s)', '#7ce0ff', 150); addPop(pw.x, pw.y-18, '(procurement has questions)', '#8d99ae', 150); }
@@ -1286,7 +1300,19 @@ function update(){
   // -------- bosses --------
   for (const b of bosses){
     if (b.dead) continue;
-    if (!b.active && p.x > b.trigger){ b.active = true; sBoss(); b.quipT = 1; }
+    if (!b.active && p.x > b.trigger){
+      b.active = true; sBoss(); b.quipT = 1;
+      if (b.id === 'vc' && !b.pedApplied){ // Chad funds the pedigree, not the company
+        b.pedApplied = true;
+        if (ped().mult >= 20){
+          b.quips.unshift("oh, you were at SYNERGY.AI? here's the check");
+          b.hp = Math.max(1, b.hp - 1);   // the check clears before the fight starts
+          addPop(b.x - 30, b.y - 20, 'CHAD RESPECTS THE RÉSUMÉ (-1 HP)', '#7cffa5', 150);
+        } else if (ped().id === 'none'){
+          b.quips.unshift('and who are you?'); // being normal is the real hard mode
+        }
+      }
+    }
     if (!b.active) continue;
 
     // movement: pace toward player (THE PLATFORM is slow and huge — and never hops).
@@ -1476,6 +1502,16 @@ function update(){
     corgi.face = corgi.x > CORGI_HOME ? -1 : 1;
   }
 
+  // -------- NEPO FOUNDER baggage: the board member (dad's guy) trails you --------
+  // Reuses the actionItems block-push: he never hurts, he just... governs.
+  if (ped().id === 'nepo'){
+    if (bmX === 0) bmX = p.x - 30;
+    const bdx = (p.x - 22 * p.face) - bmX;
+    bmX += clamp(bdx * 0.07, -2.4, 2.4);
+    const bmBox = { x: bmX, y: GROUND_Y - 18, w: 12, h: 18 };
+    if (aabb(p, bmBox)) p.x += (p.x < bmX ? -0.7 : 0.7);        // blocks like a board member
+  }
+
   // -------- cofounder follower (reuses the corgi's lerp — no new physics) --------
   if (cof().id !== 'none'){
     if (cofX === 0) cofX = p.x - 16;                        // first frame: fall in behind
@@ -1562,6 +1598,13 @@ function update(){
       bb.spotted = true; raised += 5; sPow();
       addPop(p.x, p.y - 24, 'SPOTTED: ' + bb.name + ' (a real startup, unlike yours) +$5K', '#7cffa5', 150);
     }
+  }
+
+  // -------- 30 UNDER 30: the list is watching (a phantom, every ~45s) --------
+  if (playMs > listHeatAt && state === ST.PLAY){
+    listHeatAt += 45000;
+    enemies.push(makeEnemy({ x: clamp(p.x + 240, 100, 9100), t: 'c' }));
+    addPop(p.x, p.y - 24, 'the list is watching', '#c58bff', 150);
   }
 
   // -------- run-club wave (cosmetic; spawns on the playMs clock) --------
@@ -2606,6 +2649,21 @@ function draw(){
       cx.fillText('CORGI CAFÉ', Math.round(x + 6), Math.round(GROUND_Y - 24));
     }
   }
+  // NEPO FOUNDER's board member: gray suit, coffee, opinions
+  if (ped().id === 'nepo' && bmX !== 0 && state !== ST.TITLE){
+    const x = bmX - cam;
+    if (x > -30 && x < W + 30){
+      const y = GROUND_Y - 18;
+      px(x+2, y, 8, 2, '#b9b9b9'); px(x+3, y+2, 6, 4, '#e8d4b8');
+      px(x+1, y+6, 10, 8, '#3a3a44'); px(x+5, y+6, 2, 4, '#fff'); // gray suit, white shirt
+      px(x+11, y+8, 3, 4, '#8a5a2b');                             // the coffee
+      px(x+2, y+14, 3, 3, '#16161d'); px(x+7, y+14, 3, 3, '#16161d');
+      px(x+2, y+17, 3, 1, '#111'); px(x+7, y+17, 3, 1, '#111');
+      if (state === ST.PLAY && frame % 700 < 130 && Math.abs(player.x - bmX) < 80)
+        celebBubble(x + 6, y + 2, ['quick sync?', 'your father says hi.', 'the board has thoughts.'][Math.floor(playMs / 3000) % 3]);
+    }
+  }
+
   // the cofounder, trailing (draw-only follower; hitboxes belong to the player)
   if (cof().id !== 'none' && state !== ST.TITLE){
     const x = cofX - cam;
