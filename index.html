@@ -3199,11 +3199,11 @@ function showEndUI(won){
   // classic badge behind a toggle. One surface on a win: the badge.
   const surfaces = {
     badge: { c: makeBadge(won), fname: won ? 'founder-mode-unicorn.png' : 'founder-mode-rip.png',
-             text: shareText(won), save: won ? '⬇ SAVE BADGE' : '⬇ SAVE BADGE', blob: null, file: null, blobUrl: null, url: '' },
+             text: shareText(won), save: '⬇ SAVE BADGE + COPY POST', blob: null, file: null, blobUrl: null, url: '' },
   };
   surfaces.obit = { c: makeObituary(won), fname: won ? 'hypergrowth-daily-ipo.png' : 'hypergrowth-daily-frontpage.png',
     text: `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${GAME_URL}`,
-    save: '⬇ SAVE FRONT PAGE', blob: null, file: null, blobUrl: null, url: '' };
+    save: '⬇ SAVE PAGE + COPY POST', blob: null, file: null, blobUrl: null, url: '' };
   let cur = won ? 'badge' : 'obit'; // wins lead with the badge, losses with the front page
   for (const k in surfaces){
     const s = surfaces[k];
@@ -3217,12 +3217,11 @@ function showEndUI(won){
 
   const bShare = canShareFiles ? '<button id="bSh" class="alt">📤 SHARE</button>' : '';
   const bSave  = `<button id="bDl">${surfaces[cur].save}</button>`;
-  const bCopy  = '<button id="bCp" class="alt">📋 COPY LINKEDIN POST</button>';
   const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button>`;
   const bTog   = `<button id="bTg" style="font-size:12px; padding:6px 10px">${won ? 'view front page' : 'view classic badge'}</button>`;
   // losers are the comedy's best distributors: PIVOT first, share buttons
   // immediately second (FINAL-REVIEW §2 amendment — outranks the spec's order)
-  const btns = won ? bShare + bSave + bCopy + bRetry + bTog : bRetry + bShare + bSave + bCopy + bTog;
+  const btns = won ? bShare + bSave + bRetry + bTog : bRetry + bShare + bSave + bTog;
 
   const val = valuation(won);
   lastVal = val.v;
@@ -3270,10 +3269,25 @@ function showEndUI(won){
   };
   if (LB_ON){
     const listEl = document.getElementById('lbList');
-    const renderTop = () => { listEl.innerHTML = lbTop && lbTop.length
-      ? "TODAY'S BOARD — seed #" + SEED_N + '<br>' + lbTop.slice(0, 5).map((r, i) =>
-          `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>')
-      : ''; };
+    const renderRows = rows => rows.map((r, i) =>
+      `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
+    const renderTop = () => {
+      listEl.innerHTML = lbTop && lbTop.length
+        ? "TODAY'S BOARD — seed #" + SEED_N + '<br>' + renderRows(lbTop.slice(0, 5)) +
+          '<br><a id="lbAll" href="#" style="color:#7ce0ff">view full board ↓</a>'
+        : '';
+      const all = document.getElementById('lbAll');
+      if (all) all.onclick = e => {
+        e.preventDefault();
+        fetch('/api/leaderboard?seed=' + SEED_N + '&limit=200').then(r => r.json()).then(j => {
+          if (!j || !j.ok) return;
+          listEl.innerHTML = "TODAY'S BOARD — seed #" + SEED_N + ' · all ' + j.top.length +
+            `<div style="max-height:170px; overflow:auto; margin:4px auto 0; width:min(440px,84vw); padding:4px 10px; background:rgba(0,0,0,.35); text-align:left">${renderRows(j.top)}</div>` +
+            '<a id="lbLess" href="#" style="color:#7ce0ff">show top 5 ↑</a>';
+          document.getElementById('lbLess').onclick = ev => { ev.preventDefault(); renderTop(); };
+        }).catch(() => {});
+      };
+    };
     renderTop();
     document.getElementById('lbGo').onclick = () => {
       if (lbPostedAt === (endTime || playMs)) return;   // this run is already on the board
@@ -3286,7 +3300,8 @@ function showEndUI(won){
         body: JSON.stringify({ name: nm, val: lastVal, raised, timeMs: Math.round(endTime || playMs), won, seed: SEED_N }) })
         .then(r => r.json())
         .then(j => {
-          btn.textContent = j && j.ok ? '✓ ON THE BOARD' : 'board offline (very pre-seed)';
+          btn.textContent = j && j.ok ? (j.kept === 'existing' ? 'your earlier run was better ✓' : '✓ ON THE BOARD')
+                                      : (j && j.reason ? '✗ ' + j.reason : 'board offline (very pre-seed)');
           if (j && j.ok) lbFetch(renderTop);
         })
         .catch(() => { btn.textContent = 'board offline (very pre-seed)'; });
@@ -3301,20 +3316,22 @@ function showEndUI(won){
   };
   if (canShareFiles) document.getElementById('bSh').onclick = () => {
     const s = surfaces[cur];
+    // picture + the game link: some targets drop text when files ride along,
+    // so the url field carries the link on its own
     const data = s.file && navigator.canShare({files:[s.file]})
-      ? {files:[s.file], text:s.text} : {text:s.text};
-    navigator.share(data).catch(()=>{});
+      ? {files:[s.file], text:s.text, url: GAME_URL} : {text:s.text, url: GAME_URL};
+    navigator.share(data).catch(() => navigator.share({text:s.text}).catch(()=>{}));
   };
   document.getElementById('bDl').onclick = () => {
+    // one button, both halves of a LinkedIn post: the PNG downloads and the
+    // post text lands on the clipboard in the same click
     const a = document.createElement('a');
     a.href = surfaces[cur].blobUrl || surfaces[cur].url; a.download = surfaces[cur].fname;
     document.body.appendChild(a); a.click(); a.remove();
-  };
-  document.getElementById('bCp').onclick = () => {
     const msg = document.getElementById('cpMsg');
     const text = surfaces[cur].text;
     const badgeBlob = surfaces[cur].blob;
-    const ok = () => msg.textContent = 'post copied ✓ — now SAVE BADGE and attach it';
+    const ok = () => msg.textContent = 'saved ✓ + post copied ✓ — paste on LinkedIn, attach the image';
     const manual = () => { // last resort: visible readonly textarea, still shippable
       msg.textContent = 'copy blocked — select all + copy manually:';
       const ta = document.createElement('textarea');

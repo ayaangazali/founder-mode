@@ -15,10 +15,25 @@
 //     won boolean not null, seed int not null
 //   );
 //   create index founder_scores_board on founder_scores (seed, val desc, time_ms asc);
+//   create unique index founder_scores_one_per_name on founder_scores (seed, name);
 
 const SB = process.env.SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_KEY;
 const H = { apikey: KEY, authorization: 'Bearer ' + KEY, 'content-type': 'application/json' };
+
+// name policy: one entry per name per day (best run wins), and the board is a
+// share surface — no slurs/profanity, leetspeak included. Checked on the
+// collapsed uppercase string so spacing/punctuation can't dodge it.
+const BLOCKLIST = ['FUCK','SHIT','CUNT','BITCH','NIGG','FAGG','COCK','DICK','PUSSY',
+  'WHORE','SLUT','RAPE','NAZI','HITLER','PENIS','VAGINA','ASSHOLE','PEDO','KYS',
+  'RETARD','TWAT','WANK','BOOB','TITTY','SEMEN','CUMS'];
+function nameBlocked(name){
+  const collapsed = name.toUpperCase()
+    .replace(/0/g, 'O').replace(/1/g, 'I').replace(/3/g, 'E').replace(/4/g, 'A')
+    .replace(/5/g, 'S').replace(/7/g, 'T').replace(/8/g, 'B')
+    .replace(/[^A-Z]/g, '');
+  return BLOCKLIST.some(w => collapsed.includes(w));
+}
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -31,8 +46,9 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     const { searchParams } = new URL(req.url, 'https://foundermode.vercel.app');
     const seed = parseInt(searchParams.get('seed') || '0', 10) | 0;
+    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) | 0));
     const q = `${SB}/rest/v1/founder_scores?seed=eq.${seed}` +
-              `&order=val.desc,time_ms.asc&limit=10&select=name,val,raised,time_ms,won`;
+              `&order=val.desc,time_ms.asc&limit=${limit}&select=name,val,raised,time_ms,won`;
     const r = await fetch(q, { headers: H });
     if (!r.ok) return res.status(200).json({ ok: false, reason: 'board unavailable' });
     return res.status(200).json({ ok: true, top: await r.json() });
@@ -51,6 +67,24 @@ export default async function handler(req, res) {
     if (raised < 0 || raised > 3000 || val < 0 || val > Math.ceil(raised * 3.9) + 10 ||
         (won && timeMs < 45000) || timeMs < 0 || timeMs > 6 * 3600 * 1000)
       return res.status(400).json({ ok: false, reason: 'diligence found irregularities' });
+    if (nameBlocked(name))
+      return res.status(400).json({ ok: false, reason: 'legal has concerns about that name' });
+
+    // one row per (seed, name): keep the best run. Manual compare + a unique
+    // index backstop for races.
+    const exQ = `${SB}/rest/v1/founder_scores?seed=eq.${seed}&name=eq.${encodeURIComponent(name)}&select=id,val,time_ms`;
+    const ex = await fetch(exQ, { headers: H });
+    const rows = ex.ok ? await ex.json() : [];
+    if (rows.length){
+      const old = rows[0];
+      const better = val > old.val || (val === old.val && timeMs < old.time_ms);
+      if (!better) return res.status(200).json({ ok: true, kept: 'existing' }); // their earlier run was stronger
+      const up = await fetch(`${SB}/rest/v1/founder_scores?id=eq.${old.id}`, {
+        method: 'PATCH', headers: H,
+        body: JSON.stringify({ val, raised, time_ms: timeMs, won }),
+      });
+      return res.status(200).json({ ok: up.ok, kept: 'improved' });
+    }
     const r = await fetch(`${SB}/rest/v1/founder_scores`, {
       method: 'POST', headers: H,
       body: JSON.stringify({ name, val, raised, time_ms: timeMs, won, seed }),
