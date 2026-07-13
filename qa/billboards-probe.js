@@ -16,7 +16,7 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
 // real board lands a yes.
 const ALLOWED_REAL = ['SUPERSET','VERCEL','WARP','RESEND','EXA',
   'FIRECRAWL','BROWSER USE','MANUFACT','CLEAN','INSFORGE','CALLIX',
-  'SUPERMEMORY','HYPERSPELL','AGENTMAIL','KINECT','DEEL'];
+  'SUPERMEMORY','HYPERSPELL','AGENTMAIL','KINECT','IMAGINE AI','DEEL'];
 // v2 owner pass removed GOJIBERRY / REPLIT / SUPABASE (the latter two stay on
 // the denylist: parody boards may never use those marks either)
 // real brands a PARODY-tier board must never equal (extend freely)
@@ -61,9 +61,9 @@ const DENYLIST = /vercel|supabase|warp|replit|resend|firecrawl|deel|exa|stripe|o
     const outOfWorld = BILLBOARDS.filter(bb => bb.x < 100 || bb.x > 8450).map(bb => bb.name);
     return { count: BILLBOARDS.length, minGap, sameYBad, inArena, outOfWorld };
   });
-  check('16 boards (v2 owner pass)', inv.count === 16, String(inv.count));
+  check('17 boards (v2 + IMAGINE AI, BUILD-v1.2 A)', inv.count === 17, String(inv.count));
   check('every board outside all three boss arenas', inv.inArena.length === 0, inv.inArena.join(','));
-  check('board spacing >=290 world px', inv.minGap >= 290, 'min gap ' + inv.minGap);
+  check('board spacing >=250 world px', inv.minGap >= 250, 'min gap ' + inv.minGap);
   check('same-height neighbors >=400px (no panel overlap at .5 parallax)', inv.sameYBad.length === 0, inv.sameYBad.join(','));
   check('boards inside the reachable world', inv.outOfWorld.length === 0, inv.outOfWorld.join(','));
 

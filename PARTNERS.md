@@ -21,6 +21,7 @@
 | EXA | exa.ai | reachable | REAL | DM | — |
 | RESEND | resend.com | dev-darling | REAL | DM | — |
 | SUPERSET | YC P26 (agent IDE) | reachable | REAL | DM founder | — |
+| IMAGINE AI | imagineai.me, YC F25 | DM Sky Yang — on-theme | REAL | easy yes per owner | — |
 | VERCEL | vercel.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
 | WARP | warp.dev | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
 | DEEL | deel.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
@@ -31,6 +32,14 @@ Any of them can return on a written yes; there are free slots in every zone.
 Panels also shrank 180×40 → 132×30 with a steel frame/rivets/catwalk detail
 pass, and spacing widened to ≥290px (same-height neighbors ≥590px). CALLIX
 moved back to the Sand Hill GTM row (x6060) — the slot GOJIBERRY vacated.
+
+## BUILD-v1.2 Part A reconciliation (2026-07-13)
+The v1.2 spec's board list predates the owner's live-review cuts (GOJIBERRY /
+REPLIT / SUPABASE stay cut) and the v2 renderer (132×30 framed panels, sky-band
+tiers). Per the spec's own smaller-diff rule, the shipped system stands; the
+net-new delta is IMAGINE AI ("we reverse-engineer your LinkedIn"), slotted into
+THE CLOUD row, which respaces to 7150/7400/7650/7900/8150/8400 (Δ250, height-
+staggered — spec x8500 sat inside SYNERGY.AI's arena). 17 boards total.
 
 ## Placement deviations from docs/BILLBOARDS-FINAL.md (owner told Claude Code to nudge + note)
 The spec's ≥900px spacing is geometrically impossible for 19 boards in a 9,200px
