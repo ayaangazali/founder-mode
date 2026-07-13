@@ -553,6 +553,27 @@ let cofX = 0, cofFace = 1, cofSaid = 0, cofBubT = 0;  // follower + bubble rotat
 let aiNudgeAt = Infinity, aiNudgeT = 0;               // the AI cofounder "helps" once per run
 let momRoundUsed = false, momBacked = false;          // B3: the mom round — once per run; flavors every share surface
 
+// -------- INTERN FAIR (BUILD-v1.2 B2, flagship) --------
+// Two folding-table booths. Each offers ONE weighted-random candidate per run;
+// stand at the table ~half a second to hire (dwell gate: bots sprint past, so
+// the sense-act suite never accidentally staffs up). Interns trail you on the
+// follower lerp. Every type has a catch — that's the entire labor market.
+const INTERN_TYPES = [
+  { id:'grinder', name:'THE GRINDER',       cost:20, w:30 },
+  { id:'ghost',   name:'THE GHOST',         cost:20, w:20 },
+  { id:'tenx',    name:'THE 10X INTERN',    cost:40, w:15 },
+  { id:'nepo',    name:'THE NEPO INTERN',   cost:30, w:15 },
+  { id:'unpaid',  name:'THE UNPAID INTERN', cost:0,  w:20 },
+];
+const BOOTHS = [ { x:1330, type:0, hired:false }, { x:4380, type:0, hired:false } ];
+let interns = [];                                  // active: {id, x, t, face, invis}
+let internHiredCount = 0, internTypesHired = [], internDwell = 0;
+function pickInternType(r){
+  let acc = 0; const total = INTERN_TYPES.reduce((a, t) => a + t.w, 0);
+  for (let i = 0; i < INTERN_TYPES.length; i++){ acc += INTERN_TYPES[i].w; if (r * total < acc) return i; }
+  return 0;
+}
+
 // -------- COFFEE CHATS — the investor-psychology mini-game --------
 // Three funder archetypes (canon rule 3: composites, never real people) hold
 // coffee chats at fixed tables. Press C at the table (touch: stand still).
@@ -848,6 +869,9 @@ function reset(fromCheckpoint){
     cofX = 0; cofFace = 1; cofSaid = 0; cofBubT = 0;
     aiNudgeT = 0; aiNudgeAt = cof().id === 'ai' ? 25000 + quoteRoll * 60000 : Infinity;
     momRoundUsed = false; momBacked = cof().id === 'mom';
+    interns = []; internHiredCount = 0; internTypesHired = []; internDwell = 0;
+    BOOTHS[0].type = pickInternType(quoteRoll); BOOTHS[0].hired = false;
+    BOOTHS[1].type = pickInternType((quoteRoll * 7919) % 1); BOOTHS[1].hired = false;
     interview = null; accDone = false;
     for (const bb of BILLBOARDS) bb.spotted = false;  // partner shout-outs re-arm per run
     slops = []; slopN = 0;
@@ -909,6 +933,14 @@ function hurtPlayer(cause, word){
     player.hurtT = 60; shakeT = 2;
     addPop(player.x, player.y-10, 'BAD TAKE DEFLECTED', '#7ce0ff');
     beep(700, .12, 'triangle', .08);
+    return;
+  }
+  const tenx = interns.findIndex(i2 => i2.id === 'tenx');
+  if (tenx >= 0){                  // the 10X intern tanks exactly one hit, then renegotiates
+    interns.splice(tenx, 1);
+    player.hurtT = 90; shakeT = 2; sHurt();
+    addPop(player.x, player.y - 24, 'your 10X intern took the hit', '#7ce0ff', 160);
+    addPop(player.x, player.y - 12, '"can I get equity? a title? to lead eng?" — quit', '#8d99ae', 220);
     return;
   }
   if (cause) deathCause = cause;   // the last thing that hurt you writes the headline
@@ -1115,11 +1147,13 @@ function update(){
   // -------- coins --------
   for (const c of coins){
     if (!c.got && aabb(p, c)){
-      c.got = true; raised += COIN_VALUE; sCoin(); // rate environment sets the coin (ROADMAP §7)
+      // NEPO intern on payroll: +20% per coin (his dad knows everyone)
+      const cv2 = interns.some(i2 => i2.id === 'nepo') ? Math.round(COIN_VALUE * 1.2) : COIN_VALUE;
+      c.got = true; raised += cv2; sCoin(); // rate environment sets the coin (ROADMAP §7)
       moodUp(); // every coin lifts the mood, even when the popup dedupes
       // one popup per coin cluster, not per coin — a full row was 5 stacked labels (playtest)
       if (!popups.some(q2 => q2.txt.startsWith('+$') && Math.abs(q2.x - c.x) < 56))
-        addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K', '#ffd94a');
+        addPop(c.x, c.y - 6, '+$' + cv2 + 'K', '#ffd94a');
     }
   }
 
@@ -1419,6 +1453,56 @@ function update(){
       addPop(p.x, p.y - 24, 'your AI cofounder is "helping"', '#c58bff', 150);
     }
     if (aiNudgeT > 0){ aiNudgeT--; p.vx += p.face > 0 ? -0.3 : 0.3; } // gentle wrong-way tug
+  }
+
+  // -------- interns: hire (dwell), trail, and each type's catch --------
+  {
+    let atBooth = null;
+    for (const bo of BOOTHS)
+      if (!bo.hired && Math.abs(p.x - bo.x) < 14 && p.onGround) atBooth = bo;
+    if (atBooth && interns.length < 2){
+      const T = INTERN_TYPES[atBooth.type];
+      if (++internDwell >= 30){
+        internDwell = 0;
+        if (raised < T.cost){ addPop(p.x, p.y - 22, "can't afford the intern. (yes.)", '#8d99ae', 150); }
+        else {
+          atBooth.hired = true; raised -= T.cost;
+          internHiredCount++; internTypesHired.push(T.id);
+          addPop(p.x, p.y - 24, 'HIRED: ' + T.name + (T.cost ? ' (-$' + T.cost + 'K)' : ' ($0)'), '#7cffa5', 180);
+          interns.push({ id: T.id, x: p.x - 24, t: { grinder: 1200, ghost: 180, nepo: 1800, unpaid: 900 }[T.id] || -1,
+                         face: 1, invis: T.id === 'ghost' });
+          sPow();
+        }
+      }
+    } else internDwell = 0;
+    for (const it of interns){
+      // trail: behind the player, behind the cofounder, single file
+      const slot = 1 + interns.indexOf(it) + (cof().id !== 'none' ? 1 : 0);
+      const tdx = (p.x - (14 + slot * 12) * p.face) - it.x;
+      it.x += clamp(tdx * 0.08, -2.6, 2.6);
+      if (Math.abs(tdx) > 2) it.face = tdx > 0 ? 1 : -1;
+      // coin magnetism: the grinder collects for you, the unpaid one collects "for exposure"
+      if ((it.id === 'grinder' || it.id === 'unpaid') && !it.invis){
+        for (const c of coins){
+          if (!c.got && Math.abs(c.x - it.x) < 40 && Math.abs(c.y - (GROUND_Y - 20)) < 60){
+            c.got = true;
+            if (it.id === 'grinder'){ raised += COIN_VALUE; sCoin(); addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K (intern)', '#7cffa5'); }
+            else addPop(c.x, c.y - 6, '+$0 (for exposure)', '#8d99ae');
+          }
+        }
+      }
+      if (it.t > 0 && --it.t === 0){
+        if (it.id === 'ghost') addPop(p.x, p.y - 22, 'your intern ghosted — accepted 6 other offers', '#8d99ae', 200);
+        if (it.id === 'grinder') addPop(p.x, p.y - 22, 'got a better offer. it was also unpaid.', '#8d99ae', 200);
+        if (it.id === 'nepo') addPop(p.x, p.y - 22, 'left in a town car. said nothing.', '#8d99ae', 200);
+        if (it.id === 'unpaid'){
+          addPop(p.x, p.y - 22, 'the LABOR BOARD has questions', '#d64550', 200);
+          enemies.push(makeEnemy({ x: clamp(p.x + 200, 100, 9100), t: 'c' }));   // a compliance phantom, with a cause
+        }
+        it.gone = true;
+      }
+    }
+    interns = interns.filter(it => !it.gone);
   }
 
   // -------- HUMOR PATCH item 5: MEETLY.AI aftermath --------
@@ -1891,6 +1975,43 @@ function drawInterview(){
     if (interview.won){ cx.fillStyle = '#d97706'; cx.fillText('DEMO DAY LETTER: +$150K · INVINCIBLE 8s', 16, 92); }
   }
   drawHUD();
+}
+
+// INTERN FAIR booths + the interns trailing you (lanyards non-negotiable)
+const INTERN_SHIRT = { grinder:'#8d99ae', ghost:'#cfd6e4', tenx:'#ffd94a', nepo:'#2c3e6b', unpaid:'#c2b280' };
+function drawInternFair(){
+  for (const bo of BOOTHS){
+    const x = bo.x - cam;
+    if (x < -70 || x > W + 70) continue;
+    px(x - 20, GROUND_Y - 14, 40, 3, '#6b4f2a');                 // folding table
+    px(x - 17, GROUND_Y - 11, 3, 11, '#54401f'); px(x + 14, GROUND_Y - 11, 3, 11, '#54401f');
+    px(x - 24, GROUND_Y - 46, 48, 22, '#3a3348');                // the sign
+    cx.font = 'bold 7px monospace'; cx.fillStyle = '#ffd94a';
+    cx.fillText('INTERN FAIR', Math.round(x - 20), Math.round(GROUND_Y - 37));
+    cx.font = 'bold 6px monospace'; cx.fillStyle = '#8d99ae';
+    cx.fillText('equity: no · exposure: yes', Math.round(x - 22), Math.round(GROUND_Y - 28));
+    if (!bo.hired){                                              // today's candidate, waiting
+      const T = INTERN_TYPES[bo.type], y = GROUND_Y - 14;
+      px(x + 22, y - 2, 6, 2, '#4a3626'); px(x + 22, y, 6, 4, '#e8c39a');
+      px(x + 21, y + 4, 8, 6, INTERN_SHIRT[T.id]);
+      px(x + 24, y + 4, 2, 5, '#ffd94a');                        // the lanyard
+      px(x + 22, y + 10, 3, 3, '#2b2d42'); px(x + 26, y + 10, 3, 3, '#2b2d42');
+      if (Math.abs(player.x - bo.x) < 44 && state === ST.PLAY)
+        celebBubble(x + 25, y + 2, T.name + (T.cost ? ' — $' + T.cost + 'K. stand here to hire.' : ' — free. stand here to hire.'));
+    }
+  }
+  for (const it of interns){
+    if (it.invis) continue;                                      // the ghost, famously
+    const x = it.x - cam;
+    if (x < -30 || x > W + 30) continue;
+    const y = GROUND_Y - 14, step = (frame >> 3) % 2;
+    px(x + 2, y - 2, 6, 2, '#4a3626'); px(x + 2, y, 6, 4, '#e8c39a');
+    px(x + 1, y + 4, 8, 6, INTERN_SHIRT[it.id]);
+    px(x + 4, y + 4, 2, 5, '#ffd94a');                           // lanyard
+    px(x + 2, y + 10, 3, 3 + step, '#2b2d42'); px(x + 6, y + 10, 3, 4 - step, '#2b2d42');
+    if (it.id === 'nepo' && state === ST.PLAY && frame % 620 < 130 && Math.abs(player.x - it.x) < 90)
+      celebBubble(x + 5, y + 2, 'my dad knows everyone at Sequoiadendron');
+  }
 }
 
 function drawChatTables(){
@@ -2606,6 +2727,7 @@ function draw(){
 
   // cameo sprites — background layer: everything gameplay draws on top of them
   drawChatTables(); // coffee-chat tables + waiting funders
+  drawInternFair(); // folding tables, lanyards, terms non-negotiable
   for (const c of cameos) drawCameoSprite(c);
 
   // robotaxi — neutral rideable platform (sprites.js §4, s=1)
@@ -3049,6 +3171,8 @@ function badgeFlairs(won){
   if (!won) return f;
   if (enemies.every(e => e.dead)) f.push('ZERO CHURN');
   if ((endTime || playMs) < 180000) f.push('T2D3');
+  if (internHiredCount >= 3) f.push('built a real team (allegedly)');
+  if (internTypesHired.length && internTypesHired.every(t => t === 'ghost')) f.push('SERIAL DELEGATOR');
   return f;
 }
 
