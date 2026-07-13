@@ -15,7 +15,23 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(500);
     st = await page.evaluate(() => state);
   }
-  console.log('state:', st, '| errors:', errors.length ? errors.join(' | ') : 'none');
+  // Legacy key-name normalization (field bug: a MacBook where only WASD+X
+  // worked — its browser reports 'Spacebar'/'Left'/'Esc' instead of the spec
+  // names). Synthesizes the deviant events and asserts the game still reads them.
+  const legacyOk = await page.evaluate(() => {
+    const fire = (type, key, code) => window.dispatchEvent(new KeyboardEvent(type, { key, code }));
+    const results = [];
+    fire('keydown', 'Spacebar', 'Space');   results.push(keys['space'] === true);
+    fire('keyup',   'Spacebar', 'Space');   results.push(keys['space'] === false);
+    fire('keydown', 'Left', 'ArrowLeft');   results.push(keys['arrowleft'] === true);
+    fire('keyup',   'Left', 'ArrowLeft');   results.push(keys['arrowleft'] === false);
+    fire('keydown', 'Up', '');              results.push(keys['arrowup'] === true);  // no e.code at all
+    fire('keyup',   'Up', '');              results.push(keys['arrowup'] === false);
+    fire('keydown', 'Process', 'KeyD');     results.push(keys['d'] === true);        // IME-swallowed letter
+    fire('keyup',   'Process', 'KeyD');     results.push(keys['d'] === false);
+    return results.every(Boolean) ? 'ok' : 'FAIL ' + results.join(',');
+  });
+  console.log('state:', st, '| legacy keys:', legacyOk, '| errors:', errors.length ? errors.join(' | ') : 'none');
   await browser.close();
-  if (st !== 1 || errors.length){ console.log('SMOKETEST FAIL'); process.exitCode = 1; }
+  if (st !== 1 || legacyOk !== 'ok' || errors.length){ console.log('SMOKETEST FAIL'); process.exitCode = 1; }
 })();

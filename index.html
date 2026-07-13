@@ -186,16 +186,35 @@ document.getElementById('rot').addEventListener('mousedown', () => { rotDismisse
 // ------------------------- INPUT -------------------------
 const keys = {};
 let anyKeyPressed = false;
+// Key normalization: not every browser reports the spec names — legacy engines
+// and some layout/IME setups give 'Spacebar', 'Left'/'Up'/'Down'/'Right', 'Esc',
+// or 'Process' instead of ' '/'ArrowLeft'/'Escape'. Letters are the only stable
+// names, which is how a machine ends up with WASD+X working and nothing else.
+// e.key wins when it parses (respects the user's layout); e.code is the
+// physical-key fallback that never lies about nav keys.
+const LEGACY2KEY = { ' ':'space', 'spacebar':'space', 'left':'arrowleft', 'right':'arrowright',
+  'up':'arrowup', 'down':'arrowdown', 'esc':'escape' };
+const CODE2KEY = { 'Space':'space', 'ArrowLeft':'arrowleft', 'ArrowRight':'arrowright',
+  'ArrowUp':'arrowup', 'ArrowDown':'arrowdown', 'Escape':'escape' };
+function normKey(e){
+  const k = (e.key || '').toLowerCase();
+  if (LEGACY2KEY[k]) return LEGACY2KEY[k];
+  if (CODE2KEY[e.code]) return CODE2KEY[e.code];
+  if ((!k || k === 'process' || k === 'dead' || k === 'unidentified') && /^Key[A-Z]$/.test(e.code || ''))
+    return e.code.slice(3).toLowerCase(); // IME swallowed the letter; the physical key didn't
+  return k;
+}
+const NAV_KEYS = ['arrowleft','arrowright','arrowup','arrowdown','space'];
 window.addEventListener('keydown', e => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
-  if (e.key === 'Escape' && state === ST.PLAY){ paused = !paused; return; }
-  keys[e.key.toLowerCase()] = true;
-  if (e.key === ' ') keys['space'] = true;
+  const nk = normKey(e);
+  if (NAV_KEYS.includes(nk)) e.preventDefault();
+  if (nk === 'escape' && state === ST.PLAY){ paused = !paused; return; }
+  keys[nk] = true;
   anyKeyPressed = true;
   idleT = 0;
   initAudio();
   if (state === ST.TITLE){ // founder picker — edge-triggered, never starts the game
-    const k = e.key.toLowerCase();
+    const k = nk;
     if (k === 'c') cycleLook('s');
     else if (k === 'h') cycleLook('h');
     else if (k === 'v') cycleLook('v');
@@ -210,7 +229,7 @@ window.addEventListener('keydown', e => {
   }
   // the classic cheat-code sequence — tracked anywhere, never rendered in-game
   if (!konamiDone){
-    const kk = e.key.toLowerCase();
+    const kk = nk;
     konamiIdx = kk === KONAMI[konamiIdx] ? konamiIdx + 1 : (kk === KONAMI[0] ? 1 : 0);
     if (konamiIdx >= KONAMI.length){
       konamiDone = true; moodLock = true;        // the meter reads FOUNDER MODE, permanently
@@ -218,14 +237,13 @@ window.addEventListener('keydown', e => {
       beep(660, .3, 'square', .08);
     }
   }
-  if (e.key.toLowerCase() === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
-  if (e.key.toLowerCase() === 'r' && !e.repeat && (state === ST.DEAD || state === ST.WIN)){
+  if (nk === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
+  if (nk === 'r' && !e.repeat && (state === ST.DEAD || state === ST.WIN)){
     resumePlay(state === ST.DEAD); // death retries from checkpoint; a win restart is a fresh run
   }
 });
 window.addEventListener('keyup', e => {
-  keys[e.key.toLowerCase()] = false;
-  if (e.key === ' ') keys['space'] = false;
+  keys[normKey(e)] = false;
 });
 // input hygiene: alt-tab / app-switch with a key held must not auto-run the founder
 function clearAllInput(){ for (const k in keys) keys[k] = false; touch.L = touch.R = touch.J = false; }
@@ -313,7 +331,7 @@ const sHurt  = () => beep(160, .3, 'sawtooth', .09, -110);
 const sPow   = () => { [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.1,'square',.07),i*70)); };
 const sBoss  = () => beep(80, .5, 'sawtooth', .1, -30);
 const sWin   = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.08),i*130)); };
-window.addEventListener('keydown', e => { if (e.key.toLowerCase()==='m') muted = !muted; });
+window.addEventListener('keydown', e => { if (normKey(e)==='m') muted = !muted; });
 
 // ------------------------- HELPERS -------------------------
 const clamp = (v,a,b) => v<a?a:(v>b?b:v);

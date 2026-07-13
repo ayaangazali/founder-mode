@@ -513,3 +513,20 @@ GitHub (private).
 gates recorded); qa/design-cameos.md §4 thin-veil table stripped per its own
 instruction; stale-doc banners on the v0.1-era docs; CLIP-REPORT merge status
 corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
+
+## 2026-07-13 — [INPUT NORMALIZATION] (owner field bug: MacBook where only WASD+X worked)
+
+- Root cause: the key handler read raw `e.key` names (' ', 'ArrowLeft',
+  'Escape'). Letters are the only names every browser agrees on — legacy
+  engines and some layout/IME setups report 'Spacebar', 'Left'/'Up'/'Down'/
+  'Right', 'Esc', or 'Process', so Space/arrows/Escape silently died while
+  WASD+X kept working (and W still started the game because JUMP() includes it —
+  exactly the reported symptom).
+- Fix: normKey(e) — e.key when it parses (respects user layout), legacy-name
+  map, e.code physical-key fallback for nav keys, and Key[A-Z] code recovery
+  when an IME swallows a letter ('Process'). preventDefault now keys off the
+  normalized name too, so those browsers also stop page-scrolling. Mute and
+  keyup go through the same path; the lbName stopPropagation guard unchanged.
+- smoketest now synthesizes the deviant events (Spacebar/Left/Up-with-no-code/
+  Process+KeyD) and asserts the game reads them — the field bug is a permanent
+  regression check. No physics/timing change; not a speedrun-contract item.
