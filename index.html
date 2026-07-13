@@ -486,7 +486,7 @@ const dailyRng = mulberry32(SEED_N);
 // http(s) only; on file:// the game never touches the network and falls back
 // to the localStorage personal best. The board is garnish, never load-bearing.
 const LB_ON = /^https?:$/.test(location.protocol);
-let lbTop = null, lbSent = false;
+let lbTop = null, lbPostedAt = -1; // endTime of the run already posted (name edits rebuild the card; a run still posts once)
 function lbFetch(after){
   if (!LB_ON) return;
   fetch('/api/leaderboard?seed=' + SEED_N).then(r => r.json())
@@ -3226,7 +3226,6 @@ function showEndUI(won){
 
   const val = valuation(won);
   lastVal = val.v;
-  lbSent = false; // one post per end screen
   try { const b = lbBest(); if (!b || lastVal > b.val)
     localStorage.setItem('fm_best', JSON.stringify({ val: lastVal, won, t: endTime || playMs })); } catch(e){}
   const valHtml = `
@@ -3255,10 +3254,19 @@ function showEndUI(won){
 
   const nameEl = document.getElementById('lbName');
   nameEl.onkeydown = e => e.stopPropagation();        // typing must not steer the game
-  nameEl.onchange = () => {                           // commit the name -> re-stamp badge + front page
+  nameEl.onchange = () => {                           // commit the name -> re-stamp in place
+    // no full rebuild: replacing the card mid-click would eat the POST button
     const nm = nameEl.value.toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14);
     try { localStorage.setItem('fm_name', nm); } catch(e){}
-    showEndUI(won);
+    surfaces.badge.c = makeBadge(won);
+    surfaces.obit.c = makeObituary(won);
+    surfaces.obit.text = `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${GAME_URL}`;
+    for (const k in surfaces){
+      const sf = surfaces[k];
+      sf.url = sf.c.toDataURL('image/png');
+      sf.c.toBlob(blob => { if (blob){ sf.blob = blob; sf.file = new File([blob], sf.fname, {type:'image/png'}); sf.blobUrl = URL.createObjectURL(blob); } }, 'image/png');
+    }
+    document.getElementById('endImg').src = surfaces[cur].url;
   };
   if (LB_ON){
     const listEl = document.getElementById('lbList');
@@ -3268,10 +3276,10 @@ function showEndUI(won){
       : ''; };
     renderTop();
     document.getElementById('lbGo').onclick = () => {
-      if (lbSent) return;
+      if (lbPostedAt === (endTime || playMs)) return;   // this run is already on the board
       const nm = (nameEl.value || 'YOU').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14) || 'YOU';
       try { localStorage.setItem('fm_name', nm); } catch(e){}
-      lbSent = true;
+      lbPostedAt = endTime || playMs;
       const btn = document.getElementById('lbGo');
       btn.textContent = '…syndicating…';
       fetch('/api/leaderboard', { method: 'POST', headers: { 'content-type': 'application/json' },
