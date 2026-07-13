@@ -551,6 +551,7 @@ try { cofIdx = clamp(parseInt(localStorage.getItem('fm_cof')) || 0, 0, COFOUNDER
 const cof = () => COFOUNDERS[cofIdx];
 let cofX = 0, cofFace = 1, cofSaid = 0, cofBubT = 0;  // follower + bubble rotation
 let aiNudgeAt = Infinity, aiNudgeT = 0;               // the AI cofounder "helps" once per run
+let momRoundUsed = false, momBacked = false;          // B3: the mom round — once per run; flavors every share surface
 
 // -------- COFFEE CHATS — the investor-psychology mini-game --------
 // Three funder archetypes (canon rule 3: composites, never real people) hold
@@ -846,6 +847,7 @@ function reset(fromCheckpoint){
     chat = null; chatStill = 0; for (const cc of CHATS) cc.done = false;
     cofX = 0; cofFace = 1; cofSaid = 0; cofBubT = 0;
     aiNudgeT = 0; aiNudgeAt = cof().id === 'ai' ? 25000 + quoteRoll * 60000 : Infinity;
+    momRoundUsed = false; momBacked = cof().id === 'mom';
     interview = null; accDone = false;
     for (const bb of BILLBOARDS) bb.spotted = false;  // partner shout-outs re-arm per run
     slops = []; slopN = 0;
@@ -920,11 +922,29 @@ function hurtPlayer(cause, word){
   shakeT = 2; hitstopT = 3; // juice only — control stays with the player (ruling 2.2)
   addPop(player.x, player.y-10, '-1 RUNWAY', '#ff5a5a');
   if (hearts <= 0){
+    if (momRound()) return;         // 📞 once per run, the seed round comes through
     endTime = playMs;
     recordDeathSpot(player.x);
     state = ST.DEAD;
     showEndUI(false);
   }
+}
+
+// B3: THE MOM ROUND. On hitting 0 RUNWAY — once per run — a beat, a phone
+// call, +2 RUNWAY. Guaranteed if MOM is your cofounder, else a 1-in-6 roll
+// (quoteRoll: fixed per run, so a retry can't fish for it mid-run).
+function momRound(){
+  // the 1-in-6 path needs a run worth saving (>20s) — also keeps the QA
+  // suites' die-on-purpose probes deterministic. MOM-as-cofounder always calls.
+  if (momRoundUsed || !(cof().id === 'mom' || (quoteRoll < 1/6 && playMs > 20000))) return false;
+  momRoundUsed = true; momBacked = true;
+  hearts = 2; maxHearts = Math.max(maxHearts, 2);
+  hitstopT = 72;                                   // the 1.2s beat — the world holds its breath
+  addPop(player.x, player.y - 36, '📞 INCOMING: MOM', '#fff', 220);
+  addPop(player.x, player.y - 24, 'YOUR MOM LED YOUR SEED ROUND', '#ffd94a', 220);
+  addPop(player.x, player.y - 12, '+2 RUNWAY · "I believe in you, sweetie"', '#7cffa5', 220);
+  moodUp(); sPow();
+  return true;
 }
 
 function addPop(x,y,txt,c,life=60){
@@ -1037,7 +1057,9 @@ function update(){
     moodDown();
     hearts--; sHurt();
     addPop(cam+220, 120, zoneName(p.x) === 'THE CLOUD' ? '-1 RUNWAY (the 0.01% downtime)' : '-1 RUNWAY (pivot failed)', '#ff5a5a');
-    if (hearts <= 0){ endTime = playMs; recordDeathSpot(p.x); state = ST.DEAD; showEndUI(false); return; }
+    if (hearts <= 0){
+      if (!momRound()){ endTime = playMs; recordDeathSpot(p.x); state = ST.DEAD; showEndUI(false); return; }
+    }
     p.x = checkpoint; p.y = GROUND_Y - 40; p.vx = 0; p.vy = 0; p.hurtT = 90;
     cam = Math.max(0, checkpoint - 100);
   }
@@ -3059,6 +3081,7 @@ function makeBadge(won){
   b.fillStyle = '#fff'; b.font = 'bold 34px monospace';
   b.fillText(won ? 'survived SF · defeated SYNERGY.AI' : 'SF claims another founder', 320, 205);
   if (playerName()){ b.fillStyle = '#7ce0ff'; b.font = 'bold 30px monospace'; b.fillText('FOUNDER: ' + playerName().toUpperCase(), 320, 245); }
+  if (won && momBacked){ b.fillStyle = '#d9748f'; b.font = 'bold 26px monospace'; b.fillText('SEED LED BY: MOM (undisclosed)', 320, 508); }
   const t = fmtTime(endTime || playMs);
   b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';
   b.fillText('RAISED  ' + fmtMoney(raised), 320, 295);
@@ -3204,9 +3227,11 @@ function makeObituary(won){
            ? (i1 + 1) % POOL.length : (i1 + 1 + Math.floor(quoteRoll * 3)) % POOL.length;
   const rM = fmtMoney(raised), tM = fmtTime(endTime || playMs);
   b.font = 'bold 17px monospace';
+  const MOM_LOSS = "The company's sole investor — the founder's mom — released a statement: 'I'm still proud of you.' The cap table was, in the end, a family matter.";
   [[48, i1], [440, i2]].forEach(([cx2, bi]) => {
     b.fillStyle = INK;
-    wrap(POOL[bi](rM, tM), 356).slice(0, 3).forEach((ln, li) => b.fillText(ln, cx2, 246 + li * 25));
+    const bodyText = (momBacked && !won && cx2 === 440) ? MOM_LOSS : POOL[bi](rM, tM);
+    wrap(bodyText, 356).slice(0, 3).forEach((ln, li) => b.fillText(ln, cx2, 246 + li * 25));
     b.fillStyle = GREEK;
     for (let g = 0; g < 6; g++) b.fillRect(cx2, 332 + g * 22, g % 3 === 2 ? 250 : 352, 12);
   });
@@ -3228,9 +3253,11 @@ function makeObituary(won){
   // pull quote
   b.fillStyle = INK; b.fillRect(48, 486, 8, 74);
   b.font = 'bold 30px monospace';
-  b.fillText(won ? '"i never doubted us"' : '"it was a market timing issue"', 72, 520, 720);
+  b.fillText(won ? (momBacked ? '"he\'s always been very driven"' : '"i never doubted us"')
+                 : '"it was a market timing issue"', 72, 520, 720);
   b.font = 'bold 16px monospace'; b.fillStyle = FAINT;
-  b.fillText(won ? '— you, who doubted us, on LinkedIn' : '— you, on LinkedIn', 72, 550);
+  b.fillText(won ? (momBacked ? '— the founder\'s mother, who led the round (terms undisclosed)' : '— you, who doubted us, on LinkedIn')
+                 : '— you, on LinkedIn', 72, 550);
 
   // bottom ticker
   b.fillStyle = INK; b.fillRect(0, 592, 1200, 38);
