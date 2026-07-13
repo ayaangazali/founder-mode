@@ -496,7 +496,7 @@ const LB_ON = /^https?:$/.test(location.protocol);
 let lbTop = null, lbPostedRun = -1; // runId already on the board (marked only on a CONFIRMED post)
 function lbFetch(after){
   if (!LB_ON) return;
-  fetch('/api/leaderboard?seed=' + SEED_N + '&limit=200').then(r => r.json())
+  fetch('/api/leaderboard?seed=' + SEED_N).then(r => r.json())
     .then(j => { if (j && j.ok){ lbTop = j.top; if (after) after(); } }).catch(() => {});
 }
 lbFetch();
@@ -3691,9 +3691,19 @@ function showEndUI(won){
       `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
     const renderTop = () => {
       listEl.innerHTML = lbTop && lbTop.length
-        ? "TODAY'S BOARD — seed #" + SEED_N + ' · ' + lbTop.length + (lbTop.length === 1 ? ' founder' : ' founders') +
-          `<div style="max-height:210px; overflow:auto; margin:6px auto 0; width:min(520px,84vw); padding:6px 12px; background:rgba(0,0,0,.35); text-align:left">${renderRows(lbTop)}</div>`
+        ? "TODAY'S BOARD — seed #" + SEED_N + '<br>' + renderRows(lbTop.slice(0, 5)) +
+          '<br><button id="lbAll" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">🏆 VIEW TOP 100</button>'
         : '';
+      const all = document.getElementById('lbAll');
+      if (all) all.onclick = () => {
+        fetch('/api/leaderboard?seed=' + SEED_N + '&limit=100').then(r => r.json()).then(j => {
+          if (!j || !j.ok) return;
+          listEl.innerHTML = "TODAY'S BOARD — seed #" + SEED_N + ' · top ' + j.top.length +
+            `<div style="max-height:220px; overflow:auto; margin:6px auto 0; width:min(520px,84vw); padding:6px 12px; background:rgba(0,0,0,.35); text-align:left">${renderRows(j.top)}</div>` +
+            '<button id="lbLess" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">show top 5 ↑</button>';
+          document.getElementById('lbLess').onclick = () => renderTop();
+        }).catch(() => {});
+      };
     };
     renderTop();
     document.getElementById('lbGo').onclick = () => {
