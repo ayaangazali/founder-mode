@@ -159,6 +159,7 @@ window.addEventListener('keydown', e => {
     else if (k === 'h') cycleLook('h');
     else if (k === 'v') cycleLook('v');
     else if (k === 'x') cycleLook('x');
+    else if (k === 'p') cycleLook('p');
     // item 10 eggs: type CORGI / SLOP on the title (sticky for the session)
     if (k.length === 1 && k >= 'a' && k <= 'z'){
       typed = (typed + k).slice(-5);
@@ -232,6 +233,7 @@ const PICKER_ZONES = [
   { x:112, y:206, w:104, h:12, k:'h' },
   { x:112, y:220, w:104, h:12, k:'v' },
   { x:112, y:234, w:104, h:12, k:'x' },
+  { x:224, y:234, w:118, h:12, k:'p' },
 ];
 function pickerHit(clientX, clientY){
   const r = cv.getBoundingClientRect();
@@ -550,6 +552,23 @@ let cofIdx = 0;
 try { cofIdx = clamp(parseInt(localStorage.getItem('fm_cof')) || 0, 0, COFOUNDERS.length - 1); } catch(e){}
 const cof = () => COFOUNDERS[cofIdx];
 let cofX = 0, cofFace = 1, cofSaid = 0, cofBubT = 0;  // follower + bubble rotation
+
+// -------- PEDIGREE (BUILD v1.3) — the résumé multiplies the raise --------
+// The whole joke: performance barely moves the number next to pedigree.
+// Bigger multiplier = bigger baggage, so it's risk/reward, not a free win.
+// Archetype spellings only — recognizable, never a real trademark.
+const PEDIGREES = [
+  { id:'none',   label:'NO PEDIGREE',      mult:1,   badge:'no pedigree. just shipped.' },
+  { id:'serial', label:'SERIAL FOUNDER',   mult:5,   badge:'pattern recognition, they call it' },
+  { id:'drop',   label:'STANFURD DROPOUT', mult:10,  badge:'raised on a dorm idea' },
+  { id:'thirty', label:'30 UNDER 30',      mult:15,  badge:'30 under 30 (the list is cursed)' },
+  { id:'teal',   label:'TEAL FELLOW',      mult:20,  badge:'paid $100K not to graduate' },
+  { id:'nepo',   label:'NEPO FOUNDER',     mult:50,  badge:'warm intro from birth' },
+  { id:'exsyn',  label:'ex-SYNERGY.AI',    mult:100, badge:'was in the room (allegedly)' },
+];
+let pedIdx = 0;
+try { pedIdx = clamp(parseInt(localStorage.getItem('fm_ped')) || 0, 0, PEDIGREES.length - 1); } catch(e){}
+const ped = () => PEDIGREES[pedIdx];
 let aiNudgeAt = Infinity, aiNudgeT = 0;               // the AI cofounder "helps" once per run
 let momRoundUsed = false, momBacked = false;          // B3: the mom round — once per run; flavors every share surface
 
@@ -1659,6 +1678,12 @@ function cycleLook(k){                       // k: 's' | 'h' | 'v' | 'x' (cofoun
     cofIdx = (cofIdx + 1) % COFOUNDERS.length;
     try { localStorage.setItem('fm_cof', cofIdx); } catch(e){}
     beep(880, .05, 'square', .05);
+    return;
+  }
+  if (k === 'p'){
+    pedIdx = (pedIdx + 1) % PEDIGREES.length;
+    try { localStorage.setItem('fm_ped', pedIdx); } catch(e){}
+    beep(920, .05, 'square', .05);
     return;
   }
   const n = k==='h' ? HAIRS.length : 6;
@@ -3181,10 +3206,11 @@ function drawTitle(){
     { y:206, c:'#7ce0ff', txt:'[H] HAIR: '  + HAIRS[look.h] },
     { y:220, c:'#c58bff', txt:'[V] HOODIE: '+ HOODIES[look.v].name },
     { y:234, c:'#7cffa5', txt:'[X] COFOUNDER: ' + COFOUNDERS[cofIdx].label },
+    { y:234, x:224, w:118, c:'#ff8c37', txt:'[P] ' + PEDIGREES[pedIdx].label + (pedIdx ? ' ×' + PEDIGREES[pedIdx].mult : '') },
   ];
   for (const ch of chipDefs){
-    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(112, ch.y, 104, 12);
-    cx.fillStyle = ch.c; cx.fillText(ch.txt, 116, ch.y + 9);
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(ch.x || 112, ch.y, ch.w || 104, 12);
+    cx.fillStyle = ch.c; cx.fillText(ch.txt, (ch.x || 112) + 4, ch.y + 9);
   }
   cx.fillStyle = '#5d647a'; cx.font = 'bold 6px monospace';
   cx.fillText('cosmetic. like most pivots.', 224, 229);
@@ -3246,6 +3272,10 @@ function makeBadge(won){
   if (playerName()){ b.fillStyle = '#7ce0ff'; b.font = 'bold 30px monospace'; b.fillText('FOUNDER: ' + playerName().toUpperCase(), 320, 245); }
   if (won && momBacked){ b.fillStyle = '#d9748f'; b.font = 'bold 26px monospace'; b.fillText('SEED LED BY: MOM (undisclosed)', 320, 508); }
   if (won && accBatch){ b.fillStyle = '#d97706'; b.font = 'bold 24px monospace'; b.fillText('ACCELERATOR · BATCH F26', 320, 272); }
+  if (pedIdx > 0){ b.fillStyle = '#ff8c37'; b.font = 'bold 24px monospace';
+    b.fillText('PEDIGREE: ' + ped().label + ' (×' + ped().mult + ') — "' + ped().badge + '"', 320, 435, 840); }
+  else if (won){ b.fillStyle = '#8d99ae'; b.font = 'bold 24px monospace';
+    b.fillText('"' + ped().badge + '"', 320, 435, 840); }
   const t = fmtTime(endTime || playMs);
   b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';
   b.fillText('RAISED  ' + fmtMoney(raised), 320, 295);
@@ -3429,8 +3459,9 @@ function makeObituary(won){
   // bottom ticker
   b.fillStyle = INK; b.fillRect(0, 592, 1200, 38);
   b.fillStyle = PAPER; b.font = 'bold 19px monospace';
-  b.fillText(won ? `RAISED ${rM} ▲ · BELL RUNG ▲ · VIBES: ALL-TIME HIGH · NEXT: YOUR RUN?`
-                 : `RAISED ${rM} ▼ · RUNWAY 0.0 MONTHS ▼ · VIBES DELISTED · NEXT: YOUR RUN?`, 48, 617, 1104);
+  const pedTick = pedIdx > 0 ? ` · PEDIGREE: ${ped().label} ×${ped().mult}` : '';
+  b.fillText((won ? `RAISED ${rM} ▲ · BELL RUNG ▲ · VIBES: ALL-TIME HIGH` 
+                  : `RAISED ${rM} ▼ · RUNWAY 0.0 MONTHS ▼ · VIBES DELISTED`) + pedTick + ' · NEXT: YOUR RUN?', 48, 617, 1104);
   return oc;
 }
 
@@ -3451,6 +3482,7 @@ function valuation(won){
     v *= 0.5; lines.push('× 0.5  DOWN ROUND (you died)');
   }
   if (corgiHired){ v *= 1.1; lines.push('× 1.1  CHIEF MORALE OFFICER (corgi)'); }
+  if (ped().mult > 1){ v *= ped().mult; lines.push('× ' + ped().mult + '  PEDIGREE: ' + ped().label); }
   v = Math.round(v);
   return { v, lines, final: 'VALUATION ' + fmtMoney(v) };
 }
