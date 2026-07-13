@@ -1,9 +1,9 @@
 {
   "name": "founder-mode",
   "private": true,
-  "description": "FOUNDER MODE — one-file SF startup platformer. The game is index.html; api/ holds the deploy-ready OG badge edge function (ROADMAP §8).",
+  "description": "FOUNDER MODE \u2014 one-file SF startup platformer. The game is index.html; api/ holds the deploy-ready OG badge edge function (ROADMAP \u00a78).",
   "dependencies": {
-    "@vercel/og": "^0.8.5"
+    "@vercel/og": "0.8.6"
   },
   "devDependencies": {
     "playwright": "^1.61.1"

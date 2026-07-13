@@ -30,7 +30,8 @@ const BLOCKLIST = ['FUCK','SHIT','CUNT','BITCH','NIGG','FAGG','COCK','DICK','PUS
 function nameBlocked(name){
   const collapsed = name.toUpperCase()
     .replace(/0/g, 'O').replace(/1/g, 'I').replace(/3/g, 'E').replace(/4/g, 'A')
-    .replace(/5/g, 'S').replace(/7/g, 'T').replace(/8/g, 'B')
+    .replace(/5/g, 'S').replace(/6/g, 'G').replace(/7/g, 'T').replace(/8/g, 'B')
+    .replace(/9/g, 'G').replace(/@/g, 'A').replace(/\$/g, 'S')
     .replace(/[^A-Z]/g, '');
   return BLOCKLIST.some(w => collapsed.includes(w));
 }
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
     const seed = parseInt(searchParams.get('seed') || '0', 10) | 0;
     const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) | 0));
     const q = `${SB}/rest/v1/founder_scores?seed=eq.${seed}` +
-              `&order=val.desc,time_ms.asc&limit=${limit}&select=name,val,raised,time_ms,won`;
+              `&order=won.desc,val.desc,time_ms.asc&limit=${limit}&select=name,val,raised,time_ms,won`;
     const r = await fetch(q, { headers: H });
     if (!r.ok) return res.status(200).json({ ok: false, reason: 'board unavailable' });
     return res.status(200).json({ ok: true, top: await r.json() });
@@ -96,7 +97,20 @@ export default async function handler(req, res) {
       method: 'POST', headers: H,
       body: JSON.stringify({ name, val, raised, time_ms: timeMs, won, seed }),
     });
-    return res.status(200).json({ ok: r.ok });
+    if (r.ok) return res.status(200).json({ ok: true });
+    // unique-index race: someone inserted this (seed,name) between our read and
+    // write — re-read and take the compare/PATCH path once (audit)
+    const ex2 = await fetch(exQ, { headers: H });
+    const rows2 = ex2.ok ? await ex2.json() : [];
+    if (rows2.length){
+      const old2 = rows2[0];
+      const better2 = val > old2.val || (val === old2.val && timeMs < old2.time_ms);
+      if (!better2) return res.status(200).json({ ok: true, kept: 'existing' });
+      const up2 = await fetch(`${SB}/rest/v1/founder_scores?id=eq.${old2.id}`, {
+        method: 'PATCH', headers: H, body: JSON.stringify({ val, raised, time_ms: timeMs, won }) });
+      return res.status(200).json({ ok: up2.ok, kept: 'improved' });
+    }
+    return res.status(200).json({ ok: false, reason: 'board hiccup — try again' });
   }
 
   res.status(405).json({ ok: false });

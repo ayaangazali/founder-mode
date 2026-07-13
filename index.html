@@ -11,12 +11,18 @@
 <meta property="og:image" content="https://foundermode.vercel.app/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:url" content="https://foundermode.vercel.app/">
+<meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FOUNDER MODE — the SF startup platformer">
+<meta name="twitter:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Ring the IPO bell.">
+<meta name="twitter:image" content="https://foundermode.vercel.app/og.png">
 <!-- Vercel Web Analytics, static-site flavor: no npm, no framework — the game
      stays one file. Injected only over http(s): a static tag 404s on file://
      and the console noise trips the playtest's zero-error gate. -->
 <script>
 if (/^https?:$/.test(location.protocol)){
+  window.va = window.va || function(){ (window.vaq = window.vaq || []).push(arguments); };
   const a = document.createElement('script');
   a.defer = true; a.src = '/_vercel/insights/script.js';
   document.head.appendChild(a);
@@ -89,7 +95,7 @@ if (/^https?:$/.test(location.protocol)){
 <div id="ui"><div class="card" id="uicard"></div></div>
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">⏸</div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
-<div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener">ayaan gazali</a></div>
+<div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener noreferrer">ayaan gazali</a></div>
 <div id="lbChip">🏆 LEADERBOARD</div>
 <div id="lbPanel"><div id="lbPanelCard"><div id="lbPanelHead"></div><div id="lbPanelList"></div><button id="lbPanelClose">close</button></div></div>
 <script>
@@ -127,7 +133,7 @@ cx.fillText = function(str, x, y){
 // overlay text stacks above ALL game pixels, so a bubble box drawn later can no
 // longer hide text drawn earlier. every backing box calls this to punch out the
 // overlay beneath it — restores draw-order occlusion for text.
-function occlude(x, y, w, h){ tcx.clearRect(x * TS, y * TS, w * TS, h * TS); }
+function occlude(x, y, w, h){ tcx.clearRect(Math.round(x) * TS, Math.round(y) * TS, Math.ceil(w) * TS, Math.ceil(h) * TS); } // rounds like px() so punches align with boxes (audit)
 
 // --- scale canvas to window, keep 16:9, integer-ish scale ---
 // portrait on touch: non-blocking (ruling 2.1) — top-align canvas, buttons directly under it,
@@ -360,6 +366,7 @@ const plats = [
 
 // coins: rows {x,y,n}
 const coinRows = [
+  {x:140,y:196,n:4}, // first-30s pass: a free taste of RAISED before any hazard (ROADMAP §5)
   {x:310,y:172,n:3},{x:420,y:134,n:3},
   {x:910,y:164,n:4},{x:1080,y:128,n:3},
   {x:1660,y:160,n:4},
@@ -382,7 +389,7 @@ const coinRows = [
 // enemies {x, t}  t: g=churn gremlin, m=standing meeting, s=scooter bro,
 //                 t=thought leader (sine flyer), c=compliance phantom (drifter)
 const enemyDefs = [
-  {x:520,t:'g'},{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
+  {x:650,t:'g'} /* first-30s pass: was 520 (ROADMAP §5) */,{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
   {x:1980,t:'m'},{x:2230,t:'m'},{x:2620,t:'m'},{x:2860,t:'m'},
   {x:3200,t:'s'},{x:3480,t:'s'},{x:3760,t:'g'},{x:3850,t:'m'},
   // CEREBRAL VALLEY — first phantom starts at 4620 (under stack 2, its speced
@@ -535,10 +542,12 @@ function lbFetch(after){
     .then(j => { if (j && j.ok){ lbTop = j.top; if (after) after(); } }).catch(() => {});
 }
 lbFetch();
+function track(name){ try { if (window.va) va('event', { name }); } catch(e){} } // funnel: ROADMAP §10 (no-op offline)
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
 function lbRowsHtml(rows){
+  const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
   return rows.map((r, i) =>
-    `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
+    `${i + 1}. ${esc(r.name)} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
 }
 // load a board; if today is empty (fresh daily seed), fall back to yesterday's
 function lbLoad(limit, cb){
@@ -560,7 +569,7 @@ const MARKETS = [
   { s:'HYPE→PRAGMATISM — bosses quip 2x faster, hit same',                       k:'pragma' },
   { s:'FOG THICK TODAY — Karl covers the pits (visual only, good luck)',         k:'fog' },
   { s:"EVERYONE'S AT A CONFERENCE — half the meetings are remote (despawned)",   k:'conf' },
-  { s:'DOWN ROUND SEASON — term sheets grant no runway (still spawn board members)', k:'downround' },
+  { s:'DOWN ROUND SEASON — term sheets grant no runway (the board still calls)', k:'downround' },
   { s:'BULL MARKET — start with +1 RUNWAY',                                      k:'bull' },
   { s:'AUDIT WEEK — burn rate ticks 2s faster',                                  k:'audit' },
 ];
@@ -625,6 +634,7 @@ let listHeatAt = Infinity;   // 30 UNDER 30: the list sends a compliance phantom
 let bmSyncAt = Infinity, bmSyncT = 0; // NEPO FOUNDER: the board member's recurring "quick sync"
 let aiNudgeAt = Infinity, aiNudgeT = 0;               // the AI cofounder "helps" once per run
 let momRoundUsed = false, momBacked = false;          // B3: the mom round — once per run; flavors every share surface
+let momRoll = 1;                                      // own roll: quoteRoll reuse correlated mom runs with quote/booth picks (audit)
 
 // -------- INTERN FAIR (BUILD-v1.2 B2, flagship) --------
 // Two folding-table booths. Each offers ONE weighted-random candidate per run;
@@ -709,13 +719,13 @@ const ACC_QS = [
   // v1.2 bank (B4). Two options per question (the engine's ←/→ mechanic —
   // smaller diff than the spec's 4-option cards; funniest wrong kept, noted
   // in CLIP-REPORT). The short, concrete answer is always the right one.
-  { q:'what does your company do?', a:'we help founders dodge VCs.', b:"honestly? it's a movement." },
+  { q:'what does your company do?', a:'we help founders dodge VCs.', b:"honestly? it's less a product, more a movement." },
   { q:'how big is the market?', a:'$4B and growing.', b:'everyone is the market.' },
-  { q:'why you two?', a:"we've shipped this before.", b:'i have the gene.' },
-  { q:"who's your competition?", a:"CHAD CAPITAL and SYNERGY — we're faster.", b:"google. they don't know yet." },
-  { q:"what's your revenue?", a:'$12K MRR, up 40%.', b:'vibes are up.' },
-  { q:'are you default alive?', a:'yes — 18 months runway.', b:'my mom is backing us.', momAlt:1 },
-  { q:"what'll you do with the money?", a:'hire two engineers.', b:'a bigger billboard.' },
+  { q:'why you two?', a:"we've shipped this before.", b:'i have the founder gene. my aunt confirmed it.' },
+  { q:"who's your competition?", a:"CHAD and SYNERGY. we're faster.", b:"a very large search company. they don't know yet." },
+  { q:"what's your revenue?", a:'$12K MRR, up 40%.', b:'revenue is a lagging indicator of vibes.' },
+  { q:'are you default alive?', a:'yes — 18 months runway.', b:'my mom is backing us, so… define alive.', momAlt:1 },
+  { q:"what'll you do with the money?", a:'hire two engineers.', b:'a bigger billboard. maybe two billboards.' },
 ];
 let interview = null; // {qi, t, score, held, phase, flash, respectT}
 let accDone = false;
@@ -728,9 +738,11 @@ function interviewStart(){
 }
 function interviewUpdate(){
   if (playMs > aiNudgeAt) aiNudgeAt = playMs + 3000; // the AI cofounder doesn't ambush a mini-game exit
+  tickPowers();
   if (interview.phase === 'q'){
     interview.t--;
     if (interview.flash > 0) interview.flash--;
+    if (interview.respectT > 0) interview.respectT--; // sim clock, not draw clock (audit)
     const L = keys['arrowleft'] || keys['a'] || touch.L;
     const R = keys['arrowright'] || keys['d'] || touch.R;
     if (!L && !R) interview.held = false;
@@ -738,7 +750,7 @@ function interviewUpdate(){
     if (!interview.held){ if (L) pick = 0; else if (R) pick = 1; }
     if (pick >= 0){
       interview.held = true;
-      const swap = interview.qi % 2 === 1;
+      const swap = swapFor('acc', interview.qi);
       const chose = swap ? 1 - pick : pick;
       let good = chose === 0;                          // the short answer is always answer a
       if (!good && ACC_QS[interview.qi].momAlt && (cof().id === 'mom' || momBacked)){
@@ -768,13 +780,17 @@ function interviewUpdate(){
   }
 }
 
+function swapFor(kind, qi){ // per-run randomized answer side (parity was a blind-mashable metronome — audit)
+  return ((Math.floor(quoteRoll * 9973) >> (qi + (kind === 'acc' ? 3 : 0))) & 1) === 1;
+}
 function chatStart(ci){
-  chat = { ci, qi: 0, phase: 'q', t: 6 * 60, score: 0, swap: ci % 2 === 1,
+  chat = { ci, qi: 0, phase: 'q', t: 8 * 60, score: 0, swap: swapFor('chat', ci * 3),
            held: true, msg: '', good: false, amt: 0 };
   sPow();
 }
 function chatUpdate(){
   if (playMs > aiNudgeAt) aiNudgeAt = playMs + 3000; // the AI cofounder doesn't ambush a mini-game exit
+  tickPowers();
   const c = CHATS[chat.ci];
   if (chat.phase === 'q'){
     chat.t--;
@@ -806,7 +822,7 @@ function chatUpdate(){
         chat.amt = chat.score >= 3 ? c.amt : chat.score === 2 ? 50 : 0;
         chat.msg = chat.score >= 3 ? c.win : chat.score === 2 ? c.mid : c.lose;
         if (chat.amt){ raised += chat.amt; moodUp(); sPow(); } else moodDown();
-      } else { chat.phase = 'q'; chat.t = 6 * 60; chat.swap = (chat.ci + chat.qi) % 2 === 1; chat.held = true; }
+      } else { chat.phase = 'q'; chat.t = 6 * 60; chat.swap = swapFor('chat', chat.ci * 3 + chat.qi); chat.held = true; }
     }
   } else if (--chat.t <= 0){                          // end card done
     c.done = true;
@@ -891,6 +907,7 @@ let deckCd = 0;    // PITCH DECK attack cooldown (frames; the attack only exists
 
 // the founder's one weapon, and only while holding a fresh deck (PITCH DECK pickup)
 function throwDeck(){
+  if (paused || chat || interview || room.active) return; // no shots into a frozen sim (audit)
   if (state !== ST.PLAY || player.deckT <= 0 || deckCd > 0) return;
   deckCd = 15;
   shots.push({ x: player.x + (player.face > 0 ? 12 : -16), y: player.y + 5,
@@ -905,7 +922,7 @@ function makeEnemy(d){
   if (d.t==='m'){ base.w=16; base.h=18; base.y=GROUND_Y-18; }
   if (d.t==='s'){ base.w=16; base.h=14; }
   if (d.t==='t'){ base.w=16; base.h=14; base.y=GROUND_Y-58; base.baseY=GROUND_Y-58; base.x0=d.x; } // flyer
-  if (d.t==='c'){ base.w=14; base.h=16; base.y=GROUND_Y-40; }                                      // drifter
+  if (d.t==='c'){ base.w=12; base.h=13; base.y=GROUND_Y-37; }                                      // drifter (hitbox <= 12x13 art, audit)
   return base;
 }
 
@@ -966,7 +983,7 @@ function reset(fromCheckpoint){
     chat = null; chatStill = 0; for (const cc of CHATS) cc.done = false;
     cofX = 0; cofFace = 1; cofSaid = 0; cofBubT = 0;
     aiNudgeT = 0; aiNudgeAt = cof().id === 'ai' ? 25000 + quoteRoll * 60000 : Infinity;
-    momRoundUsed = false; momBacked = cof().id === 'mom';
+    momRoundUsed = false; momBacked = cof().id === 'mom'; momRoll = Math.random();
     if (pedIdx > 0) addPop(60, GROUND_Y - 60, 'PEDIGREE: ' + ped().label + ' ×' + ped().mult, '#ff8c37', 200);
     if (cof().id !== 'none') addPop(60, GROUND_Y - 48, 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label), '#7cffa5', 200);
     listHeatAt = ped().id === 'thirty' ? 40000 : Infinity;           // the list is watching
@@ -974,8 +991,8 @@ function reset(fromCheckpoint){
     if (ped().id === 'exsyn'){ bosses[2].hp += 2; bosses[2].maxhp += 2; } // "we know what you did"
     bosses.forEach(bb => { bb.pedApplied = false; });
     interns = []; internHiredCount = 0; internTypesHired = []; internDwell = 0;
-    BOOTHS[0].type = pickInternType(quoteRoll); BOOTHS[0].hired = false;
-    BOOTHS[1].type = pickInternType((quoteRoll * 7919) % 1); BOOTHS[1].hired = false;
+    BOOTHS[0].type = pickInternType(Math.random()); BOOTHS[0].hired = false;
+    BOOTHS[1].type = pickInternType(Math.random()); BOOTHS[1].hired = false;
     interview = null; accDone = false; accBatch = false;
     for (const bb of BILLBOARDS) bb.spotted = false;  // partner shout-outs re-arm per run
     slops = []; slopN = 0;
@@ -1073,10 +1090,14 @@ function hurtPlayer(cause, word){
 // B3: THE MOM ROUND. On hitting 0 RUNWAY — once per run — a beat, a phone
 // call, +2 RUNWAY. Guaranteed if MOM is your cofounder, else a 1-in-6 roll
 // (quoteRoll: fixed per run, so a retry can't fish for it mid-run).
+function tickPowers(){ // buffs don't park while the world is paused for a mini-game (audit)
+  for (const k of ['ycT', 'deckT', 'coffeeT', 'matchaT', 'slowT'])
+    if (player[k] > 0) player[k]--;
+}
 function momRound(){
   // the 1-in-6 path needs a run worth saving (>20s) — also keeps the QA
   // suites' die-on-purpose probes deterministic. MOM-as-cofounder always calls.
-  if (momRoundUsed || !(cof().id === 'mom' || (quoteRoll < 1/6 && playMs > 20000))) return false;
+  if (momRoundUsed || !(cof().id === 'mom' || (momRoll < 1/6 && playMs > 20000))) return false;
   momRoundUsed = true; momBacked = true;
   hearts = 2; maxHearts = Math.max(maxHearts, 2);
   hitstopT = 72;                                   // the 1.2s beat — the world holds its breath
@@ -1238,9 +1259,12 @@ function update(){
   if (p.burnT > 60 * 3 && frame % 10 === 0)
     parts.push({x:p.x + 4 + Math.random()*4, y:p.y + 2, vx:0, vy:-0.6, t:20, c:'#8d99ae'}); // smoke warning
   if (p.burnT >= BURN_FRAMES){
-    p.burnT = 0;
-    addPop(p.x, p.y - 14, 'BURN RATE', '#ff5a5a');
-    hurtPlayer('burn'); if (state !== ST.PLAY) return;
+    if (p.hurtT > 0 || p.ycT > 0){ p.burnT = BURN_FRAMES - 30; } // invulnerable: re-tick shortly, no fake popup (audit)
+    else {
+      p.burnT = 0;
+      addPop(p.x, p.y - 14, 'BURN RATE', '#ff5a5a');
+      hurtPlayer('burn'); if (state !== ST.PLAY) return;
+    }
   }
   if (Math.abs(p.vx) > 0.5 && p.onGround && frame % 6 === 0) p.runFrame ^= 1;
 
@@ -1291,11 +1315,14 @@ function update(){
                                                           : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a', 150);
         }
       }
-      if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5', 150); }
+      if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5', 150); }
       if (pw.t === 'contract'){ raised += 100; p.slowT = 60*8; addPop(pw.x, pw.y-8, 'ENTERPRISE CONTRACT! +$100K (slows you, 8s)', '#7ce0ff', 150); addPop(pw.x, pw.y-18, '(procurement has questions)', '#8d99ae', 150); }
       if (pw.t === 'rug'){ raised = Math.max(0, raised - 5); addPop(pw.x, pw.y-8, 'RUGGED. -$5K', '#d64550'); }
       if (pw.t === 'sheet'){
-        if (MK === 'downround'){ addPop(pw.x, pw.y-8, 'TERM SHEET! +0 RUNWAY (down round)', '#7cffa5'); }
+        if (MK === 'downround'){
+          addPop(pw.x, pw.y-8, 'TERM SHEET! +0 RUNWAY (the board will call)', '#7cffa5');
+          bmSyncAt = Math.min(bmSyncAt, playMs + 4000); // and it does — a BOARD SYNC lands shortly (the copy stopped lying, audit)
+        }
         else { if (hearts < 5) hearts++; maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'TERM SHEET! +1 RUNWAY', '#7cffa5'); }
       }
     }
@@ -1310,7 +1337,7 @@ function update(){
       e.x += e.dir * 0.3;
       if (e.x > e.x0 + 50) e.dir = -1; else if (e.x < e.x0 - 50) e.dir = 1;
       e.y = e.baseY + Math.sin((frame + e.x0) * 0.03) * 10;
-      if (Math.abs(e.x - p.x) < 220 && (frame + e.x0) % 150 === 0)
+      if (Math.abs(e.x - p.x) < 220 && (frame + e.x0) % 140 === 0)
         shots.push({x:e.x + 1, y:e.y + e.h, vx:0, vy:0.4, w:14, h:9, t:'thread'});
       // falls through to player collision below
     } else if (e.t === 'c'){
@@ -1348,17 +1375,17 @@ function update(){
     // collide with player
     if (Math.abs(e.x - p.x) < 300 && aabb(p, e)){
       if (p.ycT > 0){ e.dead = true; sStomp(); raised += 10; moodUp(); addPop(e.x, e.y-8, 'DISRUPTED! +$10K', '#ff8c37'); addParts(e.x+7, e.y+7, '#ff8c37');
-        if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
+        if (enemies.every(x2 => x2.dead || x2.inj)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled (injected phantoms don't gate it)
       }
       else if (p.vy > 1 && p.y + p.h - e.y < 10 && !(e.t === 't' && (frame + e.x0) % 140 < 36)){
         // (a thought leader mid-post has i-frames — the glow warns you)
         e.dead = true; p.vy = -5; p.bounceT = 12; sStomp(); moodUp();
-        const reward = (e.t === 't' || e.t === 'c') ? 15 : 10;
+        const reward = e.noBounty ? 0 : (e.t === 't' || e.t === 'c') ? 15 : 10;
         raised += reward;
         const msgs = {g:'CHURN CRUSHED! +$10K', m:'MEETING CANCELED! +$10K', s:'THESIS DECLINED! +$10K',
                       t:"RATIO'D! +$15K", c:'EXEMPTED! +$15K'};
         addPop(e.x, e.y-8, msgs[e.t], '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
-        if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled
+        if (enemies.every(x2 => x2.dead || x2.inj)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // EGG: 20/20 handled (injected phantoms don't gate it)
       }
       else { hurtPlayer({g:'gremlin', m:'meeting', s:'scooter', t:'thought leader', c:'phantom'}[e.t]); if (state !== ST.PLAY) return; }
     }
@@ -1369,14 +1396,17 @@ function update(){
     if (b.dead) continue;
     if (!b.active && p.x > b.trigger){
       b.active = true; sBoss(); b.quipT = 1;
+      if (b.id === 'platform') track('first_boss');
       if (b.id === 'vc' && !b.pedApplied){ // Chad funds the pedigree, not the company
         b.pedApplied = true;
         if (ped().mult >= 20){
-          b.quips.unshift("oh, you were at SYNERGY.AI? here's the check");
+          if (b.quips[0] !== "oh, you were at SYNERGY.AI? here's the check")
+            b.quips.unshift("oh, you were at SYNERGY.AI? here's the check");
           b.hp = Math.max(1, b.hp - 1);   // the check clears before the fight starts
           addPop(b.x - 30, b.y - 20, 'CHAD RESPECTS THE RÉSUMÉ (-1 HP)', '#7cffa5', 150);
         } else if (ped().id === 'none'){
-          b.quips.unshift('and who are you?'); // being normal is the real hard mode
+          if (b.quips[0] !== 'and who are you?')
+            b.quips.unshift('and who are you?'); // being normal is the real hard mode
         }
       }
     }
@@ -1408,7 +1438,9 @@ function update(){
       if (!b.slopped){ b.slopped = true; addPop(b.x - 40, b.y - 48, 'GENERATING CONTENT', '#8fd18f'); sBoss(); }
       if (frame % 90 === 0 && slops.length < 4){
         slopN++;
-        slops.push({ x: clamp(b.x + (slopN % 2 ? -70 - (slopN % 3) * 30 : 70 + (slopN % 3) * 30), b.trigger + 20, b.wall - 36),
+        let slopX = clamp(b.x + (slopN % 2 ? -70 - (slopN % 3) * 30 : 70 + (slopN % 3) * 30), b.trigger + 20, b.wall - 36);
+        if (Math.abs(slopX - p.x) < 40) slopX = clamp(slopX + (slopX > p.x ? 40 : -40), b.trigger + 20, b.wall - 36); // never ON the player (audit)
+        slops.push({ x: slopX,
                      y: GROUND_Y - 22, w: 16, h: 22, real: slopN % 5 === 4, lbl: SLOP_LABELS[slopN % 3], wob: 0 });
       }
     }
@@ -1499,6 +1531,7 @@ function update(){
               raised += bonus; sWin();
               addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
               addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
+              if (b.id === 'vc') meetlyT = 330; // the notetaker was in the room for the deck kill too (audit)
             }
           }
         }
@@ -1574,7 +1607,7 @@ function update(){
   // Every ~30s: a BOARD SYNC drags you to 0.8x speed for 1.5s. ----
   if (ped().id === 'nepo' && state === ST.PLAY){
     if (playMs > bmSyncAt){
-      bmSyncAt = playMs + 30000; bmSyncT = 90;
+      bmSyncAt = playMs + 20000; bmSyncT = 90; // x50 deserves real governance (audit: baggage was too light)
       addPop(p.x, p.y - 24, 'BOARD SYNC — "quick one, promise"', '#8d99ae', 150);
     }
   }
@@ -1586,13 +1619,21 @@ function update(){
     const cdx2 = (p.x - 16 * p.face) - cofX;
     cofX += clamp(cdx2 * 0.08, -2.6, 2.6);
     if (Math.abs(cdx2) > 2) cofFace = cdx2 > 0 ? 1 : -1;
-    if (--cofBubT <= 0) cofBubT = 560;                      // a line every ~9s, shown for ~2s
+    if (--cofBubT <= 0){ cofBubT = 560; cofSaid++; }        // a line every ~9s, shown for ~2s (rotation on the sim clock)
     // the AI cofounder "helps" exactly once per run
     if (cof().id === 'ai' && playMs > aiNudgeAt && aiNudgeT === 0){
       aiNudgeT = 30; aiNudgeAt = Infinity;
       addPop(p.x, p.y - 24, 'your AI cofounder is "helping"', '#c58bff', 150);
     }
     if (aiNudgeT > 0){ aiNudgeT--; p.vx += p.face > 0 ? -0.3 : 0.3; } // gentle wrong-way tug
+    if (cof().id === 'ai' && cmoT === 0){ // it does not sleep: hoovers coins in a small radius
+      for (const c of coins)
+        if (!c.got && Math.abs(c.x - p.x) < 34 && Math.abs(c.y - (p.y + 8)) < 40){
+          c.got = true; raised += COIN_VALUE; sCoin();
+          if (!popups.some(q2 => q2.txt.includes('(AI)') && Math.abs(q2.x - c.x) < 56))
+            addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K (AI)', '#c58bff');
+        }
+    }
   }
 
   // -------- interns: hire (dwell), trail, and each type's catch --------
@@ -1623,7 +1664,11 @@ function update(){
         for (const c of coins){
           if (!c.got && Math.abs(c.x - p.x) < 60 && Math.abs(c.y - (GROUND_Y - 20)) < 60){
             c.got = true;
-            if (it.id === 'grinder'){ raised += COIN_VALUE; sCoin(); addPop(c.x, c.y - 6, '+$' + COIN_VALUE + 'K (intern)', '#7cffa5'); }
+            if (cmoT > 0){ addPop(c.x, c.y - 6, '+0 REAL DOLLARS (impressions)', '#8d99ae'); } // vanity binds the whole team
+            else if (it.id === 'grinder'){
+              const icv = interns.some(i3 => i3.id === 'nepo') ? Math.round(COIN_VALUE * 1.2) : COIN_VALUE;
+              raised += icv; sCoin(); addPop(c.x, c.y - 6, '+$' + icv + 'K (intern)', '#7cffa5');
+            }
             else addPop(c.x, c.y - 6, '+$0 (for exposure)', '#8d99ae');
           }
         }
@@ -1634,7 +1679,9 @@ function update(){
         if (it.id === 'nepo') addPop(p.x, p.y - 22, 'left in a town car. said nothing.', '#8d99ae', 200);
         if (it.id === 'unpaid'){
           addPop(p.x, p.y - 22, 'the LABOR BOARD has questions', '#d64550', 200);
-          enemies.push(makeEnemy({ x: clamp(p.x + 200, 100, 9100), t: 'c' }));   // a compliance phantom, with a cause
+          const lb = makeEnemy({ x: clamp(p.x + 200, 100, 9100), t: 'c' });      // a compliance phantom, with a cause
+          lb.inj = true; lb.noBounty = true;
+          enemies.push(lb);
         }
         it.gone = true;
       }
@@ -1668,9 +1715,14 @@ function update(){
   // -------- 30 UNDER 30: the list is watching (a phantom, every ~45s) --------
   if (playMs > listHeatAt && state === ST.PLAY){
     listHeatAt += 45000;
-    enemies.push(makeEnemy({ x: clamp(p.x + 240, 100, 9100), t: 'c' }));
+    const lw = makeEnemy({ x: clamp(p.x + 240, 100, 9100), t: 'c' });
+    lw.inj = true; lw.noBounty = true;   // the list gives nothing back (audit P0: farmable)
+    enemies.push(lw);
     addPop(p.x, p.y - 24, 'the list is watching', '#c58bff', 150);
   }
+
+  // barry's memory fades on the sim clock (was ticked in draw — audit)
+  if (barrySawIt && ++barryShownT > 240){ barrySawIt = false; barryShownT = 0; }
 
   // -------- run-club wave (cosmetic; spawns on the playMs clock) --------
   if (!wave && playMs % 45000 < 17 && playMs > 1000) wave = { x: 3040 };
@@ -1717,7 +1769,9 @@ function update(){
     ringHeld = down;
     if (bellRing.meter >= 1){
       bellRing.done = true; bellRing.celeT = 110;
-      endTime = playMs; raised += 1000; moodUp();
+      bellDone = true;                 // the win COMMITS here (audit P0: dying mid-confetti
+      player.hurtT = 200;              // kept the +$1M and re-armed the bell) — celebration
+      endTime = playMs; raised += 1000; moodUp(); //  is invulnerable theater from this frame
       // the chime: three overlapping bell partials, long tails
       beep(1568, .9, 'triangle', .16); beep(1046, 1.3, 'triangle', .12); beep(784, 1.8, 'sine', .09);
       addPop(9070, GROUND_Y - 84, 'THE BELL RINGS. IPO!', '#ffd94a', 110);
@@ -1730,7 +1784,6 @@ function update(){
         addParts(9030 + Math.random() * 170, 90 + Math.random() * 70, cols[bellRing.celeT % 5], 6);
       }
     } else {
-      bellDone = true;
       state = ST.WIN; sWin();
       showEndUI(true);
     }
@@ -2080,11 +2133,11 @@ function drawChat(){
   cx.font = 'bold 9px monospace'; cx.fillStyle = '#ffd94a';
   cx.fillText('COFFEE CHAT — ' + c.name, 134, 18);
   cx.font = 'bold 7px monospace'; cx.fillStyle = '#8d99ae';
-  cx.fillText(chat.qi === 0 && chat.phase === 'q' && chat.t > 330 ? c.intro : 'question ' + Math.min(chat.qi + 1, 3) + ' of 3', 134, 30);
+  cx.fillText(chat.qi === 0 && chat.phase === 'q' && chat.t > 360 ? c.intro : 'question ' + Math.min(chat.qi + 1, 3) + ' of 3', 134, 30);
   if (chat.phase === 'q'){
     const q = c.qs[chat.qi];
     // timer bar — drains left to right; the meeting was always going to run short
-    px(16, 42, Math.max(0, Math.round((W - 32) * chat.t / 360)), 4, chat.t < 120 ? '#d64550' : '#39c46d');
+    px(16, 42, Math.max(0, Math.round((W - 32) * Math.min(chat.t, 360) / 360)), 4, chat.t < 120 ? '#d64550' : '#39c46d');
     cx.font = 'bold 9px monospace'; cx.fillStyle = '#fff';
     cx.fillText('"' + q.q + '"', 16, 62);
     const optA = chat.swap ? q.b : q.a, optB = chat.swap ? q.a : q.b;
@@ -2125,7 +2178,7 @@ function drawInterview(){
   if (interview.phase === 'q'){
     // the shared clock — one bar for the whole interview
     px(16, 38, Math.max(0, Math.round((W - 32) * interview.t / 600)), 5, interview.t < 180 ? '#d64550' : '#1a1a2e');
-    const q = ACC_QS[interview.qi], swap = interview.qi % 2 === 1;
+    const q = ACC_QS[interview.qi], swap = swapFor('acc', interview.qi);
     cx.font = 'bold 9px monospace'; cx.fillStyle = '#1a1a2e';
     cx.fillText('"' + q.q + '"  (' + (interview.qi + 1) + '/7)', 16, 60);
     const optA = swap ? q.b : q.a, optB = swap ? q.a : q.b;
@@ -2140,7 +2193,7 @@ function drawInterview(){
       cx.font = 'bold 10px monospace'; cx.fillStyle = interview.flashBad ? '#d64550' : '#1d9e50';
       cx.fillText(interview.flashBad ? '✗' : '✓', 452, 60);
     }
-    if (interview.respectT > 0){ interview.respectT--;
+    if (interview.respectT > 0){
       cx.font = 'bold 8px monospace'; cx.fillStyle = '#1d9e50';
       cx.fillText('...respect.', 400, 76);
     }
@@ -2498,7 +2551,7 @@ function draw(){
       cx.font = 'bold 8px monospace';
       const lines = ['CHAD CAPITAL', 'IS NOW CHAD.AI'];
       const wmax = Math.max(...lines.map(t => cx.measureText(t).width)) + 8;
-      px(x + 12, GROUND_Y - 46, wmax, 25, '#221b2e');
+      px(x + 12, GROUND_Y - 46, wmax, 25, '#221b2e'); occlude(x + 12, GROUND_Y - 46, wmax, 25);
       px(x + 12 + wmax/2 - 2, GROUND_Y - 22, 4, 22, '#4a3a2a');
       cx.fillStyle = frame % 40 < 20 ? '#41f2ff' : '#7ce0ff';       // freshly lit. of course it glows AI-blue.
       lines.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 46 + i * 10 + 9)));
@@ -2671,7 +2724,7 @@ function draw(){
       cx.font = 'bold 8px monospace'; cx.fillStyle = '#fff';
       cx.fillText('IS CODE DEAD?', Math.round(A - 30), Math.round(gy - 54));
       cx.font = 'bold 6px monospace'; cx.fillStyle = '#8d99ae';
-      cx.fillText('a panel · day 3 · the big names canceled', Math.round(A - 50), Math.round(gy - 46));
+      cx.fillText('a panel · day 3 · sold out', Math.round(A - 40), Math.round(gy - 46));
       // the LED banner the intern keeps alive
       px(A - 52, gy - 40, 104, 9, '#0e1020');
       cx.font = 'bold 6px monospace';
@@ -2757,7 +2810,6 @@ function draw(){
       // a line every ~9s; TECH only ever says his once
       if (state === ST.PLAY && cofBubT > 440 && cof().lines.length){
         const li = cof().id === 'tech' ? 0 : (cofSaid % cof().lines.length);
-        if (cofBubT === 560) cofSaid++;
         if (!(cof().id === 'tech' && cofSaid > 1)) celebBubble(x + 5, y + 2, cof().lines[li]);
       }
     }
@@ -2822,7 +2874,7 @@ function draw(){
         px(x+2, y+16, 3, 1, '#fff'); px(x+7, y+16, 3, 1, '#fff');
         if (Math.abs(player.x - 4306) <= 70 && state === ST.PLAY){
           let line;
-          if (barrySawIt){ line = '...OK MAYBE NOT LIKE THAT'; if (++barryShownT > 240) barrySawIt = false; }
+          if (barrySawIt){ line = '...OK MAYBE NOT LIKE THAT'; }
           else line = ['YOU CAN JUST DO THINGS', "it's so over for code. we're SO back.", 'BUILD BUILD BUILD'][Math.floor(playMs / 2500) % 3];
           celebBubble(x + 6, y, line);
         }
@@ -3140,9 +3192,9 @@ function draw(){
     }
     drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
     drawPedGear(cx, player.x - cam, player.y, 1);
-    for (const fn of lateDraws) fn(); // boss quips + held signs render over the player
     if (player.coffeeT > 0 && frame % 5 === 0) parts.push({x:player.x - 2 + Math.random()*4, y:player.y + 14, vx:-player.face, vy:-0.5, t:14, c:'#c58bff'});
   }
+  for (const fn of lateDraws) fn(); // boss quips + held signs render EVERY frame (they strobed with the hurt flash — audit)
 
   // particles
   for (const q of parts) px(q.x - cam, q.y, 2, 2, q.c);
@@ -3244,7 +3296,7 @@ function drawHUD(){
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
   if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText((('ontouchstart' in window) ? 'PITCHING · tap fires · ' : 'PITCHING · X fires · ') + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
-  if (bmSyncT > 0){ cx.fillStyle = '#8d99ae'; cx.fillText('BOARD SYNC ' + Math.ceil(bmSyncT / 60) + 's', 12, 54); }
+  if (bmSyncT > 0){ cx.fillStyle = '#8d99ae'; cx.fillText('BOARD SYNC ' + Math.ceil(bmSyncT / 60) + 's', 12, 94); }
   // interns on payroll: a small ledger line (owner: the hires need presence)
   if (interns.length){
     cx.fillStyle = '#7cffa5';
@@ -3375,10 +3427,10 @@ const GAME_URL = 'https://foundermode.vercel.app';
 function badgeFlairs(won){
   const f = [];
   if (!won) return f;
-  if (enemies.every(e => e.dead)) f.push('ZERO CHURN');
+  if (enemies.every(e => e.dead || e.inj)) f.push('ZERO CHURN');
   if ((endTime || playMs) < 180000) f.push('T2D3');
-  if (pedIdx === 0) f.push('SELF-MADE (unfundable)');
-  if (internHiredCount >= 3) f.push('built a real team (allegedly)');
+  if (pedIdx === 0 && !momBacked) f.push('SELF-MADE (unfundable)'); // mom money isn't self-made (audit)
+  if (internHiredCount >= 2) f.push('built a real team (allegedly)'); // 2 booths exist; 3 was unreachable (audit)
   if (internTypesHired.length && internTypesHired.every(t => t === 'ghost')) f.push('SERIAL DELEGATOR');
   return f;
 }
@@ -3643,6 +3695,14 @@ function valuation(won){
   return { v, lines, final: 'VALUATION ' + fmtMoney(v) };
 }
 
+// per-run result link: /api/r renders og tags for THIS run then bounces to the
+// game — LinkedIn/Twitter unfurl the actual scorecard (ROADMAP §8, audit item)
+function resultUrl(won){
+  if (!/^https?:$/.test(location.protocol)) return GAME_URL;
+  const q = `w=${won ? 1 : 0}&n=${encodeURIComponent(playerName())}&v=${valuation(won).v | 0}&r=${raised | 0}` +
+            `&t=${encodeURIComponent(fmtTime(endTime || playMs))}&p=${pedIdx}`;
+  return GAME_URL + '/api/r?' + q;
+}
 function shareText(won){
   const t = fmtTime(endTime || playMs);
   const f = badgeFlairs(won);
@@ -3650,11 +3710,12 @@ function shareText(won){
   return won
     ? `I just beat FOUNDER MODE 🦄\n\nRaised ${fmtMoney(raised)}, stomped the churn gremlins, out-jumped a VC whose vest is load-bearing, and defeated SYNERGY.AI in ${t}. Exit valuation: ${fmtMoney(val.v)}.` +
       (f.length ? `\n\nFlair earned: ${f.join(' · ')}.` : '') +
-      `\n\nCan you top my valuation?\n\nPlay: ${GAME_URL}`
-    : `FOUNDER MODE just took me out. Raised ${fmtMoney(raised)} and died in ${zoneName(player.x)} 💀 Final valuation: ${fmtMoney(val.v)} (down round).\n\nIt was a market timing issue.\n\nThink you can survive SF?\n\nPlay: ${GAME_URL}`;
+      `\n\nCan you top my valuation?\n\nPlay: ${resultUrl(true)}`
+    : `FOUNDER MODE just took me out. Raised ${fmtMoney(raised)} and died in ${zoneName(player.x)} 💀 Final valuation: ${fmtMoney(val.v)} (down round).\n\nIt was a market timing issue.\n\nThink you can survive SF?\n\nPlay: ${resultUrl(false)}`;
 }
 
 function showEndUI(won){
+  track(won ? 'win' : 'badge_screen');
   // input hygiene: a held R must not wipe the badge; the d-pad must not sit on top of the buttons
   keys['r'] = false; touch.L = touch.R = touch.J = false;
   document.getElementById('touch').style.display = 'none';
@@ -3667,7 +3728,7 @@ function showEndUI(won){
              text: shareText(won), save: '⬇ SAVE BADGE + COPY POST', blob: null, file: null, blobUrl: null, url: '' },
   };
   surfaces.obit = { c: makeObituary(won), fname: won ? 'hypergrowth-daily-ipo.png' : 'hypergrowth-daily-frontpage.png',
-    text: `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${GAME_URL}`,
+    text: `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${resultUrl(won)}`,
     save: '⬇ SAVE PAGE + COPY POST', blob: null, file: null, blobUrl: null, url: '' };
   let cur = won ? 'badge' : 'obit'; // wins lead with the badge, losses with the front page
   for (const k in surfaces){
@@ -3786,7 +3847,7 @@ function showEndUI(won){
     // picture + the game link: some targets drop text when files ride along,
     // so the url field carries the link on its own
     const data = s.file && navigator.canShare({files:[s.file]})
-      ? {files:[s.file], text:s.text, url: GAME_URL} : {text:s.text, url: GAME_URL};
+      ? {files:[s.file], text:s.text, url: resultUrl(won)} : {text:s.text, url: resultUrl(won)};
     navigator.share(data).catch(() => navigator.share({text:s.text}).catch(()=>{}));
   };
   document.getElementById('bDl').onclick = () => {
@@ -3832,6 +3893,7 @@ const STEP = 1000 / 60;
 let last = 0, acc = 0;
 function stepGame(){
   if (state === ST.TITLE && (JUMP()) && frame > 30){
+    track('start');
     document.getElementById('credit').style.display = 'none';
     document.getElementById('lbChip').style.display = 'none';
     document.getElementById('lbPanel').style.display = 'none';

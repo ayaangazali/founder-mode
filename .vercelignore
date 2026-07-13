@@ -12,3 +12,5 @@ test/
 .gitignore
 index.v0.1.bak.html
 shot*.png
+supabase/
+.vercel/
