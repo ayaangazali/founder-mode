@@ -128,7 +128,7 @@ cx.fillText = function(str, x, y){
   tcx.textBaseline = cx.textBaseline;
   // maxWidth pins the overlay run to the game-unit measure — layout boxes were
   // sized with cx.measureText, and font hinting drifts a few px over long lines
-  tcx.fillText(str, x * TS, y * TS, cx.measureText(str).width * TS);
+  tcx.fillText(str, (x + uiShakeX) * TS, (y + uiShakeY) * TS, cx.measureText(str).width * TS);
 };
 // overlay text stacks above ALL game pixels, so a bubble box drawn later can no
 // longer hide text drawn earlier. every backing box calls this to punch out the
@@ -336,7 +336,11 @@ window.addEventListener('keydown', e => { if (normKey(e)==='m') muted = !muted; 
 // ------------------------- HELPERS -------------------------
 const clamp = (v,a,b) => v<a?a:(v>b?b:v);
 const aabb = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
-function px(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(Math.round(x),Math.round(y),w,h); }
+// mini-game urgency shake: a draw-only offset consumed by px() and the text
+// overlay, so the whole dialogue judders as the clock runs out. Set per frame
+// inside drawChat/drawInterview and always reset to 0 — the sim never reads it.
+let uiShakeX = 0, uiShakeY = 0;
+function px(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(Math.round(x+uiShakeX),Math.round(y+uiShakeY),w,h); }
 
 // ------------------------- LEVEL DATA -------------------------
 const GROUND_Y = 232;
@@ -751,7 +755,7 @@ let accBatch = false; // won the interview this run — BATCH F26 stamps badge +
 let wave = null;      // the run club: {x} sweeping Dolores left-to-right every ~45s
 
 function interviewStart(){
-  interview = { qi: 0, t: 600, score: 0, held: true, phase: 'q', flash: 0 };
+  interview = { qi: 0, t: 900, score: 0, held: true, phase: 'q', flash: 0 }; // 15s total (owner: 10 was unanswerable)
   sPow();
 }
 function interviewUpdate(){
@@ -802,7 +806,7 @@ function swapFor(kind, qi){ // per-run randomized answer side (parity was a blin
   return ((Math.floor(quoteRoll * 9973) >> (qi + (kind === 'acc' ? 3 : 0))) & 1) === 1;
 }
 function chatStart(ci){
-  chat = { ci, qi: 0, phase: 'q', t: 8 * 60, score: 0, swap: swapFor('chat', ci * 3),
+  chat = { ci, qi: 0, phase: 'q', t: 12 * 60, score: 0, swap: swapFor('chat', ci * 3), // 3s intro + 9s question (owner: 6s was too quick)
            held: true, msg: '', good: false, amt: 0 };
   sPow();
 }
@@ -840,7 +844,7 @@ function chatUpdate(){
         chat.amt = chat.score >= 3 ? c.amt : chat.score === 2 ? 50 : 0;
         chat.msg = chat.score >= 3 ? c.win : chat.score === 2 ? c.mid : c.lose;
         if (chat.amt){ raised += chat.amt; moodUp(); sPow(); } else moodDown();
-      } else { chat.phase = 'q'; chat.t = 6 * 60; chat.swap = swapFor('chat', chat.ci * 3 + chat.qi); chat.held = true; }
+      } else { chat.phase = 'q'; chat.t = 9 * 60; chat.swap = swapFor('chat', chat.ci * 3 + chat.qi); chat.held = true; }
     }
   } else if (--chat.t <= 0){                          // end card done
     c.done = true;
@@ -2138,82 +2142,101 @@ function drawCameoSprite(c){
 function drawChat(){
   const c = CHATS[chat.ci];
   occlude(0, 0, W, H);                                     // clean slate on the text layer
-  px(0, 0, W, H, '#171221');                               // café interior
+  // urgency shake — the meeting is ending and the room knows it (draw-only)
+  const urgent = chat.phase === 'q' && chat.t < 120;
+  uiShakeX = urgent ? ((frame * 13) % 3) - 1 : 0;
+  uiShakeY = urgent ? ((frame * 7) % 3) - 1 : 0;
+  px(-2, -2, W + 4, H + 4, '#171221');                     // café interior (oversized so the shake never shows seams)
   px(0, 210, W, 60, '#2a2338');                            // floor
   px(150, 176, 180, 10, '#6b4f2a'); px(160, 186, 8, 24, '#54401f'); px(312, 186, 8, 24, '#54401f'); // table
   px(196, 166, 10, 10, '#e8ecf5'); px(206, 168, 3, 5, '#e8ecf5');   // your cup
   px(272, 166, 10, 10, '#e8ecf5'); px(269, 168, 3, 5, '#e8ecf5');   // their cup
   if (frame % 40 < 20){ px(199, 158, 2, 5, '#8d99ae'); px(275, 158, 2, 5, '#8d99ae'); } // steam
-  drawFounder(cx, 120, 128, 3, 1, 0, false);               // you
-  drawFounder(cx, 322, 128, 3, -1, 0, false, c.lk);        // them
+  drawFounder(cx, 120 + uiShakeX, 128 + uiShakeY, 3, 1, 0, false);        // you
+  drawFounder(cx, 322 + uiShakeX, 128 + uiShakeY, 3, -1, 0, false, c.lk); // them
   cx.textAlign = 'left';
   // header — starts right of the RAISED box (drawHUD owns the top-left corner)
   cx.font = 'bold 9px monospace'; cx.fillStyle = '#ffd94a';
   cx.fillText('COFFEE CHAT — ' + c.name, 134, 18);
   cx.font = 'bold 7px monospace'; cx.fillStyle = '#8d99ae';
-  cx.fillText(chat.qi === 0 && chat.phase === 'q' && chat.t > 360 ? c.intro : 'question ' + Math.min(chat.qi + 1, 3) + ' of 3', 134, 30);
+  cx.fillText(chat.qi === 0 && chat.phase === 'q' && chat.t > 540 ? c.intro : 'question ' + Math.min(chat.qi + 1, 3) + ' of 3 — press ← or → to answer', 134, 30);
   if (chat.phase === 'q'){
     const q = c.qs[chat.qi];
-    // timer bar — drains left to right; the meeting was always going to run short
-    px(16, 42, Math.max(0, Math.round((W - 32) * Math.min(chat.t, 360) / 360)), 4, chat.t < 120 ? '#d64550' : '#39c46d');
+    // TIME bar — drains left to right, blinks when the silence is getting long
+    const barW = Math.max(0, Math.round((W - 60) * Math.min(chat.t, 540) / 540));
+    cx.font = 'bold 7px monospace'; cx.fillStyle = urgent && (frame >> 3) % 2 ? '#d64550' : '#8d99ae';
+    cx.fillText('TIME', 16, 42);
+    px(44, 36, W - 60, 6, '#232a3a');
+    px(44, 36, barW, 6, chat.t < 180 ? (urgent && (frame >> 3) % 2 ? '#ff8c37' : '#d64550') : '#39c46d');
+    // the whole exchange lives at the top: question, then the two answers under it
     cx.font = 'bold 9px monospace'; cx.fillStyle = '#fff';
-    cx.fillText('"' + q.q + '"', 16, 62);
+    cx.fillText('"' + q.q + '"', 16, 58);
     const optA = chat.swap ? q.b : q.a, optB = chat.swap ? q.a : q.b;
-    // two answer cards
-    px(12, 226, 222, 32, '#232a3a'); px(12, 226, 222, 2, '#7ce0ff');
-    px(246, 226, 222, 32, '#232a3a'); px(246, 226, 222, 2, '#ffd94a');
+    px(12, 64, 222, 32, '#232a3a'); px(12, 64, 222, 2, '#7ce0ff');
+    px(246, 64, 222, 32, '#232a3a'); px(246, 64, 222, 2, '#ffd94a');
     cx.font = 'bold 8px monospace';
-    cx.fillStyle = '#7ce0ff'; cx.fillText('←', 18, 238);
-    cx.fillStyle = '#ffd94a'; cx.fillText('→', 452, 238);
+    cx.fillStyle = '#7ce0ff'; cx.fillText('←', 18, 76);
+    cx.fillStyle = '#ffd94a'; cx.fillText('→', 452, 76);
     cx.font = 'bold 7px monospace'; cx.fillStyle = '#e8ecf5';
-    cx.fillText(optA, 18, 250); cx.fillText(optB, 252, 250);
+    cx.fillText(optA, 18, 88); cx.fillText(optB, 252, 88);
+    cx.fillStyle = '#8d99ae';
+    cx.fillText('← picks the left answer, → the right. freezing is also an answer.', 16, 110);
   } else {
     cx.font = 'bold 8px monospace';
     cx.fillStyle = chat.phase === 'end' ? (chat.amt ? '#7cffa5' : '#ff8c8c') : (chat.good ? '#7cffa5' : '#ff8c8c');
-    cx.fillText('"' + chat.msg + '"', 16, 62);
+    cx.fillText('"' + chat.msg + '"', 16, 58);
     if (chat.phase === 'end'){
       cx.fillStyle = '#ffd94a'; cx.font = 'bold 9px monospace';
-      cx.fillText(chat.amt ? '+$' + chat.amt + 'K RAISED' : '+$0. exposure, probably.', 16, 80);
+      cx.fillText(chat.amt ? '+$' + chat.amt + 'K RAISED' : '+$0. exposure, probably.', 16, 76);
     }
   }
+  uiShakeX = uiShakeY = 0;                                 // the HUD does not panic
   drawHUD();
 }
 
 function drawInterview(){
   occlude(0, 0, W, H);
-  px(0, 0, W, H, '#e8e4da');                                // daylight. terrifying.
+  // urgency shake — the partners are already thinking about the next meeting
+  const urgent = interview.phase === 'q' && interview.t < 210;
+  uiShakeX = urgent ? ((frame * 13) % 3) - 1 : 0;
+  uiShakeY = urgent ? ((frame * 7) % 3) - 1 : 0;
+  px(-2, -2, W + 4, H + 4, '#e8e4da');                      // daylight. terrifying. (oversized for the shake)
   px(0, 200, W, 70, '#c9c2b2');                             // floor
   for (let i = 0; i < 3; i++)                               // the panel: three partners, identical posture
-    drawFounder(cx, 160 + i * 60, 118, 2.6, -1, 0, false,
+    drawFounder(cx, 160 + i * 60 + uiShakeX, 118 + uiShakeY, 2.6, -1, 0, false,
       { skin:'#e8b98a', hair:'#3a3a3a', hairDk:'#262626', hood:i === 1 ? '#5a6b8c' : '#6e7787', pocket:'#4a5568', hairStyle:i });
   px(120, 150, 240, 8, '#8a7a5a'); px(130, 158, 6, 42, '#6e6248'); px(344, 158, 6, 42, '#6e6248'); // long desk hides their legs
-  drawFounder(cx, 60, 160, 2.6, 1, 0, false);               // you, in the folding chair era
+  drawFounder(cx, 60 + uiShakeX, 160 + uiShakeY, 2.6, 1, 0, false); // you, in the folding chair era
   cx.textAlign = 'left';
   cx.font = 'bold 9px monospace'; cx.fillStyle = '#1a1a2e';
   cx.fillText('THE ACCELERATOR — INTERVIEW', 134, 18);
   cx.font = 'bold 7px monospace'; cx.fillStyle = '#6e6248';
-  cx.fillText('you have ten seconds. total. for all seven.', 134, 30);
+  cx.fillText('fifteen seconds. total. for all seven. answer with ← or →.', 134, 30);
   if (interview.phase === 'q'){
-    // the shared clock — one bar for the whole interview
-    px(16, 38, Math.max(0, Math.round((W - 32) * interview.t / 600)), 5, interview.t < 180 ? '#d64550' : '#1a1a2e');
+    // the shared clock — one bar for the whole interview, blinking at the end
+    const barW = Math.max(0, Math.round((W - 60) * interview.t / 900));
+    cx.font = 'bold 7px monospace'; cx.fillStyle = urgent && (frame >> 3) % 2 ? '#d64550' : '#6e6248';
+    cx.fillText('TIME', 16, 42);
+    px(44, 36, W - 60, 6, '#cfc8b8');
+    px(44, 36, barW, 6, interview.t < 270 ? (urgent && (frame >> 3) % 2 ? '#d97706' : '#d64550') : '#1a1a2e');
     const q = ACC_QS[interview.qi], swap = swapFor('acc', interview.qi);
     cx.font = 'bold 9px monospace'; cx.fillStyle = '#1a1a2e';
-    cx.fillText('"' + q.q + '"  (' + (interview.qi + 1) + '/7)', 16, 60);
+    cx.fillText('"' + q.q + '"  (' + (interview.qi + 1) + '/7)', 16, 58);
     const optA = swap ? q.b : q.a, optB = swap ? q.a : q.b;
-    px(12, 226, 222, 32, '#fff'); px(12, 226, 222, 2, '#3b5bdb');
-    px(246, 226, 222, 32, '#fff'); px(246, 226, 222, 2, '#d97706');
+    px(12, 64, 222, 32, '#fff'); px(12, 64, 222, 2, '#3b5bdb');
+    px(246, 64, 222, 32, '#fff'); px(246, 64, 222, 2, '#d97706');
     cx.font = 'bold 8px monospace';
-    cx.fillStyle = '#3b5bdb'; cx.fillText('←', 18, 238);
-    cx.fillStyle = '#d97706'; cx.fillText('→', 452, 238);
+    cx.fillStyle = '#3b5bdb'; cx.fillText('←', 18, 76);
+    cx.fillStyle = '#d97706'; cx.fillText('→', 452, 76);
     cx.font = 'bold 7px monospace'; cx.fillStyle = '#1a1a2e';
-    cx.fillText(optA, 18, 250); cx.fillText(optB, 252, 250);
+    cx.fillText(optA, 18, 88); cx.fillText(optB, 252, 88);
     if (interview.flash > 0){ // last answer's verdict, gone in a blink
       cx.font = 'bold 10px monospace'; cx.fillStyle = interview.flashBad ? '#d64550' : '#1d9e50';
-      cx.fillText(interview.flashBad ? '✗' : '✓', 452, 60);
+      cx.fillText(interview.flashBad ? '✗' : '✓', 452, 58);
     }
     if (interview.respectT > 0){
       cx.font = 'bold 8px monospace'; cx.fillStyle = '#1d9e50';
-      cx.fillText('...respect.', 400, 76);
+      cx.fillText('...respect.', 390, 110);
     }
   } else {
     cx.font = 'bold 9px monospace';
@@ -2224,6 +2247,7 @@ function drawInterview(){
     if (interview.won){ cx.fillStyle = '#d97706'; cx.fillText('DEMO DAY LETTER: +$150K · INVINCIBLE 8s', 16, 92);
       cx.fillStyle = '#1a1a2e'; cx.fillText('stamped: ACCELERATOR · BATCH F26', 16, 106); }
   }
+  uiShakeX = uiShakeY = 0;                                  // the HUD does not panic
   drawHUD();
 }
 

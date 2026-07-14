@@ -530,3 +530,20 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
 - smoketest now synthesizes the deviant events (Spacebar/Left/Up-with-no-code/
   Process+KeyD) and asserts the game reads them — the field bug is a permanent
   regression check. No physics/timing change; not a speedrun-contract item.
+
+## 2026-07-13 — [MINI-GAME READABILITY] (owner call from a user playtest: "didn't
+## understand the coffee-chat arrows; time too quick; shake when time runs out")
+
+- Dialogue block moved to the TOP of the screen for both coffee chats and the
+  interview: question, then the two answer cards directly under it, then an
+  explicit "← picks the left answer, → the right" line. The scene art stays
+  below; nothing important lives at the bottom edge anymore.
+- Clocks loosened: chat questions 6s → 9s (first question 12s = 3s intro + 9s);
+  interview 10s → 15s total (subtitle copy updated — still absurd, now
+  answerable). React/end-card timings unchanged.
+- TIME bar: labeled, thicker (6px), track behind it, drains left→right;
+  turns red in the last third and blinks in the final stretch.
+- Urgency shake: last ~2s of a chat question / ~3.5s of the interview, the
+  whole dialogue judders ±1px (draw-only uiShake offset consumed by px() and
+  the text overlay so sprites and crisp text move together; HUD exempt; sim
+  untouched — not a speedrun-contract item, no physics change).
