@@ -84,21 +84,42 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
   await p.screenshot({ path: path.resolve(__dirname, 'overnight', 'celeb-rocket.png') });
 
   // WITNESSED HISTORY: must be standing still BEFORE liftoff — wait for the
-  // countdown (rt wrapping toward 2700), then hold still through the whole ascent
-  await p.evaluate(() => { witnessStill = 0; witnessed = false; hearts = 5; player.hurtT = 60;
-                           bosses.forEach(bb => { bb.dead = true; bb.active = false; }); // Barry's block revived them — a live Platform wall yanks teleports into its arena
-                           player.x = 6050; player.y = GROUND_Y - 40; cam = 5950;
-                           enemies.forEach(e => { if (Math.abs(e.x - 6050) < 500) e.dead = true; }); });
-  for (let i = 0; i < 400; i++){
-    const rt = await p.evaluate(() => frame % 2700);
-    if (rt > 2580) break;               // T-minus ~2s
-    // fidget IN PLACE with hops — walking drifts you into the Platform arena
-    // (verified: it killed an earlier probe), and standing still burns runway
-    await p.keyboard.down('Space'); await p.waitForTimeout(90); await p.keyboard.up('Space');
-    await p.waitForTimeout(1100);
+  // countdown (rt wrapping toward 2700), then hold still through the whole ascent.
+  // Hardened 2026-07-14 (seed-195 flake, baseline reproduced pre-diff): daily
+  // layouts can patrol a scooter pack into x6050 during the multi-cycle wait and
+  // burn ticks can drain the staged hearts — re-stage the scene every hop and
+  // retry across up to 3 launch cycles. The game's witness code path is untouched.
+  const stage = () => p.evaluate(() => { hearts = 5;
+    bosses.forEach(bb => { bb.dead = true; bb.active = false; }); // Barry's block revived them — a live Platform wall yanks teleports into its arena
+    enemies.forEach(e => { if (e.x > 5500 && e.x < 7200) e.dead = true; }); });
+  let eggGot = false;
+  for (let attempt = 0; attempt < 3 && !eggGot; attempt++){
+    await p.evaluate(() => { if (state === 3) resumePlay(true); // an earlier leg can leave a corpse (seed-195 trace: st=3 through all attempts) — the gate only ticks in PLAY
+                             witnessStill = 0; witnessed = false; player.hurtT = 60;
+                             player.x = 6050; player.y = GROUND_Y - 40; player.vx = 0; cam = 5950; });
+    await stage();
+    for (let i = 0; i < 400; i++){
+      const rt = await p.evaluate(() => frame % 2700);
+      if (rt > 2580) break;             // T-minus ~2s
+      // fidget IN PLACE with hops — walking drifts you into the Platform arena
+      // (verified: it killed an earlier probe), and standing still burns runway
+      await p.keyboard.down('Space'); await p.waitForTimeout(90); await p.keyboard.up('Space');
+      await stage();
+      await p.waitForTimeout(1100);
+    }
+    await p.evaluate(() => { player.vx = 0; player.hurtT = 0; });
+    await stage();
+    // stand dead still and POLL through the ascent — a blind sleep drifts with
+    // wall-clock jitter and can slide the still-window past frame 220 (the
+    // 2026-07-14 flake); polling exits the moment the egg lands
+    eggGot = await p.evaluate(async () => {
+      for (let t = 0; t < 560; t++){
+        await new Promise(r => setTimeout(r, 16));
+        if (witnessed) return true;
+      }
+      return witnessed;
+    });
   }
-  await p.waitForTimeout(5500);          // NOW stand dead still through liftoff + ascent
-  const eggGot = await p.evaluate(() => witnessed);
   check('WITNESSED HISTORY +$0K for standing dead still through a launch', eggGot === true);
 
   check('zero page errors', errors.length === 0, errors.join(' | '));

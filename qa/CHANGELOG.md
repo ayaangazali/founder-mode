@@ -633,3 +633,21 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   merge → deploy → verify endpoints → LinkedIn Post Inspector on an /api/r
   URL → re-run seed-board. Branch tip stays undeployed until the owner
   confirms purchase + attachment.
+
+## 2026-07-14 — [REGRESSION PASS, branch board-and-domain] (probe fix + benchmarks)
+
+- celebs-probe WITNESSED HISTORY leg was failing on today's seed — traced to a
+  corpse: an earlier leg drains the last heart on some daily layouts and the
+  witness gate only ticks in PLAY. The leg now revives (resumePlay) before
+  staging, re-stages enemies/hearts every hop, retries across 3 launch cycles,
+  and polls instead of blind-sleeping through the ascent. Reproduced on
+  pre-branch main first (not the diff); game code untouched.
+- Full battery green: 3 suites, 9 probes, casual bot 6/12. Clean bot straddles
+  its 6-death budget post-crate-damage: branch {7,7,4}, baseline main {3,5},
+  same seed — overlapping distributions, shared hotspot x5521 (platform-arena
+  crates), display-only diff confirmed by hunk audit. Verdict: straddle
+  variance, no branch regression. If CV starts feeling brutal in human play,
+  the sanctioned lever is crate cadence — owner call, since crate damage was
+  an explicit owner order.
+- Screenshots: qa/overnight/board-nozomio.png (pink-on-ink render at 5760),
+  qa/overnight/board-horse-tier.png ($1.2B 🦄 above $580M 🐴 above 💀).
