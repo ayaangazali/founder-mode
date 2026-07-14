@@ -547,3 +547,19 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   whole dialogue judders ±1px (draw-only uiShake offset consumed by px() and
   the text overlay so sprites and crisp text move together; HUD exempt; sim
   untouched — not a speedrun-contract item, no physics change).
+
+## 2026-07-14 — [POSTHOG + BOARD SEED + MEETLY CUT] (owner calls)
+
+- PostHog wired (project 511099, US cloud): manual array.js loader + pre-load
+  queue next to the Vercel Analytics shim — same http(s) gate, localhost
+  excluded so qa probes stay hermetic, autocapture off (canvas game).
+  track() now sends both targets and carries seed/valuation/raised/play_s.
+- qa/seed-board.js: seeds today's daily board with 50 invented archetype
+  founders through the LIVE endpoint (same plausibility gate + profanity
+  filter as real runs; canon rule 3 — no real names). Values tuned beatable:
+  8 winners (two pedigree flexes on top at $580M/$310M val), 42 out-of-runway.
+  Daily board = rows age out with the seed; re-run any morning. --dry to preview.
+- MEETLY.AI aftermath CUT (owner: "I don't get the papers thing" — post-boss-2
+  recap email + the chasing ACTION ITEMS stack killed the win moment).
+  The notetaker drone in Chad's arena stays: draw-only, does nothing,
+  that's the product. CLIP-REPORT item 5 annotated.

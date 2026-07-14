@@ -27,6 +27,26 @@ if (/^https?:$/.test(location.protocol)){
   a.defer = true; a.src = '/_vercel/insights/script.js';
   document.head.appendChild(a);
 }
+// PostHog, same one-file treatment: manual loader + tiny pre-load queue instead
+// of the official snippet. localhost excluded so the qa probes stay hermetic.
+// The key is the project's public ingest token (client-side by design).
+window.phQ = []; window.phReady = false;
+if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'){
+  const p = document.createElement('script');
+  p.async = true; p.crossOrigin = 'anonymous';
+  p.src = 'https://us-assets.i.posthog.com/static/array.js';
+  p.onload = () => {
+    posthog.init('phc_yngbEtsZtd9SH2ABp2RS7KURPwgYAFVKqWxTxPKViQf2', {
+      api_host: 'https://us.i.posthog.com',
+      person_profiles: 'identified_only',   // anonymous events; no profiles until someone is identified
+      autocapture: false,                   // canvas game — DOM autocapture is noise
+    });
+    window.phReady = true;
+    for (const ev of window.phQ) posthog.capture(ev.n, ev.p);
+    window.phQ.length = 0;
+  };
+  document.head.appendChild(p);
+}
 </script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -564,7 +584,13 @@ function lbFetch(after){
     .then(j => { if (j && j.ok){ lbTop = j.top; if (after) after(); } }).catch(() => {});
 }
 lbFetch();
-function track(name){ try { if (window.va) va('event', { name }); } catch(e){} } // funnel: ROADMAP §10 (no-op offline)
+function track(name, props){ // funnel: ROADMAP §10 (no-op offline) — mirrored to Vercel + PostHog
+  try { if (window.va) va('event', { name }); } catch(e){}
+  try {
+    const p = Object.assign({ seed: SEED_N, valuation: lastVal || 0, raised, play_s: Math.round(playMs / 1000) }, props || {});
+    if (window.phReady) posthog.capture(name, p); else if (window.phQ) window.phQ.push({ n: name, p });
+  } catch(e){}
+}
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
 function lbRowsHtml(rows){
   const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
@@ -613,7 +639,6 @@ let quoteRoll = 0; // v0.2: badge quote pick, rolled once per fresh run (stable 
 let bellRing = null;    // ringing ceremony: {meter, done, celeT} — mash R (touch: A) to fill, then confetti
 let ringHeld = false;   // edge detector for the mash
 let barrySawIt = false, barryShownT = 0; // item 4: Barry watched you die near him
-let meetlyT = 0, actionItems = null;     // item 5: MEETLY.AI recap overlay + the ACTION ITEMS that chase you
 // HUMOR PATCH item 6: THE CORGI (10x8, devastating). It cannot die. It has no
 // health, no hitbox, and appears in no collision path — immortality by
 // construction, verified by qa/corgi-probe.js. While it follows, burn is paused.
@@ -999,7 +1024,6 @@ function reset(fromCheckpoint){
     quoteRoll = Math.random();
     bellRing = null; ringHeld = false;
     barrySawIt = false; barryShownT = 0; witnessStill = 0; witnessed = false;
-    meetlyT = 0; actionItems = null;
     corgi = { x: CORGI_HOME, following: false, followT: 0, sitting: false, face: 1 };
     corgiHired = false;
     chat = null; chatStill = 0; for (const cc of CHATS) cc.done = false;
@@ -1031,7 +1055,7 @@ function reset(fromCheckpoint){
     shots.length = 0; crates.length = 0;
     slops = [];                                           // clones don't outlive the attempt
     bellRing = null; ringHeld = false;                    // a death mid-confetti is still a death
-    meetlyT = 0; actionItems = null; cmoT = 0;            // paused-world theater ends with the run
+    cmoT = 0;                                             // paused-world theater ends with the run
     bosses.forEach(bb => { if (!bb.dead){ bb.pedApplied = false; bb.slopped = false; } }); // Chad re-reads the résumé; slop phase re-announces
     for (const b of bosses){
       if (!b.dead){ // live boss back to its trigger state; dead bosses stay dead
@@ -1510,7 +1534,6 @@ function update(){
             raised += bonus; sWin();
             addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
             addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
-            if (b.id === 'vc') meetlyT = 330; // item 5: the notetaker was in the room the whole time (5.5s — owner couldn't finish it at 2.5)
           }
         }
         else if (p.pogo && !(b.hitT > 0) && !b.hinted){
@@ -1553,7 +1576,6 @@ function update(){
               raised += bonus; sWin();
               addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
               addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
-              if (b.id === 'vc') meetlyT = 330; // the notetaker was in the room for the deck kill too (audit)
             }
           }
         }
@@ -1709,21 +1731,6 @@ function update(){
       }
     }
     interns = interns.filter(it => !it.gone);
-  }
-
-  // -------- HUMOR PATCH item 5: MEETLY.AI aftermath --------
-  if (meetlyT > 0){
-    meetlyT--;
-    if (meetlyT === 0) // the recap lands, then the action items COME FOR YOU
-      actionItems = { x: bosses[1].x0, y: GROUND_Y - 16, w: 20, h: 16, t: 600, flut: 0 };
-  }
-  if (actionItems){
-    const ai2 = actionItems;
-    ai2.flut += 0.2;
-    ai2.x += (p.x > ai2.x ? 1 : -1) * 0.9;                    // paperwork always finds you
-    ai2.y = GROUND_Y - 16 + Math.sin(ai2.flut) * 1.5;
-    if (aabb(p, ai2)) p.x += (p.x < ai2.x ? -0.8 : 0.8);      // blocks like a board member; never hurts
-    if (--ai2.t <= 0) actionItems = null;                     // statute of limitations
   }
 
   // -------- billboards: a partner board greets you once per run --------
@@ -3123,23 +3130,6 @@ function draw(){
       if (frame % 20 < 10) px(mx + 5, my + 15, 2, 1, '#8d99ae'); // scribble particles
     }
   }
-  // the ACTION ITEMS — a paper stack with a lanyard and your name on everything
-  if (actionItems){
-    const ax = actionItems.x - cam, ay = actionItems.y;
-    if (ax > -40 && ax < W + 40){
-      px(ax, ay + 4, 20, 12, '#f4f4f4');
-      px(ax + 1, ay + 6, 18, 1, '#8d99ae'); px(ax + 1, ay + 9, 14, 1, '#8d99ae');
-      px(ax + 1, ay + 12, 16, 1, '#8d99ae');                     // dense, unread
-      px(ax + 2, ay + 2, 16, 3, '#e8ecf5');                      // the stack continues upward
-      px(ax + 8, ay - 1, 4, 4, '#d64550');                       // URGENT sticker
-      cx.font = 'bold 8px monospace';
-      const tw = cx.measureText('ACTION ITEMS').width;
-      cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(ax + 10 - tw/2 - 2), Math.round(ay - 14), tw + 4, 11);
-      occlude(ax + 10 - tw/2 - 2, ay - 14, tw + 4, 11);
-      cx.fillStyle = '#ff5a5a'; cx.fillText('ACTION ITEMS', Math.round(ax + 10 - tw/2), Math.round(ay - 5));
-    }
-  }
-
   // HUMOR PATCH item 7: the slop clones — deliberately wrong copies of the boss.
   // The tell: the REAL one is drawn correctly. Spotting real vs slop is the joke
   // AND the mechanic.
@@ -3289,23 +3279,6 @@ function draw(){
     cx.textAlign = 'left';
   }
 
-  // HUMOR PATCH item 5: the recap email — 5.5s of dimmed screen and assigned
-  // blame. Drawn dead last: nothing outranks a calendar invite.
-  if (meetlyT > 0 && state === ST.PLAY){
-    occlude(0, 0, W, H); // the recap owns the frame — no HUD/popup text floats over it
-    cx.fillStyle = 'rgba(8,8,20,.72)'; cx.fillRect(0, 0, W, H);
-    px(88, 64, 304, 128, '#f4f4f4');
-    px(88, 64, 304, 22, '#3b5bdb');
-    if (frame % 30 < 15) px(376, 70, 6, 6, '#ff5a5a');           // still recording, somehow
-    cx.font = 'bold 9px monospace'; cx.fillStyle = '#fff';
-    cx.fillText('MEETLY.AI HAS SENT THE RECAP', 96, 79);
-    cx.font = 'bold 8px monospace'; cx.fillStyle = '#16130c';
-    cx.fillText('Subject: Boss Fight — Recap & Action Items (47)', 98, 106);
-    cx.fillText('All action items assigned to: YOU', 98, 126);
-    cx.fillText('Next boss fight scheduled: now.', 98, 146);
-    cx.fillStyle = '#8d99ae';
-    cx.fillText('this meeting could have been an email. it is one now.', 98, 176);
-  }
   cx.setTransform(1, 0, 0, 1, 0, 0); // undo hurt shake
 }
 

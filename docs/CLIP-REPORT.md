@@ -16,7 +16,7 @@ greps clean · celeb grep-gate enforced as a test.
 | 4b | BARRY GAN watches you die | celeb-barry-sawit.png | His cycle is pure hype until you die in front of him: "...OK MAYBE NOT LIKE THAT" |
 | 4c | The rocket (and the 1-in-10 landing) | celeb-rocket.png | A rocket launches behind Sand Hill every 45s. Stand perfectly still through one (burn risk!) → WITNESSED HISTORY +$0K. |
 | 4d | SAM WALTMAN's sign | celeb-waltman-knew.png | "it knows me" → beat the boss → "it knew me". Two rects. Devastating. |
-| 5 | MEETLY.AI recap | meetly-drone.png, meetly-recap.png, meetly-actionitems.png | The notetaker drone watched your boss fight. All 47 action items: assigned to YOU. Then the paperwork physically chases you. |
+| 5 | MEETLY.AI recap | meetly-drone.png, meetly-recap.png, meetly-actionitems.png | ~~The notetaker drone watched your boss fight…~~ **CUT 2026-07-14 (owner): the post-fight recap email + chasing paperwork confused playtesters and killed the win moment. The notetaker drone in the arena stays (draw-only flavor).** |
 | 6 | THE CORGI | corgi-adopted.png, corgi-cafe.png | Acqui-hire a corgi. Burn pauses (morale: high). You get hit, it sits and waits. It cannot die — that's a tested invariant. |
 | 7 | SLOP PHASE | slop-phase.png | The final boss starts generating wrong copies of itself (IA, A1, ΛI). The one drawn CORRECTLY is the real threat. Spot the slop. |
 | 8 | HACKATHON HOUSE | hackathon-inside.png | A 12-real-second interior: frozen founders, HOUR 46 OF 48, DEMO IN 10s. Win: "1ST PLACE: a Notion template". |
