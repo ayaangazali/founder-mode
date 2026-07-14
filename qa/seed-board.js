@@ -20,7 +20,9 @@ const SEED_N = Math.round((Date.UTC(_t.getFullYear(), _t.getMonth(), _t.getDate(
 const mm = s => s * 1000; // seconds → ms
 // [name, won, val ($K), raised ($K), time seconds]
 const CLASS_OF_TODAY = [
-  // v2 roster (owner call): reads like a real player base — common American /
+  // v2 roster (owner call): reads like a real player base. Unicorn gate note
+  // (2026-07-14): 🦄 needs VALUATION ≥ $1B — every winner below is sub-$1B, so
+  // the whole class renders 🐴 (NEPOBABYCEO at $580M is a horse, which is funnier). — common American /
   // Mexican / Asian first names, a few one-word originals, and the best of the
   // troll handles kept. Still zero real identifiable people (canon rule 3).
   // the winners' circle

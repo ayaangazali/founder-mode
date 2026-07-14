@@ -591,6 +591,9 @@ function track(name, props){ // funnel: ROADMAP §10 (no-op offline) — mirrore
   } catch(e){}
 }
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
+// you're a horse until you're a unicorn (owner gate: 🦄 only at VALUATION ≥ $1B;
+// val is stored in $K, so the bar is 1,000,000)
+const winEmoji = v => v >= 1000000 ? '🦄' : '🐴';
 function lbRowsHtml(rows){
   const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
   // aligned columns (owner: 50 rows of prose was unreadable): rank · name ·
@@ -601,7 +604,7 @@ function lbRowsHtml(rows){
       `<span style="flex:none; width:2em; text-align:right; color:#8d99ae">${rank(i)}</span>` +
       `<span style="flex:1; min-width:0; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;${i < 3 ? ' color:#ffd94a' : ''}">${esc(r.name)}</span>` +
       `<span style="flex:none; width:5.4em; text-align:right; color:#7cffa5">${fmtMoney(r.val)}</span>` +
-      `<span style="flex:none">${r.won ? '🦄' : '💀'}</span>` +
+      `<span style="flex:none">${r.won ? winEmoji(r.val) : '💀'}</span>` +
       `<span style="flex:none; width:3.4em; text-align:right; color:#7ce0ff">${fmtTime(r.time_ms)}</span>` +
     `</div>`).join('');
 }
@@ -3404,7 +3407,7 @@ function drawTitle(){
     cx.fillText("today's top exit: " + fmtMoney(lbTop[0].val) + ' by ' + lbTop[0].name + ' — beat it', W/2, 120);
   } else { const b = lbBest(); if (b){
     cx.fillStyle = '#7cffa5';
-    cx.fillText('your best exit: ' + fmtMoney(b.val) + (b.won ? ' 🦄' : ' (down round)'), W/2, 120);
+    cx.fillText('your best exit: ' + fmtMoney(b.val) + (b.won ? ' ' + winEmoji(b.val) : ' (down round)'), W/2, 120);
   } }
   cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
   cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 132);
@@ -3738,7 +3741,7 @@ function shareText(won){
   const f = badgeFlairs(won);
   const val = valuation(won);
   return won
-    ? `I just beat FOUNDER MODE 🦄\n\nRaised ${fmtMoney(raised)}, stomped the churn gremlins, out-jumped a VC whose vest is load-bearing, and defeated SYNERGY.AI in ${t}. Exit valuation: ${fmtMoney(val.v)}.` +
+    ? `I just beat FOUNDER MODE ${winEmoji(val.v)}\n\nRaised ${fmtMoney(raised)}, stomped the churn gremlins, out-jumped a VC whose vest is load-bearing, and defeated SYNERGY.AI in ${t}. Exit valuation: ${fmtMoney(val.v)}.` +
       (f.length ? `\n\nFlair earned: ${f.join(' · ')}.` : '') +
       `\n\nCan you top my valuation?\n\nPlay: ${resultUrl(true)}`
     : `FOUNDER MODE just took me out. Raised ${fmtMoney(raised)} and died in ${zoneName(player.x)} 💀 Final valuation: ${fmtMoney(val.v)} (down round).\n\nIt was a market timing issue.\n\nThink you can survive SF?\n\nPlay: ${resultUrl(false)}`;

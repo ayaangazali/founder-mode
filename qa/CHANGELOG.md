@@ -610,3 +610,14 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   source of truth; FINAL.md is design history.
 - Drift fixes: interview is 15s TOTAL (WHATS-BUILT + README said 10s each);
   chat pay ($150K) and remote interns were already stated correctly.
+
+## 2026-07-14 — [UNICORN GATE] (owner call)
+
+- 🦄 is earned, not granted: wins render 🦄 only at VALUATION ≥ $1B; below
+  that you get 🐴 (you're a horse until you're a unicorn). Losses stay 💀.
+  Applied everywhere the win emoji sits next to a valuation: leaderboard
+  rows (winEmoji helper in lbRowsHtml), the title-screen "your best exit"
+  chip, and the win share text. The /api/og card shows no emoji — its
+  CERTIFIED UNICORN headline is untouched (win branding, not a tier claim).
+- Today's entire seeded class is sub-$1B, so NEPOBABYCEO defends #1 at
+  $580M as a horse. leaderboard-probe now asserts all three tiers.

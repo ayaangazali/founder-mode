@@ -68,6 +68,15 @@ srv.listen(8127, async () => {
     return !html.includes('<img') || html.includes('&lt;img');
   });
   check('board rows HTML-escape names (XSS)', escaped);
+  // unicorn gate: 🦄 only at val ≥ $1B (1,000,000 in $K units); sub-$1B wins are 🐴
+  const tiers = await p.evaluate(() => {
+    lbTop = [{ name: 'HORSE GUY', val: 580000, raised: 2000, time_ms: 300000, won: true },
+             { name: 'REAL ONE',  val: 1200000, raised: 5000, time_ms: 400000, won: true },
+             { name: 'GONER',     val: 100, raised: 50, time_ms: 60000, won: false }];
+    return lbRowsHtml(lbTop);
+  });
+  check('sub-$1B win renders 🐴 (horse until unicorn)', tiers.indexOf('🐴') >= 0 && tiers.indexOf('🐴') < tiers.indexOf('🦄'), 'gate order');
+  check('$1B+ win renders 🦄, loss renders 💀', tiers.includes('🦄') && tiers.includes('💀'));
   // double-post blocked
   await p.click('#lbGo'); await p.waitForTimeout(300);
   check('second post is a no-op (one per run)', board.filter(r => r.name === 'PROBE').length === 1, 'rows=' + board.length);
