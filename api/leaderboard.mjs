@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     // viral day would burn one function invocation per visitor for identical
     // JSON. 60s staleness is invisible on a daily leaderboard.
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
-    const { searchParams } = new URL(req.url, 'https://foundermode.vercel.app');
+    const { searchParams } = new URL(req.url, 'https://sfspeedrun.com');
     const seed = parseInt(searchParams.get('seed') || '0', 10) | 0;
     const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) | 0));
     const q = `${SB}/rest/v1/founder_scores?seed=eq.${seed}` +

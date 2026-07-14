@@ -2,7 +2,7 @@
 
 Everything that exists in FOUNDER MODE as of the audit fix pack, in one document.
 This is the "what was made" report: the game, the systems under it, the server,
-the tests, and the paper trail. Live at **https://foundermode.vercel.app**.
+the tests, and the paper trail. Live at **https://sfspeedrun.com**.
 
 ---
 

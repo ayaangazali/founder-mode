@@ -18,7 +18,7 @@ function fmtMoney(k){
 }
 
 export default async function handler(req, res) {
-  const { searchParams } = new URL(req.url, 'https://foundermode.vercel.app');
+  const { searchParams } = new URL(req.url, 'https://sfspeedrun.com');
   const won = searchParams.get('w') === '1';
   const name = (searchParams.get('n') || '').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').slice(0, 14);
   const val = Math.max(0, Math.min(2400000, parseInt(searchParams.get('v') || '0', 10) | 0));

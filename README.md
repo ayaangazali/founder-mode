@@ -4,7 +4,7 @@
 
 **The SF startup platformer.** Stomp churn. Dodge VCs. Survive the accelerator interview. Ring the IPO bell.
 
-### [▶ &nbsp;PLAY NOW — foundermode.vercel.app](https://foundermode.vercel.app)
+### [▶ &nbsp;PLAY NOW — sfspeedrun.com](https://sfspeedrun.com)
 
 *One HTML file. No signup, no install, no loading screen. Arrow keys / WASD, Space to jump.*
 
@@ -43,7 +43,7 @@ If you want it on a GitHub **profile** (the `ayaangazali/ayaangazali` repo), the
 
 ```markdown
 ### 🦄 I made a game about being an SF founder
-**[▶ PLAY FOUNDER MODE](https://foundermode.vercel.app)** — stomp churn, dodge VCs,
+**[▶ PLAY FOUNDER MODE](https://sfspeedrun.com)** — stomp churn, dodge VCs,
 ring the IPO bell. One file, no signup, new market every day.
 ```
 
@@ -72,6 +72,6 @@ Design history, the audit, and the full build breakdown live in [`docs/`](docs/)
 
 <div align="center">
 
-*99.99% uptime\** &nbsp;·&nbsp; *\*during business hours* &nbsp;·&nbsp; **[PLAY](https://foundermode.vercel.app)**
+*99.99% uptime\** &nbsp;·&nbsp; *\*during business hours* &nbsp;·&nbsp; **[PLAY](https://sfspeedrun.com)**
 
 </div>

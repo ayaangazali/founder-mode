@@ -9,7 +9,7 @@
 // The board is daily — rows key to today's SEED_N and age out tomorrow.
 // Re-run any morning you want the bar pre-set:  node qa/seed-board.js
 // Dry run (print, no POST):                      node qa/seed-board.js --dry
-const HOST = 'https://foundermode.vercel.app';
+const HOST = 'https://sfspeedrun.com'; // re-run against the new host after the domain cutover
 const DRY = process.argv.includes('--dry');
 
 // same formula as index.html: seed #1 = 2026-01-01, local calendar date

@@ -621,3 +621,15 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   CERTIFIED UNICORN headline is untouched (win branding, not a tier claim).
 - Today's entire seeded class is sub-$1B, so NEPOBABYCEO defends #1 at
   $580M as a horse. leaderboard-probe now asserts all three tiers.
+
+## 2026-07-14 — [DOMAIN PREP: sfspeedrun.com] (NOT DEPLOYED — checklist gated)
+
+- Every host reference centralized on https://sfspeedrun.com: GAME_URL const
+  + og:image/og:url/twitter:image meta tags (index.html), api/r.mjs (3 uses
+  hoisted to a HOST const), URL-parse bases in api/og.mjs + leaderboard.mjs,
+  qa/seed-board.js HOST, README links, WHATS-BUILT live line. Badge/obituary
+  footers + shareText already derived from GAME_URL — no change needed there.
+- docs/DEPLOY-CHECKLIST.md: buy → attach in Vercel (+www) → verify DNS →
+  merge → deploy → verify endpoints → LinkedIn Post Inspector on an /api/r
+  URL → re-run seed-board. Branch tip stays undeployed until the owner
+  confirms purchase + attachment.

@@ -8,15 +8,15 @@
 <meta property="og:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Can you reach the IPO bell?">
 <!-- BUILD-GUIDE Step 4 — og.png lives next to index.html on the live Vercel root
      (swap host when the joke domain is bought) -->
-<meta property="og:image" content="https://foundermode.vercel.app/og.png">
+<meta property="og:image" content="https://sfspeedrun.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="https://foundermode.vercel.app/">
+<meta property="og:url" content="https://sfspeedrun.com/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="FOUNDER MODE — the SF startup platformer">
 <meta name="twitter:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Ring the IPO bell.">
-<meta name="twitter:image" content="https://foundermode.vercel.app/og.png">
+<meta name="twitter:image" content="https://sfspeedrun.com/og.png">
 <!-- Vercel Web Analytics, static-site flavor: no npm, no framework — the game
      stays one file. Injected only over http(s): a static tag 404s on file://
      and the console noise trips the playtest's zero-error gate. -->
@@ -3448,10 +3448,11 @@ function drawTitle(){
 // ------------------------- END SCREENS + BADGE -------------------------
 const ui = document.getElementById('ui');
 const uicard = document.getElementById('uicard');
-// M2 deployed 2026-07-11: live on Vercel. Swap to the joke domain when bought
-// (foundermode.lol still unregistered). HARDCODED on purpose — location.href
-// inside LinkedIn webviews can be a tracking redirector (ruling §2 amendments).
-const GAME_URL = 'https://foundermode.vercel.app';
+// Domain era (2026-07-14): sfspeedrun.com — owner purchase in flight; DO NOT
+// deploy this until the domain is attached in Vercel (docs/DEPLOY-CHECKLIST.md).
+// HARDCODED on purpose — location.href inside LinkedIn webviews can be a
+// tracking redirector (ruling §2 amendments).
+const GAME_URL = 'https://sfspeedrun.com';
 
 // ---- EASTER EGG FLAIR (badge + share text) ----
 // ZERO CHURN: every enemy handled at win time. T2D3: win under 3:00 on the
