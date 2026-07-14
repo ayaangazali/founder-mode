@@ -587,3 +587,15 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
 - Difficulty note (speedrun contract): the platform-boss arena gains a real
   hazard. Bot benchmarks post-change on seed #195: clean 5/6 budget,
   casual 10/12 — both inside budget, no lever pull needed.
+
+## 2026-07-14 — [BILLBOARD ROSTER v3] (owner call, branch board-and-domain)
+
+- CLEAN and DEEL removed; NOZOMIO added (nozomio.com, YC — "context for your
+  coding agent", pink-on-ink #ff7ac2/#0f0f17). 16 boards total. NOZOMIO took
+  CLEAN's vacated 5760/y56 slot: the CV agents row's 500px rhythm leaves no
+  legal ≥400px same-height gap, so it sits one row over (gaps 610/300,
+  nearest same-height 600px, outside all arenas) — nudge noted per procedure.
+- CLEAN was the only partner:true board — the SPOTTED popup is now DORMANT.
+  Code path kept; it reactivates the day the first written yes lands.
+- qa/billboards-probe.js v3: ALLOWED_REAL mirrors the new roster, count 16,
+  SPOTTED section now asserts dormancy (nothing fires, $0 granted).
