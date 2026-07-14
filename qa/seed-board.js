@@ -20,37 +20,41 @@ const SEED_N = Math.round((Date.UTC(_t.getFullYear(), _t.getMonth(), _t.getDate(
 const mm = s => s * 1000; // seconds → ms
 // [name, won, val ($K), raised ($K), time seconds]
 const CLASS_OF_TODAY = [
-  // the winners' circle — mostly modest multiples; two pedigree flexes on top
-  ['NEPOBABYCEO',  true, 580000, 2100, 372],
-  ['EXSYNERGYPM',  true, 310000, 1550, 527],
-  ['DROPOUTDEV',   true,  42000, 2050, 303],
-  ['RAMENPROFIT',  true,  18500, 1800, 441],
-  ['SHIPITSALLY',  true,   9800, 1720, 295],
-  ['GRINDSETGREG', true,   7400, 1400, 578],
-  ['DEMODAYDAN',   true,   5200, 1250, 662],
-  ['LATEPIVOT',    true,   3900,  980, 760],
-  // everyone else ran out of runway, which is canon
-  ['STEALTHMODE',  false, 15500, 310, 214], ['GPTWRAPPER',   false, 4300, 480, 355],
-  ['PREREVENUE',   false,   380,  45,  68], ['BURNRATEBRAD', false, 2900, 520, 401],
-  ['DECKDADDY',    false,  5100, 610, 379], ['CACQUEEN',     false, 1900, 290, 246],
-  ['CHURNVICTIM',  false,   700, 130, 144], ['B2BBECKY',     false, 2400, 350, 312],
-  ['MVPMARCO',     false,   990, 220, 201], ['SEEDSTRAPPED', false,  410,  75,  96],
-  ['ANGELBAIT',    false,  3700, 430, 358], ['PIVOTPETE',    false, 1650, 380, 296],
-  ['DOWNROUNDDAN', false,  2200, 510, 388], ['ARRGONAUT',    false, 4900, 470, 344],
-  ['LTVLARRY',     false,  1300, 260, 233], ['SOMASLUGGER',  false, 3300, 590, 456],
-  ['FOMOFOUNDER',  false,  1500, 340, 289], ['HYPECYCLE',    false, 2800, 410, 315],
-  ['RUNWAYZERO',   false,   120,  28,  51], ['TERMSHEETTIM', false, 4100, 550, 427],
-  ['EXITDREAMER',  false,   850, 190, 176], ['UNICORNLARP',  false, 6800, 620, 471],
-  ['HOODIEHARRY',  false,  1100, 240, 218], ['QUIETQUITTER', false,  350,  88, 109],
-  ['SPRINTZOMBIE', false,  1450, 330, 301], ['OKRSANDY',     false, 1200, 270, 251],
-  ['VESTINGCLIFF', false,  2600, 460, 366], ['MOATLESS',     false,  620, 150, 158],
-  ['FREEMIUMFRED', false,  1700, 390, 322], ['INTERNARMY',   false, 3900, 510, 409],
-  ['STANFURDGRAD', false,  6200, 430, 341], ['COLDDMKING',   false, 1550, 360, 305],
-  ['SERIESAAAH',   false,  2500, 490, 377], ['BOOTSTRAPBOB', false,  900, 210, 189],
-  ['WEBSCALE',     false,  1350, 300, 266], ['LEANCANVAS',   false, 1050, 250, 227],
-  ['TAMTOMMY',     false,  1400, 320, 284], ['GHOSTEDBYVC',  false, 1900, 410, 336],
-  ['PMFPILGRIM',   false,  1600, 370, 311], ['RUGPULLED',    false,  430,  95, 121],
-  ['BETABLASTER',  false,  1250, 280, 243], ['ZIRPNOSTALGIA',false, 2300, 440, 352],
+  // v2 roster (owner call): reads like a real player base — common American /
+  // Mexican / Asian first names, a few one-word originals, and the best of the
+  // troll handles kept. Still zero real identifiable people (canon rule 3).
+  // the winners' circle
+  ['NEPOBABYCEO', true, 580000, 2100, 372],
+  ['WEI CHEN',    true, 310000, 1550, 527],
+  ['JAKE',        true,  42000, 2050, 303],
+  ['PRIYA',       true,  18500, 1800, 441],
+  ['SOFIA G',     true,   9800, 1720, 295],
+  ['RAMENPROFIT', true,   7400, 1400, 578],
+  ['MINJI KIM',   true,   5200, 1250, 662],
+  ['CARLOS M',    true,   3900,  980, 760],
+  // out of runway — the realistic crowd
+  ['TYLER',      false, 2900, 520, 401], ['EMILY R',    false, 1900, 290, 246],
+  ['BRANDON',    false,  700, 130, 144], ['SARAH K',    false, 2400, 350, 312],
+  ['MIKE D',     false,  990, 220, 201], ['ASHLEY',     false,  410,  75,  96],
+  ['CHRIS P',    false, 3700, 430, 358], ['MATT H',     false, 1650, 380, 296],
+  ['KYLE',       false, 2200, 510, 388], ['HANNAH B',   false, 4900, 470, 344],
+  ['JOSH T',     false, 1300, 260, 233], ['MEGAN',      false, 3300, 590, 456],
+  ['ALEJANDRO',  false, 1500, 340, 289], ['DIEGO',      false, 2800, 410, 315],
+  ['VALENTINA',  false,  120,  28,  51], ['LUPITA',     false, 4100, 550, 427],
+  ['XIMENA',     false,  850, 190, 176], ['JORGE R',    false, 1100, 240, 218],
+  ['KENJI',      false,  350,  88, 109], ['RAJ P',      false, 1450, 330, 301],
+  ['HIROSHI',    false, 1200, 270, 251], ['ANH NGUYEN', false, 2600, 460, 366],
+  ['MEI LIN',    false,  620, 150, 158], ['ARJUN S',    false, 1700, 390, 322],
+  ['YUKI T',     false, 3900, 510, 409], ['JIN W',      false, 6200, 430, 341],
+  ['SANA',       false, 1550, 360, 305], ['VIKRAM',     false, 2500, 490, 377],
+  ['ZOZO',       false,  900, 210, 189], ['KAIROS',     false, 1350, 300, 266],
+  ['BLU J',      false, 1050, 250, 227], ['NIMBUS',     false, 1400, 320, 284],
+  ['JUNIPER',    false, 1600, 370, 311], ['MOSS',       false, 1250, 280, 243],
+  // the troll bench, by popular demand
+  ['GPTWRAPPER',   false,  4300, 480, 355], ['STEALTHMODE',  false, 15500, 310, 214],
+  ['RUGPULLED',    false,   430,  95, 121], ['DECKDADDY',    false,  5100, 610, 379],
+  ['PREREVENUE',   false,   380,  45,  68], ['GHOSTEDBYVC',  false,  1900, 410, 336],
+  ['ZIRPNOSTALGIA',false,  2300, 440, 352], ['UNICORNLARP',  false,  6800, 620, 471],
 ];
 
 (async () => {

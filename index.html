@@ -594,8 +594,17 @@ function track(name, props){ // funnel: ROADMAP §10 (no-op offline) — mirrore
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
 function lbRowsHtml(rows){
   const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  // aligned columns (owner: 50 rows of prose was unreadable): rank · name ·
+  // valuation right-aligned · outcome · time. medals for the podium, zebra rows.
+  const rank = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
   return rows.map((r, i) =>
-    `${i + 1}. ${esc(r.name)} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
+    `<div style="display:flex; gap:8px; align-items:baseline; padding:1px 8px;${i % 2 ? ' background:rgba(255,255,255,.05);' : ''}">` +
+      `<span style="flex:none; width:2em; text-align:right; color:#8d99ae">${rank(i)}</span>` +
+      `<span style="flex:1; min-width:0; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;${i < 3 ? ' color:#ffd94a' : ''}">${esc(r.name)}</span>` +
+      `<span style="flex:none; width:5.4em; text-align:right; color:#7cffa5">${fmtMoney(r.val)}</span>` +
+      `<span style="flex:none">${r.won ? '🦄' : '💀'}</span>` +
+      `<span style="flex:none; width:3.4em; text-align:right; color:#7ce0ff">${fmtTime(r.time_ms)}</span>` +
+    `</div>`).join('');
 }
 // load a board; if today is empty (fresh daily seed), fall back to yesterday's
 function lbLoad(limit, cb){

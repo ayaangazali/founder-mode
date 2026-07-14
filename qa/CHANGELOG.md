@@ -563,3 +563,15 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   recap email + the chasing ACTION ITEMS stack killed the win moment).
   The notetaker drone in Chad's arena stays: draw-only, does nothing,
   that's the product. CLIP-REPORT item 5 annotated.
+
+## 2026-07-14 — [BOARD ROSTER v2 + ROW FORMATTING] (owner calls)
+
+- Seed roster v2: reads like a real player base — common American/Mexican/
+  Asian first names (JAKE, SOFIA G, WEI CHEN, PRIYA…), a few one-word
+  originals (ZOZO, KAIROS, NIMBUS), best 10 troll handles kept
+  (NEPOBABYCEO still #1). The 40 retired v1 joke rows were deleted from
+  seed 195 by exact name (fabricated rows only — the never-delete-player-
+  data rule covers humans, and none were touched).
+- lbRowsHtml: prose lines → aligned flex columns (rank · name · valuation
+  right-aligned · 🦄/💀 · time), podium medals + gold names for top 3,
+  zebra striping, long names ellipsized. Same esc() — XSS probe still gates.
