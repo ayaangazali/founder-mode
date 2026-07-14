@@ -1,4 +1,9 @@
 # BILLBOARDS — FINAL LOCKED LINEUP (owner's pick)
+
+> **SUPERSEDED (2026-07-14):** this was the owner's pick list at spec time.
+> The shipped roster has since changed twice (v2 cut, v3 CLEAN/DEEL→NOZOMIO
+> swap) — **PARTNERS.md is the single source of truth** for what's live and
+> its consent status. Read this file as design history only.
 ### 19 boards, paste-ready code, placed by zone. Ship it.
 
 This is the locked list. Because a bunch of these are your personal network (Manufact, Insforge, and likely Hypersell/Callix), the play is different from the parody strategy: **for anyone you can text, skip the parody and ship the REAL board day one** — just get a verbal "yeah do it." Parody is only the fallback for names you can't reach yet.

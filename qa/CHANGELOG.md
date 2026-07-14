@@ -599,3 +599,14 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   Code path kept; it reactivates the day the first written yes lands.
 - qa/billboards-probe.js v3: ALLOWED_REAL mirrors the new roster, count 16,
   SPOTTED section now asserts dormancy (nothing fires, $0 granted).
+
+## 2026-07-14 — [DOC RECONCILIATION] (audit discrepancy fixes, docs only)
+
+- PARTNERS.md table rewritten to exactly the shipped 16-board roster (was
+  self-contradicting 16-vs-17 and still listed CLEAN as seed partner):
+  CLEAN + DEEL moved to a "Removed v3" section, NOZOMIO row added, no seed
+  partner exists — outreach all-open, SPOTTED dormant until a written yes.
+- docs/BILLBOARDS-FINAL.md: superseded banner → PARTNERS.md is the single
+  source of truth; FINAL.md is design history.
+- Drift fixes: interview is 15s TOTAL (WHATS-BUILT + README said 10s each);
+  chat pay ($150K) and remote interns were already stated correctly.

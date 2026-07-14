@@ -29,7 +29,7 @@ A Mario-style pixel platformer satirizing SF startup culture, built to be shared
 
 **Five zones:** SOMA → The Mission → Sand Hill Road → Cerebral Valley → The Cloud. **Three bosses:** the Platform Shift, the VC (throws term sheets — sign one mid-air and see what happens), and the AI that was supposed to be your moat. Checkpoints between them.
 
-**Along the way:** coffee-chat trivia tables, the ACCELERATOR interview (7 questions, 10 seconds each, a batch stamp for your badge if you 7/7 it), an intern fair with dwell-to-hire booths, 16 real-startup billboards on the 101, six parody tech celebrities muttering about whether code is dead, three easter eggs, a corgi, and — if you go broke with a mom cofounder or good luck — **the mom round** ($2K and two hearts, she believes in you).
+**Along the way:** coffee-chat trivia tables, the ACCELERATOR interview (7 questions, 15 seconds total, a batch stamp for your badge if you 7/7 it), an intern fair with dwell-to-hire booths, 16 real-startup billboards on the 101, six parody tech celebrities muttering about whether code is dead, three easter eggs, a corgi, and — if you go broke with a mom cofounder or good luck — **the mom round** ($2K and two hearts, she believes in you).
 
 **The end:** reach the bell, MASH R, confetti over the Golden Gate. Or die and get your startup's obituary as the front page of *HYPERGROWTH DAILY*, with your name in the headline, ready to save and post.
 

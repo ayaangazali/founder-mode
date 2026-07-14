@@ -7,32 +7,38 @@
 ### consent from "appear in the world" (docs/BILLBOARDS.md §5).
 
 
-> **2026-07-13 status note:** the live board list is the `BILLBOARDS` array in
-> index.html (16 boards after the GOJIBERRY/REPLIT/SUPABASE cut) — this table
-> predates the cut, so rows here may not be in the game. The consent rule and
-> the share-surface gate are unchanged and still binding. No written yes has
-> been collected for ANY board yet (CLEAN included) — that outreach is the
-> owner's open TODO.
+> **2026-07-14 reconciliation:** this table now matches the shipped
+> `BILLBOARDS` array exactly — **16 boards**, roster v3 (CLEAN and DEEL removed,
+> NOZOMIO added, all by owner call). There is **no seed partner**: no written
+> yes has been collected for ANY board, so no board carries `partner:true` and
+> the SPOTTED popup is dormant until the first yes lands here with evidence.
+> The consent rule and the share-surface gate are unchanged and binding.
 
 | Board | Company | Relationship | Real or parody now | Status | Yes evidence |
 |---|---|---|---|---|---|
-| CLEAN | tryclean.ai | you know them | REAL (partner) | ✅ seed partner | owner-confirmed (record link/screenshot here) |
-| MANUFACT | mcp-use, YC S25 | your network (Warp tab) | REAL | ping for verbal yes | — |
-| INSFORGE | insforge.dev, YC P26 | your network (Warp tab) | REAL | ping for verbal yes | — |
-| HYPERSPELL | YC F25 (agent memory) | reachable | REAL | DM founder | — |
-| CALLIX | callix.io (GTM agents) | your network? | REAL | ping for verbal yes | — |
-| AGENTMAIL | YC | reachable | REAL | DM founder | — |
-| FIRECRAWL | firecrawl.dev | meme-fluent | REAL | DM @firecrawl_dev | — |
-| BROWSER USE | YC W25 | reachable | REAL | DM | — |
-| SUPERMEMORY | supermemory.ai | 19yo founder, reachable | REAL | DM Dhravya | — |
-| KINECT | YC | reachable | REAL | DM | — |
-| EXA | exa.ai | reachable | REAL | DM | — |
-| RESEND | resend.com | dev-darling | REAL | DM | — |
 | SUPERSET | YC P26 (agent IDE) | reachable | REAL | DM founder | — |
-| IMAGINE AI | imagineai.me, YC F25 | DM Sky Yang — on-theme | REAL | easy yes per owner | — |
 | VERCEL | vercel.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
 | WARP | warp.dev | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
-| DEEL | deel.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
+| RESEND | resend.com | dev-darling | REAL | DM | — |
+| EXA | exa.ai | reachable | REAL | DM | — |
+| FIRECRAWL | firecrawl.dev | meme-fluent | REAL | DM @firecrawl_dev | — |
+| BROWSER USE | YC W25 | reachable | REAL | DM | — |
+| MANUFACT | mcp-use, YC S25 | your network (Warp tab) | REAL | ping for verbal yes | — |
+| NOZOMIO | nozomio.com, YC (context for coding agents) | owner add 2026-07-14 | REAL | DM founder | — |
+| INSFORGE | insforge.dev, YC P26 | your network (Warp tab) | REAL | ping for verbal yes | — |
+| CALLIX | callix.io (GTM agents) | your network? | REAL | ping for verbal yes | — |
+| SUPERMEMORY | supermemory.ai | 19yo founder, reachable | REAL | DM Dhravya | — |
+| HYPERSPELL | YC F25 (agent memory) | reachable | REAL | DM founder | — |
+| AGENTMAIL | YC | reachable | REAL | DM founder | — |
+| KINECT | YC | reachable | REAL | DM | — |
+| IMAGINE AI | imagineai.me, YC F25 | DM Sky Yang — on-theme | REAL | easy yes per owner | — |
+
+## Removed in the v3 owner pass (2026-07-14)
+CLEAN (tryclean.ai) and DEEL — owner roster call. CLEAN had been the
+provisional "seed partner" but no written yes was ever recorded, so nothing
+was lost consent-wise; DEEL was an aspirational big-brand slot. Either can
+return on a written yes. NOZOMIO took CLEAN's 5760/y56 slot (the CV agents
+row's 500px rhythm has no legal ≥400px same-height gap — nudge noted).
 
 ## Removed in the v2 owner pass (2026-07-12)
 GOJIBERRY, REPLIT, SUPABASE — owner call ("remove some, make it less cramped").

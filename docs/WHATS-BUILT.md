@@ -81,8 +81,8 @@ All chosen on the title screen, all persistent, all visible on your badge:
 - **Coffee chats** (3 tables): timed two-option trivia in startup-speak; 3/3
   pays the full $150K check. Answer sides are randomized per question via a
   bit-mix of the run's roll — mashing one arrow doesn't work.
-- **THE ACCELERATOR interview** (the door at x900): 7 questions, 10 seconds
-  each, deadpan-absurd answer bank. 7/7 stamps **BATCH F26** on your badge and
+- **THE ACCELERATOR interview** (the door at x900): 7 questions, 15 seconds
+  TOTAL for all seven, deadpan-absurd answer bank. 7/7 stamps **BATCH F26** on your badge and
   obituary forever. Same anti-mash randomization.
 - **The intern fair:** booths you hire from by standing still (dwell-to-hire —
   sprinting past never triggers it). GRINDER, 10X (tanks exactly one hit for
