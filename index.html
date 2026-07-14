@@ -1771,6 +1771,12 @@ function update(){
     if (!c.landed){
       c.vy += GRAV; if (c.vy > 8) c.vy = 8;
       c.y += c.vy;
+      // a falling breaking change hurts (owner bug report: crates were harmless
+      // in the air). Once per crate; landed crates are furniture, not hazards.
+      if (!c.hit && aabb(p, { x: c.x, y: c.y, w: 16, h: 12 })){
+        c.hit = true;
+        hurtPlayer('sdk crate');
+      }
       if (c.y + 12 >= GROUND_Y){ c.y = GROUND_Y - 12; c.landed = true; }
     } else if (--c.t <= 0){
       c.gone = true;
@@ -3557,6 +3563,7 @@ const OBIT_HEADLINES = {
   'phantom':        { h: 'COMPLIANCE PHANTOM CLAIMS ANOTHER STARTUP',          s: 'the regulation existed since 2019, apparently' },
   'VC terms':       { h: 'FOUNDER BURIED UNDER TERM SHEET',                    s: "the liquidation preferences were 'non-standard'" },
   'platform boss':  { h: 'DEVREL MECHA DEPRECATES LOCAL FOUNDER',              s: 'he built on the platform. the platform built on him.' },
+  'sdk crate':      { h: 'FOUNDER CRUSHED BY BREAKING CHANGE',                 s: 'the SDK update shipped without a migration guide' },
   'buzzword':       { h: null /* uses deathWord */,                            s: 'witnesses say it was travelling in a sine wave' },
   'rug token':      { h: "FOUNDER'S PORTFOLIO 'DIVERSIFIED' INTO ZERO",        s: 'the token had a roadmap' },
 };

@@ -575,3 +575,15 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
 - lbRowsHtml: prose lines → aligned flex columns (rank · name · valuation
   right-aligned · 🦄/💀 · time), podium medals + gold names for top 3,
   zebra striping, long names ellipsized. Same esc() — XSS probe still gates.
+
+## 2026-07-14 — [SDK CRATES HURT] (owner bug report: "the SDK the first boss
+## drops doesn't do any damage")
+
+- Falling SDK crates now deal 1 RUNWAY on contact (once per crate, honest
+  16×12 visual-equals-hitbox). Landed crates stay pure platforms — the
+  mechanic is unchanged once the breaking change has shipped.
+- New obituary: FOUNDER CRUSHED BY BREAKING CHANGE / "the SDK update shipped
+  without a migration guide."
+- Difficulty note (speedrun contract): the platform-boss arena gains a real
+  hazard. Bot benchmarks post-change on seed #195: clean 5/6 budget,
+  casual 10/12 — both inside budget, no lever pull needed.
