@@ -13,9 +13,11 @@ on:
     branches: [main]         # regression gate on every prod change
   workflow_dispatch: {}      # manual "Run workflow" button
 
-# least privilege: the job only needs to read code and push the report to research
+# least privilege: read code, push the report to research, and file/close an
+# issue when a hard gate breaks
 permissions:
   contents: write
+  issues: write
 
 concurrency:                 # never let two sweeps race the research branch
   group: research-sweep
@@ -83,6 +85,28 @@ jobs:
 
           Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
           git push origin research
+
+      # 24/7 surfacing: a hard-gate failure opens (or re-opens) a tracking issue
+      # so a break is visible without anyone watching the Actions tab. Success
+      # closes any open one. Deterministic — no LLM.
+      - name: File / close the gate-failure issue
+        if: always() && github.event_name != 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED: ${{ steps.sweep.outputs.gate_exit != '0' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -e
+          TITLE="🔴 research-sweep: hard gate failing"
+          EXISTING="$(gh issue list --state open --label ci-gate --search "$TITLE" --json number --jq '.[0].number' 2>/dev/null || true)"
+          if [ "$FAILED" = "true" ]; then
+            gh label create ci-gate --color b60205 --description "research-sweep hard-gate failures" 2>/dev/null || true
+            BODY="$(printf 'A hard gate failed on the scheduled research sweep.\n\nRun: %s\n\n' "$RUN_URL"; cat "$RUNNER_TEMP/ci-report.md")"
+            if [ -n "$EXISTING" ]; then gh issue comment "$EXISTING" --body "$BODY"
+            else gh issue create --title "$TITLE" --label ci-gate --body "$BODY"; fi
+          elif [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" --comment "Gate green again on $RUN_URL — closing."
+          fi
 
       - name: Fail the run if a hard gate failed
         if: always() && steps.sweep.outputs.gate_exit != '0'

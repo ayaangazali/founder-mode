@@ -1,0 +1,57 @@
+# Autonomous LLM research — the 24/7 version of the reasoning-based analysis
+# I run in-session. Every 4 hours GitHub runs Claude against the repo with the
+# rotating-lens prompt; it appends findings to qa/RESEARCH-LOG.md on the
+# `research` branch and opens a GitHub issue for anything P0/P1. No laptop, no
+# open chat session required.
+#
+# DORMANT until enabled (see .github/workflows/claude.yml header for the exact
+# steps): needs the ANTHROPIC_API_KEY secret + the ENABLE_CLAUDE_CI=true repo
+# variable. Until then it never runs, so there are no failing scheduled jobs.
+name: claude-research
+
+on:
+  schedule:
+    - cron: '41 */4 * * *'   # every 4h at :41 — offset from research-sweep's :17
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: claude-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    if: ${{ vars.ENABLE_CLAUDE_CI == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research          # work on the research branch, never main
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 25"
+          prompt: |
+            You are the continuous-analysis job for FOUNDER MODE (a single-file
+            HTML game; see CLAUDE.md). You are checked out on the `research`
+            branch and must NEVER modify main or deploy — analysis + logging only.
+
+            1. Read the tail of qa/RESEARCH-LOG.md for the last run number and
+               which lens comes next in the rotation (server/API → client
+               XSS/DOM → economy/exploit math → sim core → input/UX edge cases →
+               secrets+deps, then cycle).
+            2. Compare main to the last-analyzed commit; diff-audit new commits.
+            3. Deep-dive the next lens. VERIFY every finding against real code
+               (file:line + concrete failure scenario) before logging — no
+               speculation. Severity P0/P1/P2.
+            4. Append a new run entry to qa/RESEARCH-LOG.md and commit it to the
+               research branch (message ending with a Co-Authored-By trailer).
+            5. For any P0 or P1, open a GitHub issue titled
+               "[research] <severity>: <one-line>" with the file:line and repro.
+            Keep it tight and evidence-based. One lens per run.

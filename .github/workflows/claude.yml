@@ -1,0 +1,41 @@
+# Interactive Claude in CI: mention @claude in any issue or PR comment and it
+# runs against the repo (answer a question, propose a fix as a PR, triage an
+# issue). This is the "auto PRs / auto issues" half — the LLM layer.
+#
+# DORMANT until you turn it on (no failing runs in the meantime):
+#   1. Settings → Secrets and variables → Actions → New secret:
+#        ANTHROPIC_API_KEY = a FRESH key from console.anthropic.com
+#        (make a NEW one — do not reuse the key that leaked into chat history)
+#   2. Settings → Secrets and variables → Actions → Variables → New variable:
+#        ENABLE_CLAUDE_CI = true
+#   3. Install the Claude GitHub App: https://github.com/apps/claude
+#   4. Settings → Actions → General → Workflow permissions →
+#        enable "Allow GitHub Actions to create and approve pull requests"
+name: claude
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude:
+    if: ${{ vars.ENABLE_CLAUDE_CI == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # default trigger phrase is @claude; override with trigger_phrase:
