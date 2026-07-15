@@ -1,0 +1,91 @@
+# Continuous research sweep — the durable, deterministic half of the analysis
+# job. Runs the security sweeps + full asserting test battery on GitHub's
+# servers every 4 hours (and on every push to main, as a regression gate), then
+# commits a timestamped report to the `research` branch. NEVER touches main's
+# game code and NEVER deploys — CI config only. The reasoning-based deep-lens
+# analysis stays with the session cron; this is the part that survives without it.
+name: research-sweep
+
+on:
+  schedule:
+    - cron: '17 */4 * * *'   # every 4 hours at :17 (off the :00 fleet spike)
+  push:
+    branches: [main]         # regression gate on every prod change
+  workflow_dispatch: {}      # manual "Run workflow" button
+
+# least privilege: the job only needs to read code and push the report to research
+permissions:
+  contents: write
+
+concurrency:                 # never let two sweeps race the research branch
+  group: research-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # full history so the report can reference commits
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run sweep + test battery
+        id: sweep
+        run: |
+          set +e
+          bash qa/ci-sweep.sh "$RUNNER_TEMP/ci-report.md"
+          echo "gate_exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Job summary
+        if: always()
+        run: cat "$RUNNER_TEMP/ci-report.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-report
+          path: ${{ runner.temp }}/ci-report.md
+          retention-days: 14
+
+      # commit the report to the research branch on scheduled/manual runs only
+      # (push-triggered runs are the pass/fail gate — no need to log every push)
+      - name: Append report to research branch
+        if: always() && github.event_name != 'push'
+        run: |
+          set -e
+          git config user.name "founder-mode-ci"
+          git config user.email "noreply@anthropic.com"
+          git fetch origin research
+          git switch research
+          mkdir -p qa
+          {
+            [ -f qa/CI-SWEEP-LOG.md ] || printf '# CI SWEEP LOG\n\nDeterministic sweep + regression results from the research-sweep GitHub Action (every 4h + manual). Newest last. The reasoning-based findings live in RESEARCH-LOG.md.\n\n---\n\n'
+            cat "$RUNNER_TEMP/ci-report.md"
+            printf '\n---\n\n'
+          } >> qa/CI-SWEEP-LOG.md
+          git add qa/CI-SWEEP-LOG.md
+          git commit -m "ci: research sweep $(date -u '+%Y-%m-%d %H:%M UTC') (run ${{ github.run_number }})
+
+          Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+          git push origin research
+
+      - name: Fail the run if a hard gate failed
+        if: always() && steps.sweep.outputs.gate_exit != '0'
+        run: |
+          echo "::error::A hard gate failed — see the job summary / report artifact."
+          exit 1
