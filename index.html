@@ -97,6 +97,19 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'){
             font:bold 13px "Courier New",monospace; color:#ffd94a; display:none; cursor:pointer;
             background:rgba(8,8,20,.85); border:2px solid #ffd94a; padding:6px 10px; box-shadow:0 3px 0 #8a6d00; }
   #lbChip:active { transform:translateY(2px); box-shadow:0 1px 0 #8a6d00; }
+  #pauseChip { position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); right:16px; z-index:6;
+               font:bold 13px "Courier New",monospace; color:#7ce0ff; display:none; cursor:pointer;
+               background:rgba(8,8,20,.85); border:2px solid #7ce0ff; padding:6px 10px; box-shadow:0 3px 0 #1b5e75; }
+  #pauseChip:active { transform:translateY(2px); box-shadow:0 1px 0 #1b5e75; }
+  #pauseMenu { position:fixed; inset:0; z-index:31; display:none; align-items:center; justify-content:center;
+               background:rgba(8,8,20,.35); }
+  #pauseMenu .card { background:#141433; border:3px solid #7ce0ff; box-shadow:0 6px 0 #1b5e75; padding:18px 22px;
+                     font-family:"Courier New",monospace; font-weight:bold; text-align:center; }
+  #pauseMenu button { display:block; width:100%; margin-top:10px; font-family:"Courier New",monospace;
+                      font-weight:bold; font-size:14px; padding:8px 18px; cursor:pointer;
+                      background:#ffd94a; color:#1a1a2e; border:2px solid #1a1a2e; box-shadow:0 3px 0 #8a6d00; }
+  #pauseMenu button.alt2 { background:#2a2338; color:#ff8c8c; border-color:#ff8c8c; box-shadow:0 3px 0 #5e1b1b; }
+  #pauseMenu button:active { transform:translateY(2px); box-shadow:none; }
   #lbPanel { position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center;
              background:rgba(8,8,20,.8); }
   #lbPanelCard { background:#141433; border:3px solid #ffd94a; box-shadow:0 6px 0 #8a6d00; padding:14px 18px;
@@ -114,6 +127,13 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'){
 <div id="wrap"><div id="stack"><canvas id="game" width="480" height="270"></canvas><canvas id="txt"></canvas></div></div>
 <div id="ui"><div class="card" id="uicard"></div></div>
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">⏸</div></div>
+<button id="pauseChip">⏸ PAUSE</button>
+<div id="pauseMenu"><div class="card">
+  <div style="color:#ffd94a; font-size:16px">PAUSED</div>
+  <div style="color:#8d99ae; font-size:11px; margin-top:4px">(the market, briefly, moves without you)</div>
+  <button id="pmResume">▶ BACK TO WORK</button>
+  <button id="pmQuit" class="alt2">🏳 SHUT IT DOWN (title screen)</button>
+</div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
 <div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener noreferrer">ayaan gazali</a></div>
 <div id="lbChip">🏆 LEADERBOARD</div>
@@ -999,17 +1019,17 @@ function reset(fromCheckpoint){
     bosses = [
       // world order: THE PLATFORM (Cerebral Valley mid-boss) → CHAD → SYNERGY.AI
       { id:'platform', x:5560, y:GROUND_Y-48, w:40, h:48, hp:4, maxhp:4, trigger:5390, wall:5640, active:false, dead:false,
-        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'THE PLATFORM',
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'THE PLATFORM (PRE-SEED)',
         quips:['BUILD ON US','WE LOVE STARTUPS','FREE CREDITS*','THE API CHANGED THIS MORNING','YOUR CATEGORY IS OUR KEYNOTE'] },
       { id:'vc', x:6850, y:GROUND_Y-34, w:26, h:34, hp:3, maxhp:3, trigger:6420, wall:7030, active:false, dead:false,
-        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'CHAD CAPITAL',
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'CHAD CAPITAL (SEED)',
         quips:["WHAT'S YOUR MOAT?","COME BACK AT $1M ARR","A FEATURE, NOT A COMPANY.","LOVE IT. PASSING.","MY VEST IS LOAD-BEARING","I NEED 10X, KID",
                // v0.2 additions (MASTER-PLAN §1.4) + the fund-district tie-in (BIBLE §8)
                "SEND ME A DECK","WHO ELSE IS IN?","MY LPs ARE NERVOUS","IS THERE AI IN THIS?","I'M ALSO IN A17Z'S NEW FUND",
                // HUMOR PATCH item 10: the ball-knowledge layer
                "WHAT'S YOUR CAC TO LTV?","IS THIS VENTURE SCALE?","I ONLY DO PRE-SEED NOW","MY ANALYST LOVED IT. I DIDN'T ASK MY ANALYST."] },
       { id:'ai', x:8780, y:GROUND_Y-44, w:32, h:44, hp:5, maxhp:5, trigger:8460, wall:9040, active:false, dead:false,
-        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'SYNERGY.AI',
+        dir:-1, vy:0, atkT:0, quipT:0, quip:0, name:'SYNERGY.AI (SERIES A)',
         quips:["I AM AGENTIC.","YOUR STARTUP IS A PROMPT","DEPLOYING SYNERGY...","I RAISED $2B ON A DECK","HUMANS ARE LEGACY CODE",
                // v0.2 additions (MASTER-PLAN §1.4)
                "I AM AI-NATIVE. YOU ARE AI-NAIVE.","YOUR MOAT IS MY FEATURE","GENERATING SLOP...","I PIVOTED 14 TIMES TODAY","THIS CONVERSATION IS TRAINING DATA",
@@ -1453,6 +1473,9 @@ function update(){
     if (b.dead) continue;
     if (!b.active && p.x > b.trigger){
       b.active = true; sBoss(); b.quipT = 1;
+      addPop(b.x - 56, b.y - 34, b.id === 'platform' ? 'PRE-SEED ROUND: THE PLATFORM'
+                               : b.id === 'vc'       ? 'SEED ROUND: CHAD CAPITAL'
+                               :                       'SERIES A: SYNERGY.AI', '#ffd94a', 220);
       if (b.id === 'platform') track('first_boss');
       if (b.id === 'vc' && !b.pedApplied){ // Chad funds the pedigree, not the company
         b.pedApplied = true;
@@ -1541,9 +1564,10 @@ function update(){
             b.dead = true;
             shots.length = 0; // no posthumous term sheets
             const bonus = b.id==='ai' ? 500 : b.id==='platform' ? 350 : 250;
-            const line = b.id==='ai' ? 'SYNERGY.AI ACQUIRED (BY YOU)' : b.id==='platform' ? 'DEPRECATED!' : 'VC HUMBLED';
+            const line = b.id==='ai' ? 'SERIES A CLOSED — SYNERGY.AI ACQUIRED (BY YOU)' : b.id==='platform' ? 'PRE-SEED SECURED — DEPRECATED!' : 'SEED CLOSED — VC HUMBLED';
             raised += bonus; sWin();
             addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
+            if (b.id === 'ai') addPop(b.x-40, b.y-34, 'technically, you can IPO now.', '#8d99ae', 220);
             addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
           }
         }
@@ -1583,9 +1607,10 @@ function update(){
             if (b.hp <= 0){
               b.dead = true; shots.length = 0;
               const bonus = b.id==='ai' ? 500 : b.id==='platform' ? 350 : 250;
-              const line = b.id==='ai' ? 'SYNERGY.AI ACQUIRED (BY YOU)' : b.id==='platform' ? 'DEPRECATED!' : 'VC HUMBLED';
+              const line = b.id==='ai' ? 'SERIES A CLOSED — SYNERGY.AI ACQUIRED (BY YOU)' : b.id==='platform' ? 'PRE-SEED SECURED — DEPRECATED!' : 'SEED CLOSED — VC HUMBLED';
               raised += bonus; sWin();
               addPop(b.x-40, b.y-20, line+' +$'+bonus+'K', '#7cffa5');
+              if (b.id === 'ai') addPop(b.x-40, b.y-34, 'technically, you can IPO now.', '#8d99ae', 220);
               addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
             }
           }
@@ -3473,6 +3498,16 @@ function resumePlay(fromCheckpoint){
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
   reset(fromCheckpoint); state = ST.PLAY;
 }
+// surrender / back-to-title from the pause menu or an end card (owner ask):
+// a full fresh run is staged so the next SPACE press starts clean
+function goHome(){
+  ui.style.display = 'none';
+  paused = false; clearAllInput();
+  reset(false); state = ST.TITLE;
+}
+document.getElementById('pauseChip').onclick = () => { if (state === ST.PLAY) paused = true; initAudio(); };
+document.getElementById('pmResume').onclick = () => { paused = false; };
+document.getElementById('pmQuit').onclick = () => goHome();
 
 function makeBadge(won){
   const bc = document.createElement('canvas');
@@ -3777,7 +3812,7 @@ function showEndUI(won){
 
   const bShare = canShareFiles ? '<button id="bSh" class="alt">📤 SHARE</button>' : '';
   const bSave  = `<button id="bDl">${surfaces[cur].save}</button>`;
-  const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button>`;
+  const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button><button id="bHome">🏠 TITLE SCREEN</button>`;
   const bTog   = `<button id="bTg" style="font-size:12px; padding:6px 10px">${won ? 'view front page' : 'view classic badge'}</button>`;
   // losers are the comedy's best distributors: PIVOT first, share buttons
   // immediately second (FINAL-REVIEW §2 amendment — outranks the spec's order)
@@ -3919,6 +3954,7 @@ function showEndUI(won){
     } else legacy(); // insecure contexts / webviews: navigator.clipboard is undefined
   };
   document.getElementById('bRe').onclick = () => resumePlay(!won);
+  document.getElementById('bHome').onclick = () => goHome();
 }
 
 // ------------------------- MAIN LOOP -------------------------
@@ -3946,11 +3982,19 @@ function drawPause(){
   cx.fillStyle = '#8d99ae'; cx.font = 'bold 8px monospace';
   cx.fillText('(the market, briefly, moves without you)', W/2, 134);
   cx.fillStyle = '#fff';
-  cx.fillText(('ontouchstart' in window) ? 'tap ⏸ to resume' : 'ESC to resume', W/2, 150);
+  cx.fillText(('ontouchstart' in window) ? 'tap ⏸ to resume' : 'ESC resumes · buttons above', W/2, 150);
   cx.textAlign = 'left';
+}
+let _pmShown = null, _pcShown = null; // cached DOM visibility (no per-frame style churn)
+function pauseUiSync(){
+  const menu = paused && state === ST.PLAY, chip = !paused && state === ST.PLAY;
+  if (menu !== _pmShown){ document.getElementById('pauseMenu').style.display = menu ? 'flex' : 'none'; _pmShown = menu; }
+  const chipShow = chip && !('ontouchstart' in window); // touch already has the ⏸ button
+  if (chipShow !== _pcShown){ document.getElementById('pauseChip').style.display = chipShow ? 'block' : 'none'; _pcShown = chipShow; }
 }
 function loop(now){
   acc += Math.min(now - (last || now), 100); last = now;
+  pauseUiSync();
   if (paused && state === ST.PLAY){ acc = 0; }
   else while (acc >= STEP){ stepGame(); acc -= STEP; }
   draw();

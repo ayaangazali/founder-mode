@@ -651,3 +651,21 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   an explicit owner order.
 - Screenshots: qa/overnight/board-nozomio.png (pink-on-ink render at 5760),
   qa/overnight/board-horse-tier.png ($1.2B 🦄 above $580M 🐴 above 💀).
+
+## 2026-07-14 — [PAUSE MENU + HOME + FUNDING-ROUND BOSSES] (owner calls)
+
+- Pause is now clickable: a ⏸ PAUSE chip (top-right, desktop, PLAY-only —
+  touch keeps its existing ⏸ button) in addition to Escape. Pausing opens a
+  proper menu: ▶ BACK TO WORK and 🏳 SHUT IT DOWN (title screen). Surrender
+  stages a fresh run; playMs stays frozen while paused (speedrun contract).
+- Both end cards (win + loss) gain 🏠 TITLE SCREEN next to retry.
+- Bosses are the funding rounds (owner framing): arena entry banners
+  PRE-SEED ROUND: THE PLATFORM / SEED ROUND: CHAD CAPITAL / SERIES A:
+  SYNERGY.AI; kills close the round (PRE-SEED SECURED — DEPRECATED!,
+  SEED CLOSED — VC HUMBLED, SERIES A CLOSED — ACQUIRED (BY YOU)) and the
+  Series A kill adds the beat: "technically, you can IPO now." — the bell
+  was already the IPO. Names carry the stage; mechanics untouched.
+- Burn rate kept AS IS after owner query — it's ROADMAP §3 canon (standing
+  still burns runway; smoke warns at 3s, tick at 6s, corgi/robotaxi exempt,
+  the burnout obituary + WITNESSED HISTORY egg depend on it). AFK is now
+  safe anyway: pause freezes the world and there's a button for it.
