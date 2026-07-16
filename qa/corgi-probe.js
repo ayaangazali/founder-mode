@@ -17,7 +17,9 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
 
   // (1) static immortality: no health, no death flag, no collision references
   const staticCheck = await p.evaluate(() => {
-    const src = document.querySelector('script').textContent;
+    // the GAME script, not the first <script> (that's the analytics loader — a scan
+    // of it passes vacuously forever, which is how this gate lied green)
+    const src = [...document.querySelectorAll('script')].map(s => s.textContent).find(t => t.includes('RISKY_CAMEOS')) || '';
     return {
       noHp: !('hp' in corgi) && !('hearts' in corgi) && !('dead' in corgi),
       // the real invariant: the corgi is never an aabb participant and never a

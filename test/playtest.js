@@ -38,6 +38,9 @@ const must = (cond, msg) => { if (!cond){ console.log('PLAYTEST FAIL:', msg); fa
   const s2b = await page.evaluate(() => ({ platformActive: bosses[0].active, platformHp: bosses[0].hp, crates: crates.length }));
   console.log('platform boss:', JSON.stringify(s2b));
   must(s2b.platformActive, 'THE PLATFORM never activated');
+  await page.waitForTimeout(1600); // one more attack cycle — the SDK crates must actually drop (they hurt since 07-14; unprobed until now)
+  const s2crates = await page.evaluate(() => crates.length);
+  must(s2crates > 0, 'THE PLATFORM dropped no SDK crates');
 
   // cheat-kill the platform, teleport to VC boss arena
   await page.evaluate(() => { bosses[0].hp = 0; bosses[0].dead = true; player.x = 6450; player.y = 100; cam = 6350; hearts = 3; });

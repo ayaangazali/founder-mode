@@ -58,6 +58,14 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     check('667x375: holding ▶ moves the player right', x1 - x0 > 40, `+${Math.round(x1 - x0)}px`);
     await page.screenshot({ path: path.join(SHOTDIR, 'mobile-667x375-play.png') });
 
+    // pause: ⏸ opens the menu; a tap on the backdrop resumes (the chip sits
+    // under the backdrop and could never be re-tapped — owner-visible fix)
+    const pRect = await page.evaluate(() => { const r = document.getElementById('tP').getBoundingClientRect(); return { x: r.x + r.width/2, y: r.y + r.height/2 }; });
+    await tapXY(page, pRect.x, pRect.y); await page.waitForTimeout(250);
+    check('667x375: ⏸ opens the pause menu', await page.evaluate(() => paused && getComputedStyle(document.getElementById('pauseMenu')).display === 'flex'));
+    await tapXY(page, 60, 60); await page.waitForTimeout(250); // backdrop, off the card
+    check('667x375: backdrop tap resumes', await page.evaluate(() => paused === false));
+
     // end screen: force a death, then hit-test the buttons after image decode
     await page.evaluate(() => { hearts = 1; player.hurtT = 0; enemies.push(makeEnemy({x: player.x + 12, t: 'g'})); });
     await page.waitForTimeout(1400);
@@ -80,6 +88,23 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     const touchAfter = await page.evaluate(() => document.getElementById('touch').style.display);
     check('667x375: d-pad hidden behind end screen', touchAfter === 'none');
     await page.screenshot({ path: path.join(SHOTDIR, 'mobile-667x375-endscreen.png') });
+
+    // 🏠 TITLE SCREEN must hand the d-pad back — the launch-blocking soft-lock
+    // this probe now guards: goHome left #touch hidden; the next run had no
+    // controls and burn rate ended it unattended
+    await page.evaluate(() => document.getElementById('bHome').click());
+    await page.waitForTimeout(300);
+    check('667x375: 🏠 returns to the title', await page.evaluate(() => state) === 0);
+    const touchBack = await page.evaluate(() => document.getElementById('touch').style.display);
+    check('667x375: d-pad restored on the title (soft-lock guard)', touchBack === 'block', 'display=' + touchBack);
+    await tapXY(page, 333, 180); await page.waitForTimeout(500);
+    check('667x375: next run starts after home', await page.evaluate(() => state) === 1);
+    const hx0 = await page.evaluate(() => player.x);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: rRect.x, y: rRect.y }] });
+    await page.waitForTimeout(700);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    const hx1 = await page.evaluate(() => player.x);
+    check('667x375: post-home run is drivable (▶ moves player)', hx1 - hx0 > 30, `+${Math.round(hx1 - hx0)}px`);
     check('667x375: zero page errors', errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

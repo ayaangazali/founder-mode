@@ -4,6 +4,8 @@
 // sign flip, the rocket, and the WITNESSED HISTORY egg.
 const { chromium } = require('playwright');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 let fails = 0;
 const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!ok) fails++; };
 (async () => {
@@ -37,18 +39,36 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
     return n;
   });
 
-  // TEAL: bubble on approach
+  // TEAL: bubble on approach (tealOn also anchors the kill-switch comparison below)
   await p.evaluate(() => { bosses.forEach(bb => bb.dead = true); player.x = 7080; player.y = GROUND_Y - 40; cam = 6900; player.hurtT = 240; });
   await p.waitForTimeout(250);
-  check('PETER TEAL bubbles on approach', await whiteBubble() > 250, (await whiteBubble()) + ' white px');
+  const tealOn = await whiteBubble();
+  check('PETER TEAL bubbles on approach', tealOn > 250, tealOn + ' white px');
   await p.screenshot({ path: path.resolve(__dirname, 'overnight', 'celeb-teal.png') });
 
-  // WALTMAN: sign flips after the final boss dies
-  await p.evaluate(() => { player.x = 8380; cam = 8280; });
-  await p.waitForTimeout(200);
-  const flipped = await p.evaluate(() => bosses[2].dead); // bosses already dead above
+  // WALTMAN: the hand-held sign must actually FLIP when the final boss dies —
+  // the old check asserted the probe's own `bosses[2].dead = true` write back
+  // at itself (tautology; the flip rendering could break and the gate stayed
+  // green). Real check: the sign's parchment box is sized to the text
+  // ('it knows me' → 'it knew me' changes its width), so the lit-parchment
+  // pixel count in the sign band must move when the flag flips.
+  const signPix = () => p.evaluate(() => {
+    const d = cx.getImageData(0, 195, 480, 40).data; // sign band: GROUND_Y-17+2 ≈ y217
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4)
+      if (d[i] > 215 && d[i+1] > 205 && d[i+2] > 170 && d[i+2] < 225) n++; // #e8e0c9 parchment
+    return n;
+  });
+  await p.evaluate(() => { player.x = 8380; player.y = GROUND_Y - 40; cam = 8280; player.hurtT = 240; bosses[2].dead = false; });
+  await p.waitForTimeout(250);
+  const signBefore = await signPix();
+  await p.evaluate(() => { bosses[2].dead = true; });
+  await p.waitForTimeout(250);
+  const signAfter = await signPix();
   await p.screenshot({ path: path.resolve(__dirname, 'overnight', 'celeb-waltman-knew.png') });
-  check('WALTMAN sign in post-victory state (visual in screenshot)', flipped);
+  check('WALTMAN sign flips when SYNERGY.AI dies (sign pixels changed)',
+    signBefore > 0 && signAfter > 0 && Math.abs(signAfter - signBefore) > 12,
+    signBefore + ' → ' + signAfter + ' parchment px');
 
   // BARRY: cycles, then remembers your death
   await p.evaluate(() => { bosses.forEach(bb => { bb.dead = false; bb.active = false; }); // fresh-ish
@@ -121,6 +141,38 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
     });
   }
   check('WITNESSED HISTORY +$0K for standing dead still through a launch', eggGot === true);
+
+  // ---- THE KILL SWITCH, EXERCISED OFF (canon rule 3: "one const kills them all") ----
+  // Nothing ever loaded a RISKY_CAMEOS=false build before — a celeb drawn outside
+  // the gate would have passed every check. Load a flipped copy and require the
+  // TEAL spot to render NO bubble and NO errors.
+  const srcHtml = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf8');
+  check('kill-switch const present in source', /const RISKY_CAMEOS = (true|false);/.test(srcHtml));
+  const offPath = path.join(os.tmpdir(), 'fm-riskyoff.html');
+  fs.writeFileSync(offPath, srcHtml.replace(/const RISKY_CAMEOS = (true|false);/, 'const RISKY_CAMEOS = false;'));
+  const p2 = await b.newPage({ viewport: { width: 960, height: 540 } });
+  const errors2 = [];
+  p2.on('pageerror', e => errors2.push(e.message));
+  await p2.goto('file://' + offPath);
+  await p2.waitForTimeout(700);
+  await p2.keyboard.down('Space'); await p2.waitForTimeout(200); await p2.keyboard.up('Space');
+  await p2.waitForTimeout(300);
+  await p2.evaluate(() => { bosses.forEach(bb => bb.dead = true); player.x = 7080; player.y = GROUND_Y - 40; cam = 6900; player.hurtT = 240; });
+  await p2.waitForTimeout(300);
+  const offBubble = await p2.evaluate(() => {
+    const d = cx.getImageData(0, 150, 480, 70).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 245 && d[i+1] > 245 && d[i+2] > 245) n++;
+    return n;
+  });
+  // comparative, not absolute: the band has baseline whites (billboards, clouds
+  // — measured ~320) that a fixed cap misreads. The celebs contribute ~1600px;
+  // the OFF build must sit near baseline, far under the ON reading.
+  check('RISKY_CAMEOS=false: TEAL spot near baseline (kill switch verified)',
+    offBubble < 600 && offBubble < tealOn / 2, `off=${offBubble} vs on=${tealOn} white px`);
+  check('RISKY_CAMEOS=false build boots with zero page errors', errors2.length === 0, errors2.join(' | '));
+  await p2.close();
+  try { fs.unlinkSync(offPath); } catch(e){}
 
   check('zero page errors', errors.length === 0, errors.join(' | '));
   console.log(fails === 0 ? 'ALL CELEB CHECKS PASS' : `${fails} CELEB CHECK(S) FAILED`);

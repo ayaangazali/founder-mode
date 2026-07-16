@@ -40,7 +40,9 @@ const DENYLIST = /vercel|supabase|warp|replit|resend|firecrawl|deel|exa|stripe|o
     const hay = (makeBadge.toString() + makeObituary.toString() + shareText.toString() +
                  JSON.stringify(OBIT_HEADLINES) + OBIT_BODY.map(f => f.toString()).join(' ') + JSON.stringify(WIN_FRONTPAGE) +
                  WIN_BODY.map(f => f.toString()).join(' ') + JSON.stringify(OBIT_CAPTIONS) + badgeFlairs.toString()).toUpperCase();
-    return names.filter(n => hay.includes(n));
+    // word-boundary match: bare includes() on 3-letter names (EXA, WARP…) reds
+    // the gate on innocent words like EXACT/EXAMPLE in share-surface source
+    return names.filter(n => new RegExp('\\b' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(hay));
   }, ALLOWED_REAL);
   check('billboard names never reach badge/obituary/share text', leak.length === 0, leak.join(','));
 

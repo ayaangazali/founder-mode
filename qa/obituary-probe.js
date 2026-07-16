@@ -20,6 +20,7 @@ const CAUSES = {
   'VC terms': () => { shots.push({x: player.x + 20, y: player.y + 4, vx: -1.2, vy: 0, w: 12, h: 10, t: 'sheet', label: 'TERMS'}); },
   buzzword: () => { shots.push({x: player.x + 20, y: player.y + 4, vx: -1.2, vy: 0, w: 26, h: 9, t: 'buzz', label: 'ALIGNMENT', wob: 1}); },
   pit:      () => { player.x = 795; player.y = 250; player.vy = 6; cam = 700; }, // over the first pit, below ground line
+  'sdk crate': () => { crates.push({ x: player.x - 2, y: player.y - 60, vy: 2, landed: false, t: 480 }); }, // breaking change, falling (shipped 07-14, was unprobed)
 };
 
 (async () => {
@@ -62,13 +63,22 @@ const CAUSES = {
     await page.screenshot({ path: path.join(SHOTDIR, `obit-${cause.replace(/ /g, '')}.png`) });
     await ctx.close();
   }
-  check('>= 6 distinct causes rendered', seen.size >= 6, `${seen.size} causes`);
+  check('>= 7 distinct causes rendered', seen.size >= 7, `${seen.size} causes`);
 
   // toggle + copy-text headline + SAVE on one final loss
   const ctx = await browser.newContext({ viewport: { width: 960, height: 540 } });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
+  // capture the REAL clipboard write: the rich (image+text) path is forced to
+  // reject so the game falls back to writeText, which we record
+  await page.addInitScript(() => {
+    window.__copied = null;
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: t => { window.__copied = String(t); return Promise.resolve(); },
+      write: () => Promise.reject(new Error('probe: force the text path')),
+    }});
+  });
   await page.goto(GAME);
   await page.waitForTimeout(700);
   await page.keyboard.down('Space'); await page.waitForTimeout(180); await page.keyboard.up('Space');
@@ -93,14 +103,13 @@ const CAUSES = {
     pngOk = buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) && buf.length > 30000;
   }
   check('SAVE FRONT PAGE downloads a real PNG', pngOk, download ? download.suggestedFilename() : 'no download');
-  const copyText = await page.evaluate(() => { // the REAL surface text (audit: the old
-    // check re-derived the headline and asserted only length — it could never fail)
-    const h = obitHeadline(false);
-    const t = document.getElementById('bDl') ? // obit surface text as built by showEndUI
-      `I made the front page of Hypergrowth Daily: '${h}'.` : '';
-    return { h, t };
-  });
-  check('share copy carries the displayed headline', copyText.t.includes(copyText.h) && copyText.h.length > 10, copyText.h.slice(0, 48));
+  // the REAL surface text, read from the actual clipboard write the SAVE click
+  // performed (the previous check rebuilt the string itself and compared it to
+  // itself — it could never fail; this one reads what a player would paste)
+  const copied = await page.evaluate(() => ({ t: window.__copied, h: obitHeadline(false) }));
+  check('share copy (real clipboard write) carries the headline + game link',
+    !!copied.t && copied.t.includes(copied.h) && copied.h.length > 10 && copied.t.includes('https://sfspeedrun.com'),
+    copied.t ? copied.t.slice(0, 70) : 'nothing captured');
   check('zero page errors (toggle/save block)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 

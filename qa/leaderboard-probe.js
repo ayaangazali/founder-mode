@@ -31,6 +31,7 @@ const srv = http.createServer((req, res) => {
   res.end(fs.readFileSync(path.resolve(__dirname, '../index.html')));
 });
 
+srv.on('error', e => { console.log('FAIL  stub server could not bind :8127 — ' + e.message); process.exit(1); });
 srv.listen(8127, async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 960, height: 540 } });
@@ -44,6 +45,12 @@ srv.listen(8127, async () => {
   await p.click('#lbChip'); await p.waitForTimeout(400);
   const empty = await p.evaluate(() => document.getElementById('lbPanelHead').textContent);
   check('empty board says so (no blank panel)', /be the first|YESTERDAY/.test(empty), empty.slice(0, 60));
+  // the all-time toggle lives on the title panel too (owner ask: daily + all-time)
+  check('title panel has the all-time toggle', await p.evaluate(() => !!document.getElementById('lbPanelEra')));
+  await p.click('#lbPanelEra'); await p.waitForTimeout(400);
+  const eraHead = await p.evaluate(() => document.getElementById('lbPanelHead').textContent);
+  check('title panel flips to all-time (empty-day copy ok)', /ALL-TIME|nobody yet|all-time/i.test(eraHead), eraHead.slice(0, 60));
+  await p.click('#lbPanelEra'); await p.waitForTimeout(200); // back to today
   await p.click('#lbPanelClose');
 
   // die, post with a name that must be escaped
@@ -54,20 +61,27 @@ srv.listen(8127, async () => {
   }
   await p.evaluate(() => { hearts = 1; player.hurtT = 0; hurtPlayer('meeting', 'X'); });
   await p.waitForTimeout(900);
-  // simulate a hostile name reaching the client (server sanitizes in prod; the
-  // client must not trust that)
-  await p.evaluate(() => { lbTop = [{ name: '<img src=x onerror=alert(1)>', val: 10, raised: 10, time_ms: 1000, won: false }]; });
+  // a hostile name in SERVER data must render escaped (server sanitizes in
+  // prod; the client must not trust that). It goes into the stub board so the
+  // post-confirm re-render actually draws it — the old check searched for a
+  // row that was never in the rendered list and passed vacuously on empty.
+  board.push({ name: '<img src=x onerror=alert(1)>', val: 10, raised: 10, time_ms: 1000, won: false });
   await p.fill('#lbName', 'PROBE');
   await p.evaluate(() => document.getElementById('lbName').blur());
   await p.waitForTimeout(300);
   await p.click('#lbGo'); await p.waitForTimeout(600);
   const posted = await p.evaluate(() => ({ btn: document.getElementById('lbGo').textContent, run: lbPostedRun === runId }));
   check('post lands + marked for this run only', /ON THE BOARD/.test(posted.btn) && posted.run, JSON.stringify(posted));
-  const escaped = await p.evaluate(() => {
+  const xss = await p.evaluate(() => {
     const html = document.getElementById('lbList').innerHTML;
-    return !html.includes('<img') || html.includes('&lt;img');
+    return { escaped: html.includes('&lt;img'), raw: html.includes('<img') };
   });
-  check('board rows HTML-escape names (XSS)', escaped);
+  check('board rows HTML-escape names (XSS — hostile row PRESENT and escaped)', xss.escaped && !xss.raw, JSON.stringify(xss));
+  // the end-card era toggle: all-time board renders rows + its label
+  await p.click('#lbEra'); await p.waitForTimeout(500);
+  const eraList = await p.evaluate(() => document.getElementById('lbList').innerHTML);
+  check('ALL-TIME board renders (label + posted row)', /ALL-TIME BOARD/.test(eraList) && /PROBE/.test(eraList), eraList.slice(0, 60));
+  await p.click('#lbEra'); await p.waitForTimeout(500); // back to today for the checks below
   // unicorn gate: 🦄 only at val ≥ $1B (1,000,000 in $K units); sub-$1B wins are 🐴
   const tiers = await p.evaluate(() => {
     lbTop = [{ name: 'HORSE GUY', val: 580000, raised: 2000, time_ms: 300000, won: true },
@@ -77,9 +91,11 @@ srv.listen(8127, async () => {
   });
   check('sub-$1B win renders 🐴 (horse until unicorn)', tiers.indexOf('🐴') >= 0 && tiers.indexOf('🐴') < tiers.indexOf('🦄'), 'gate order');
   check('$1B+ win renders 🦄, loss renders 💀', tiers.includes('🦄') && tiers.includes('💀'));
-  // double-post blocked
+  // double-post blocked — and the button SAYS so instead of eating the click
   await p.click('#lbGo'); await p.waitForTimeout(300);
   check('second post is a no-op (one per run)', board.filter(r => r.name === 'PROBE').length === 1, 'rows=' + board.length);
+  const btn2 = await p.evaluate(() => document.getElementById('lbGo').textContent);
+  check('second click gives feedback (no silent dead button)', /already on the board/.test(btn2), btn2);
   // expand stays in view
   const all = await p.evaluate(() => !!document.getElementById('lbAll'));
   if (all){

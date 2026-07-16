@@ -131,6 +131,21 @@ const tap = async (p, key, hold = 90) => { await p.keyboard.down(key); await p.w
   await p.keyboard.press('Escape');
   check('pause freezes playMs (speedrun contract)', t1.paused && t1.t === t2, `${t1.t} vs ${t2}`);
 
+  // ---- pause menu: resume + SHUT IT DOWN land where they say (was unprobed) ----
+  await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+  const menuUp = await p.evaluate(() => paused && getComputedStyle(document.getElementById('pauseMenu')).display === 'flex');
+  check('pause menu shows over the game', menuUp);
+  await p.click('#pmResume'); await p.waitForTimeout(150);
+  check('BACK TO WORK resumes', await p.evaluate(() => paused === false && state === 1));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+  await p.click('#pmQuit'); await p.waitForTimeout(200);
+  const home = await p.evaluate(() => ({ st: state, paused, ui: document.getElementById('ui').style.display }));
+  check('SHUT IT DOWN lands on a clean title', home.st === 0 && home.paused === false, JSON.stringify(home));
+  await p.keyboard.down('Space'); await p.waitForTimeout(150); await p.keyboard.up('Space');
+  await p.waitForTimeout(300);
+  const fresh = await p.evaluate(() => ({ st: state, x: player.x, raised }));
+  check('next SPACE starts a fresh run after home', fresh.st === 1 && fresh.x === 20 && fresh.raised === 0, JSON.stringify(fresh));
+
   check('zero page errors', errors.length === 0, errors.join(' | '));
   console.log(fails === 0 ? 'ALL MINIGAME CHECKS PASS' : `${fails} MINIGAME CHECK(S) FAILED`);
   await b.close();
