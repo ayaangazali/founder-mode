@@ -29,10 +29,12 @@ if grep -iEq 'yc accepted|yc mode|patagonia|wework|y combinator' index.html; the
 else line "✓ canon grep clean"; fi
 
 # secret scan — match VALUE shapes (real keys/JWTs), not the words that appear
-# in docs/logs. Anthropic key: sk-ant-api03-<95ish chars>. JWT: eyJ..eyJ..
-# Scan only tracked files; skip this script + the log files that name patterns.
-SECRET_HITS="$(git ls-files | grep -vE 'ci-sweep\.sh|RESEARCH-LOG\.md|CI-SWEEP-LOG\.md|CHANGELOG\.md' \
-  | xargs grep -lEI 'sk-ant-api[0-9]{2}-[A-Za-z0-9_-]{30,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}' 2>/dev/null)"
+# in docs/logs. Covers Anthropic (api/oat/sid), OpenAI, GitHub PAT, AWS, Vercel,
+# PostHog and JWTs. Scan tracked files; skip only this script + the research
+# logs that quote patterns (CHANGELOG is included — a pasted key there is real).
+SECRET_RE='sk-ant-(api|oat|sid)[0-9]{2}-[A-Za-z0-9_-]{30,}|sk-proj-[A-Za-z0-9_-]{30,}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[0-9A-Z]{16}|phx_[A-Za-z0-9]{30,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}'
+SECRET_HITS="$(git ls-files | grep -vE 'ci-sweep\.sh|RESEARCH-LOG\.md|CI-SWEEP-LOG\.md' \
+  | xargs grep -lEI "$SECRET_RE" 2>/dev/null)"
 if [ -n "$SECRET_HITS" ]; then
   line "❌ SECRET SHAPE FOUND in: $SECRET_HITS"; FAIL=1
 else line "✓ secret scan clean (no key/JWT value shapes in tracked files)"; fi
@@ -42,11 +44,13 @@ else line "✓ secret scan clean (no key/JWT value shapes in tracked files)"; fi
 AUDIT="$(npm audit --omit=dev 2>&1 | grep -iE 'vulnerabilit' | head -1 || true)"
 line "npm audit: ${AUDIT:-no output}"
 
-# api param clamps still present (guards the plausibility gate from silent edits)
+# api param clamps still present — a HARD gate (the comment always said "guards
+# the plausibility gate from silent edits", but a warn-only line guarded nothing:
+# deleting the clamps kept the sweep green)
 if grep -q 'val > Math.ceil(Math.max(raised, 1) \* 390)' api/leaderboard.mjs \
    && grep -q "raised > 6000" api/leaderboard.mjs; then
   line "✓ leaderboard plausibility clamps intact"
-else line "⚠ leaderboard plausibility clamps changed — verify intentional"; fi
+else line "❌ leaderboard plausibility clamps MISSING — board is forgeable"; FAIL=1; fi
 echo >> "$REPORT"
 
 # ---- asserting test battery (hard gates) ----

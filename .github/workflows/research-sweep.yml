@@ -26,7 +26,7 @@ concurrency:                 # never let two sweeps race the research branch
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30      # the battery's fullrun leg alone allows 12min; 20 was cutting slow seeds mid-sweep
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -75,8 +75,12 @@ jobs:
           git fetch origin research
           git switch research
           mkdir -p qa
+          # decide on the header BEFORE the >> redirection creates the file
+          # (the old in-group test ran after creation, so the header never wrote)
+          if [ ! -f qa/CI-SWEEP-LOG.md ]; then
+            printf '# CI SWEEP LOG\n\nDeterministic sweep + regression results from the research-sweep GitHub Action (every 4h + manual). Newest last. The reasoning-based findings live in RESEARCH-LOG.md.\n\n---\n\n' > qa/CI-SWEEP-LOG.md
+          fi
           {
-            [ -f qa/CI-SWEEP-LOG.md ] || printf '# CI SWEEP LOG\n\nDeterministic sweep + regression results from the research-sweep GitHub Action (every 4h + manual). Newest last. The reasoning-based findings live in RESEARCH-LOG.md.\n\n---\n\n'
             cat "$RUNNER_TEMP/ci-report.md"
             printf '\n---\n\n'
           } >> qa/CI-SWEEP-LOG.md
@@ -84,13 +88,22 @@ jobs:
           git commit -m "ci: research sweep $(date -u '+%Y-%m-%d %H:%M UTC') (run ${{ github.run_number }})
 
           Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
-          git push origin research
+          # the LLM-lens job commits to research too — rebase + retry instead of
+          # failing the whole (green) sweep on a push race
+          n=0
+          until git push origin research; do
+            n=$((n+1))
+            if [ "$n" -ge 3 ]; then echo "::error::could not push research after 3 rebases"; exit 1; fi
+            git pull --rebase origin research
+          done
 
       # 24/7 surfacing: a hard-gate failure opens (or re-opens) a tracking issue
       # so a break is visible without anyone watching the Actions tab. Success
       # closes any open one. Deterministic — no LLM.
+      # gate_exit == '' means the sweep step never finished (timeout/infra) —
+      # that must NOT file a "hard gate failing" issue about the game
       - name: File / close the gate-failure issue
-        if: always() && github.event_name != 'push'
+        if: always() && github.event_name != 'push' && steps.sweep.outputs.gate_exit != ''
         env:
           GH_TOKEN: ${{ github.token }}
           FAILED: ${{ steps.sweep.outputs.gate_exit != '0' }}
@@ -109,7 +122,7 @@ jobs:
           fi
 
       - name: Fail the run if a hard gate failed
-        if: always() && steps.sweep.outputs.gate_exit != '0'
+        if: always() && steps.sweep.outputs.gate_exit != '0' && steps.sweep.outputs.gate_exit != ''
         run: |
           echo "::error::A hard gate failed — see the job summary / report artifact."
           exit 1

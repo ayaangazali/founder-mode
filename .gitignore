@@ -5,3 +5,4 @@ shot*.png
 
 .vercel/
 supabase/
+.env*
