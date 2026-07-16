@@ -24,9 +24,10 @@ const H = { apikey: KEY, authorization: 'Bearer ' + KEY, 'content-type': 'applic
 // name policy: one entry per name per day (best run wins), and the board is a
 // share surface — no slurs/profanity, leetspeak included. Checked on the
 // collapsed uppercase string so spacing/punctuation can't dodge it.
-const BLOCKLIST = ['FUCK','SHIT','CUNT','BITCH','NIGG','FAGG','COCK','DICK','PUSSY',
+const BLOCKLIST = ['FUCK','SHIT','CUNT','BITCH','NIGG','NIGA','FAGG','COCK','DICK','PUSSY',
   'WHORE','SLUT','RAPE','NAZI','HITLER','PENIS','VAGINA','ASSHOLE','PEDO','KYS',
-  'RETARD','TWAT','WANK','BOOB','TITTY','SEMEN','CUMS'];
+  'RETARD','TWAT','WANK','BOOB','TITTY','SEMEN','CUMS','FVCK','KKK','KIKE','SPIC',
+  'COON','CHINK','TRANNY'];
 function nameBlocked(name){
   const collapsed = name.toUpperCase()
     .replace(/0/g, 'O').replace(/1/g, 'I').replace(/3/g, 'E').replace(/4/g, 'A')
@@ -41,17 +42,34 @@ export default async function handler(req, res) {
   if (!SB || !KEY) return res.status(200).json({ ok: false, reason: 'leaderboard not configured yet' });
 
   if (req.method === 'GET') {
-    // CDN absorbs the read traffic: every page load fetches the board, and a
-    // viral day would burn one function invocation per visitor for identical
-    // JSON. 60s staleness is invisible on a daily leaderboard.
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     const { searchParams } = new URL(req.url, 'https://sfspeedrun.com');
     const seed = parseInt(searchParams.get('seed') || '0', 10) | 0;
     const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) | 0));
+    // CDN absorbs the read traffic: every page load fetches the board, and a
+    // viral day would burn one function invocation per visitor for identical
+    // JSON. 60s staleness is invisible on a daily board. The header is set on
+    // SUCCESS only — a Supabase blip must not be pinned on the edge for 60s.
+    const cacheOk = () => res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    if (searchParams.get('all') === '1') {
+      // all-time board: best surviving row per founder across every daily seed
+      const q = `${SB}/rest/v1/founder_scores?order=won.desc,val.desc,time_ms.asc&limit=400` +
+                `&select=name,val,raised,time_ms,won,seed`;
+      const r = await fetch(q, { headers: H });
+      if (!r.ok) return res.status(200).json({ ok: false, reason: 'board unavailable' });
+      const seen = new Set(), top = [];
+      for (const row of await r.json()) {
+        if (seen.has(row.name)) continue;
+        seen.add(row.name); top.push(row);
+        if (top.length >= limit) break;
+      }
+      cacheOk();
+      return res.status(200).json({ ok: true, top, all: true });
+    }
     const q = `${SB}/rest/v1/founder_scores?seed=eq.${seed}` +
               `&order=won.desc,val.desc,time_ms.asc&limit=${limit}&select=name,val,raised,time_ms,won`;
     const r = await fetch(q, { headers: H });
     if (!r.ok) return res.status(200).json({ ok: false, reason: 'board unavailable' });
+    cacheOk();
     return res.status(200).json({ ok: true, top: await r.json() });
   }
 
@@ -77,17 +95,30 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, reason: 'diligence found irregularities' });
     if (nameBlocked(name))
       return res.status(400).json({ ok: false, reason: 'legal has concerns about that name' });
+    // the board only accepts today's seed (±1 day: the client seeds off the LOCAL
+    // calendar, the server runs UTC) — nobody pre-fills next week's board
+    const now = new Date();
+    const daySeed = Math.round((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+                    - Date.UTC(2026, 0, 1)) / 86400000) + 1;
+    if (seed < daySeed - 1 || seed > daySeed + 1)
+      return res.status(400).json({ ok: false, reason: 'wrong fiscal day' });
 
-    // one row per (seed, name): keep the best run. Manual compare + a unique
-    // index backstop for races.
-    const exQ = `${SB}/rest/v1/founder_scores?seed=eq.${seed}&name=eq.${encodeURIComponent(name)}&select=id,val,time_ms`;
+    // one row per (seed, name): keep the best run, ranked the way the board
+    // ranks (won first, then val, then time — a loss must never bury a win).
+    // Manual compare + a unique index backstop for insert races + a filtered
+    // PATCH so two concurrent improvements can't leave the lesser one standing.
+    const betterThan = old => (won !== !!old.won) ? won
+      : (val > old.val || (val === old.val && timeMs < old.time_ms));
+    const patchGuard = won
+      ? `&or=(won.is.false,val.lt.${val},and(val.eq.${val},time_ms.gt.${timeMs}))`
+      : `&won=is.false&or=(val.lt.${val},and(val.eq.${val},time_ms.gt.${timeMs}))`;
+    const exQ = `${SB}/rest/v1/founder_scores?seed=eq.${seed}&name=eq.${encodeURIComponent(name)}&select=id,val,time_ms,won`;
     const ex = await fetch(exQ, { headers: H });
     const rows = ex.ok ? await ex.json() : [];
     if (rows.length){
       const old = rows[0];
-      const better = val > old.val || (val === old.val && timeMs < old.time_ms);
-      if (!better) return res.status(200).json({ ok: true, kept: 'existing' }); // their earlier run was stronger
-      const up = await fetch(`${SB}/rest/v1/founder_scores?id=eq.${old.id}`, {
+      if (!betterThan(old)) return res.status(200).json({ ok: true, kept: 'existing' }); // their earlier run was stronger
+      const up = await fetch(`${SB}/rest/v1/founder_scores?id=eq.${old.id}${patchGuard}`, {
         method: 'PATCH', headers: H,
         body: JSON.stringify({ val, raised, time_ms: timeMs, won }),
       });
@@ -104,9 +135,8 @@ export default async function handler(req, res) {
     const rows2 = ex2.ok ? await ex2.json() : [];
     if (rows2.length){
       const old2 = rows2[0];
-      const better2 = val > old2.val || (val === old2.val && timeMs < old2.time_ms);
-      if (!better2) return res.status(200).json({ ok: true, kept: 'existing' });
-      const up2 = await fetch(`${SB}/rest/v1/founder_scores?id=eq.${old2.id}`, {
+      if (!betterThan(old2)) return res.status(200).json({ ok: true, kept: 'existing' });
+      const up2 = await fetch(`${SB}/rest/v1/founder_scores?id=eq.${old2.id}${patchGuard}`, {
         method: 'PATCH', headers: H, body: JSON.stringify({ val, raised, time_ms: timeMs, won }) });
       return res.status(200).json({ ok: up2.ok, kept: 'improved' });
     }

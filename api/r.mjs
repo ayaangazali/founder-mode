@@ -9,7 +9,7 @@ export default function handler(req, res) {
   const n = pick('n', /[^a-zA-Z0-9 .-]/g, 14);
   const v = String(Math.max(0, Math.min(2400000, parseInt(searchParams.get('v') || '0', 10) | 0)));
   const r2 = String(Math.max(0, Math.min(6000, parseInt(searchParams.get('r') || '0', 10) | 0)));
-  const t = pick('t', /[^0-9:]/g, 5);
+  const t = pick('t', /[^0-9:]/g, 7); // matches og.mjs — 100+ minute times keep their last digit
   const p = String(Math.max(0, Math.min(6, parseInt(searchParams.get('p') || '0', 10) | 0)));
   const qs = `w=${w}&n=${encodeURIComponent(n)}&v=${v}&r=${r2}&t=${encodeURIComponent(t)}&p=${p}`;
   const og = `${HOST}/api/og?${qs}`;

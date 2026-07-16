@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   const name = (searchParams.get('n') || '').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').slice(0, 14);
   const val = Math.max(0, Math.min(2400000, parseInt(searchParams.get('v') || '0', 10) | 0));
   const raised = Math.max(0, Math.min(6000, parseInt(searchParams.get('r') || '0', 10) | 0));
-  const time = (searchParams.get('t') || '').replace(/[^0-9:]/g, '').slice(0, 5) || '??:??';
+  const time = (searchParams.get('t') || '').replace(/[^0-9:]/g, '').slice(0, 7) || '??:??'; // 100+ minute runs are legal (6h cap) — "103:22" must not truncate to "103:2"
   const ped = PED_LABELS[Math.max(0, Math.min(6, parseInt(searchParams.get('p') || '0', 10) | 0))];
 
   const rows = [
