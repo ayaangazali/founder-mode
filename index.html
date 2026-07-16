@@ -118,9 +118,10 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'){
   #lbPanelHead { color:#ffd94a; font-size:14px; margin-bottom:8px; }
   #lbPanelList { max-height:56vh; overflow:auto; text-align:left; font-size:14px; line-height:1.6;
                  background:rgba(0,0,0,.35); padding:8px 12px; }
-  #lbPanelClose { margin-top:10px; font-family:"Courier New",monospace; font-weight:bold; font-size:13px;
+  #lbPanelClose, #lbPanelEra { margin-top:10px; font-family:"Courier New",monospace; font-weight:bold; font-size:13px;
                   background:#ffd94a; color:#1a1a2e; border:2px solid #1a1a2e; padding:6px 14px; cursor:pointer;
                   box-shadow:0 3px 0 #8a6d00; }
+  #lbPanelEra { margin-right:8px; background:#7ce0ff; box-shadow:0 3px 0 #1b5e75; }
 </style>
 </head>
 <body>
@@ -137,7 +138,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'){
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
 <div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener noreferrer">ayaan gazali</a></div>
 <div id="lbChip">🏆 LEADERBOARD</div>
-<div id="lbPanel"><div id="lbPanelCard"><div id="lbPanelHead"></div><div id="lbPanelList"></div><button id="lbPanelClose">close</button></div></div>
+<div id="lbPanel"><div id="lbPanelCard"><div id="lbPanelHead"></div><div id="lbPanelList"></div><button id="lbPanelEra">🏅 all-time</button><button id="lbPanelClose">close</button></div></div>
 <script>
 "use strict";
 /* ============================================================
@@ -204,16 +205,21 @@ function fit() {
 }
 window.addEventListener('resize', fit); fit();
 // title-screen leaderboard panel (chip shows only on the title, like #credit)
-document.getElementById('lbChip').addEventListener('click', () => {
-  const panel = document.getElementById('lbPanel');
-  panel.style.display = 'flex';
+let lbPanelAll = false; // title panel era: today ⇄ all-time
+function lbPanelLoad(){
   document.getElementById('lbPanelHead').textContent = 'loading the cap tables…';
   document.getElementById('lbPanelList').innerHTML = '';
-  lbLoad(100, (rows, label) => {
+  document.getElementById('lbPanelEra').textContent = lbPanelAll ? '📅 today' : '🏅 all-time';
+  (lbPanelAll ? lbLoadAll : lbLoad)(100, (rows, label) => {
     document.getElementById('lbPanelHead').textContent = label + (rows.length ? ' · top ' + rows.length : '');
     document.getElementById('lbPanelList').innerHTML = rows.length ? lbRowsHtml(rows) : 'nobody yet. glory awaits.';
   });
+}
+document.getElementById('lbChip').addEventListener('click', () => {
+  document.getElementById('lbPanel').style.display = 'flex';
+  lbPanelLoad();
 });
+document.getElementById('lbPanelEra').addEventListener('click', () => { lbPanelAll = !lbPanelAll; lbPanelLoad(); });
 document.getElementById('lbPanelClose').addEventListener('click', () => {
   document.getElementById('lbPanel').style.display = 'none';
 });
@@ -255,15 +261,29 @@ window.addEventListener('keydown', e => {
   initAudio();
   if (state === ST.TITLE){ // founder picker — edge-triggered, never starts the game
     const k = nk;
-    if (k === 'c') cycleLook('s');
-    else if (k === 'h') cycleLook('h');
-    else if (k === 'v') cycleLook('v');
-    else if (k === 'x') cycleLook('x');
-    else if (k === 'p') cycleLook('p');
-    // item 10 eggs: type CORGI / SLOP on the title (sticky for the session)
-    if (k.length === 1 && k >= 'a' && k <= 'z'){
-      typed = (typed + k).slice(-5);
-      if (typed.endsWith('corgi')){ pendingCorgi = true; sPow(); }
+    // item 10 eggs: type CORGI / SLOP on the title (sticky for the session).
+    // Egg spelling must not move the pickers: SLOP's final P was silently
+    // cycling the pedigree (non-cosmetic). A key that extends a 2+ letter egg
+    // prefix is spelling, not picking; CORGI's lone leading C is ambiguous, so
+    // its skin-cycle is reverted when the word completes.
+    const eggCand = (k.length === 1 && k >= 'a' && k <= 'z') ? (typed + k).slice(-5) : null;
+    const eggPrefix = w => { for (let n = 2; n <= w.length; n++) if (eggCand.endsWith(w.slice(0, n))) return true; return false; };
+    const midEggWord = eggCand !== null && typed.length > 0 && (eggPrefix('corgi') || eggPrefix('slop'));
+    if (k === 'c' && !midEggWord){ preEggSkin = look.s; cycleLook('s'); }
+    else if (k === 'h' && !midEggWord) cycleLook('h');
+    else if (k === 'v' && !midEggWord) cycleLook('v');
+    else if (k === 'x' && !midEggWord) cycleLook('x');
+    else if (k === 'p' && !midEggWord) cycleLook('p');
+    if (eggCand !== null){
+      typed = eggCand;
+      if (typed.endsWith('corgi')){
+        pendingCorgi = true; sPow();
+        if (preEggSkin !== null){ // that C was spelling — put the skin tone back
+          look.s = preEggSkin; preEggSkin = null;
+          window.FOUNDER_LOOK = resolveLook();
+          try { localStorage.setItem('fm_look', JSON.stringify(look)); } catch(e){}
+        }
+      }
       if (typed.endsWith('slop')){ pendingSlop = true; sPow(); }
     }
   }
@@ -278,7 +298,7 @@ window.addEventListener('keydown', e => {
     }
   }
   if (nk === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
-  if (nk === 'r' && !e.repeat && (state === ST.DEAD || state === ST.WIN)){
+  if (nk === 'r' && !e.repeat && endGraceT <= 0 && (state === ST.DEAD || state === ST.WIN)){
     resumePlay(state === ST.DEAD); // death retries from checkpoint; a win restart is a fresh run
   }
 });
@@ -287,8 +307,10 @@ window.addEventListener('keyup', e => {
 });
 // input hygiene: alt-tab / app-switch with a key held must not auto-run the founder
 function clearAllInput(){ for (const k in keys) keys[k] = false; touch.L = touch.R = touch.J = false; }
-window.addEventListener('blur', clearAllInput);
-document.addEventListener('visibilitychange', () => { if (document.hidden) clearAllInput(); });
+// a visible-but-unfocused window keeps simulating (rAF only stops when hidden) —
+// without the pause, burn rate kills an idle founder standing at a second monitor
+window.addEventListener('blur', () => { clearAllInput(); if (state === ST.PLAY) paused = true; });
+document.addEventListener('visibilitychange', () => { if (document.hidden){ clearAllInput(); if (state === ST.PLAY) paused = true; } });
 const L = () => keys['arrowleft'] || keys['a'] || touch.L;
 const R = () => keys['arrowright'] || keys['d'] || touch.R;
 const JUMP = () => keys['space'] || keys['arrowup'] || keys['w'] || touch.J;
@@ -614,8 +636,9 @@ function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'n
 // you're a horse until you're a unicorn (owner gate: 🦄 only at VALUATION ≥ $1B;
 // val is stored in $K, so the bar is 1,000,000)
 const winEmoji = v => v >= 1000000 ? '🦄' : '🐴';
+const escHtml = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 function lbRowsHtml(rows){
-  const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const esc = escHtml;
   // aligned columns (owner: 50 rows of prose was unreadable): rank · name ·
   // valuation right-aligned · outcome · time. medals for the podium, zebra rows.
   const rank = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
@@ -628,14 +651,25 @@ function lbRowsHtml(rows){
       `<span style="flex:none; width:3.4em; text-align:right; color:#7ce0ff">${fmtTime(r.time_ms)}</span>` +
     `</div>`).join('');
 }
-// load a board; if today is empty (fresh daily seed), fall back to yesterday's
-function lbLoad(limit, cb){
-  fetch('/api/leaderboard?seed=' + SEED_N + '&limit=' + limit).then(r => r.json()).then(j => {
+// load a board; if today is empty (fresh daily seed), fall back to yesterday's.
+// bust=true skips the 60s CDN copy (used right after a confirmed post)
+function lbLoad(limit, cb, bust){
+  const b = bust ? '&b=' + Math.floor(Math.random() * 1e9) : '';
+  fetch('/api/leaderboard?seed=' + SEED_N + '&limit=' + limit + b).then(r => r.json()).then(j => {
     if (j && j.ok && j.top.length) return cb(j.top, "TODAY'S BOARD — seed #" + SEED_N);
-    fetch('/api/leaderboard?seed=' + (SEED_N - 1) + '&limit=' + limit).then(r2 => r2.json()).then(k => {
+    fetch('/api/leaderboard?seed=' + (SEED_N - 1) + '&limit=' + limit + b).then(r2 => r2.json()).then(k => {
       if (k && k.ok && k.top.length) cb(k.top, "no exits yet today — YESTERDAY'S BOARD (seed #" + (SEED_N - 1) + ')');
       else cb([], 'no exits yet — be the first');
     }).catch(() => cb([], 'board unreachable'));
+  }).catch(() => cb([], 'board unreachable'));
+}
+// the all-time board: best run per founder across every daily seed (owner ask:
+// the daily board resets every 24h; the all-time one never forgets)
+function lbLoadAll(limit, cb, bust){
+  const b = bust ? '&b=' + Math.floor(Math.random() * 1e9) : '';
+  fetch('/api/leaderboard?all=1&limit=' + limit + b).then(r => r.json()).then(j => {
+    if (j && j.ok && j.top.length) return cb(j.top, '🏅 ALL-TIME BOARD');
+    cb([], 'all-time board: nobody yet');
   }).catch(() => cb([], 'board unreachable'));
 }
 function playerName(){ try { return (localStorage.getItem('fm_name') || '').trim(); } catch(e){ return ''; } }
@@ -661,6 +695,7 @@ const BURN_FRAMES = MK === 'audit' ? 60 * 4 : 60 * 6; // burn tick, frames (AUDI
 const ST = { TITLE:0, PLAY:1, WIN:2, DEAD:3 };
 let state = ST.TITLE;
 let frame = 0, playMs = 0, endTime = 0;   // playMs = simulated play clock (backgrounded tabs don't count)
+let endGraceT = 0;                        // frames the end screen ignores R — a bell-masher's last press must not wipe the badge
 let lastVal = 0;                          // valuation of the run that just ended (leaderboard submits this)
 let runId = 0;                            // increments per fresh run (leaderboard one-post key)
 let hitstopT = 0, shakeT = 0, prevJump = false;
@@ -845,7 +880,7 @@ function interviewUpdate(){
       if (ped().mult >= 20 && interview.score < ACC_QS.length){ interview.score++; }   // the résumé answers one too
       interview.won = interview.score >= 5;
       if (interview.won){
-        raised += 150; player.ycT = 60 * 8; moodUp(); sPow();
+        raised += 150; moodUp(); sPow();
         accBatch = true;                               // stamped for the run
         try { localStorage.setItem('fm_alum', '1'); } catch(e){} // title flair, forever
       }
@@ -853,7 +888,10 @@ function interviewUpdate(){
     }
   } else if (--interview.t <= 0){
     accDone = true;
-    if (interview.won) addPop(player.x, player.y - 20, 'DEMO DAY LETTER! +$150K · INVINCIBLE 8s', '#ff8c37', 150);
+    if (interview.won){
+      player.ycT = 60 * 8; // granted when control returns — tickPowers was eating half of it through the end card
+      addPop(player.x, player.y - 20, 'DEMO DAY LETTER! +$150K · INVINCIBLE 8s', '#ff8c37', 150);
+    }
     interview = null;
   }
 }
@@ -925,12 +963,14 @@ let cmoT = 0, cmoDone = false;
 // HUMOR PATCH item 10 eggs: title-typed codes (sticky for the session), the
 // classic cheat-code sequence (never rendered in-game), and café loyalty.
 let typed = '', pendingCorgi = false, pendingSlop = false, slopStyle = false;
+let preEggSkin = null; // skin tone before CORGI's C cycled it — restored when the word completes
 let cafeRegular = false, cafeStill = 0;          // session-scoped: once a regular, always a regular
 const KONAMI = ['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
 let konamiIdx = 0, konamiDone = false;
 
 function roomUpdate(){
   if (playMs > aiNudgeAt) aiNudgeAt = playMs + 3000; // the AI cofounder doesn't ambush a mini-game exit
+  tickPowers(); // same rule as chat/interview: buffs don't park while the world waits
   room.t--;
   if (L()) room.px -= 1.7;
   if (R()) room.px += 1.7;
@@ -1087,6 +1127,8 @@ function reset(fromCheckpoint){
     slops = [];                                           // clones don't outlive the attempt
     bellRing = null; ringHeld = false;                    // a death mid-confetti is still a death
     cmoT = 0;                                             // paused-world theater ends with the run
+    chat = null; interview = null; room.active = false;   // no respawning inside a frozen mini-game
+    lbPostedRun = -1;                                     // this attempt can post its own (better) result — the server keeps the best
     bosses.forEach(bb => { if (!bb.dead){ bb.pedApplied = false; bb.slopped = false; } }); // Chad re-reads the résumé; slop phase re-announces
     for (const b of bosses){
       if (!b.dead){ // live boss back to its trigger state; dead bosses stay dead
@@ -1211,11 +1253,12 @@ function update(){
     for (let i = 0; i < CHATS.length; i++)
       if (!CHATS[i].done && Math.abs(p.x - CHATS[i].x) < 22 && p.onGround) atTable = i;
     const atDoor = !accDone && Math.abs(p.x - ACC_X) < 16 && p.onGround;
-    if (atTable >= 0 || atDoor){
+    const bossLive = bosses.some(bb => bb.active && !bb.dead); // no coffee chats mid-funding-round (the CONTRARIAN table sits in Chad's arena)
+    if ((atTable >= 0 || atDoor) && !bossLive){
       const still = Math.abs(p.vx) < 0.3;
       chatStill = still ? chatStill + 1 : 0;
       const go = keys['c'] || (('ontouchstart' in window) && chatStill >= 150);
-      if (go){ if (atDoor) interviewStart(); else chatStart(atTable); }
+      if (go){ if (atDoor) interviewStart(); else chatStart(atTable); return; } // the world waits from THIS frame — no same-frame hit
     } else chatStill = 0;
   }
 
@@ -1236,6 +1279,8 @@ function update(){
   // -------- player --------
   // cold brew boosts, enterprise process drags (×0.85, big logo heavy process)
   const speed = (p.coffeeT > 0 ? 2.5 : 1.7) * (p.slowT > 0 ? 0.85 : 1) * (bmSyncT > 0 ? 0.8 : 1) * (cof().id === 'tech' ? 1.08 : 1); // technical cofounder ships; board syncs drag
+  // cold-brew steam emits from the SIM, not from draw() (a paused frame was pushing particles forever)
+  if (p.coffeeT > 0 && frame % 5 === 0) parts.push({x:p.x - 2 + Math.random()*4, y:p.y + 14, vx:-p.face, vy:-0.5, t:14, c:'#c58bff'});
   if (L()) { p.vx = -speed; p.face = -1; }
   else if (R()) { p.vx = speed; p.face = 1; }
   else p.vx *= 0.7;
@@ -1594,7 +1639,7 @@ function update(){
         if (!e.dead && aabb(s, e)){
           s.gone = true; e.dead = true; sStomp(); raised += 10; moodUp();
           addPop(e.x, e.y-8, 'DECKED! +$10K', '#7cffa5'); addParts(e.x+7, e.y+7, '#7cffa5');
-          if (enemies.every(x2 => x2.dead)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37');
+          if (enemies.every(x2 => x2.dead || x2.inj)) addPop(e.x, e.y-18, 'ZERO CHURN', '#ff8c37'); // injected phantoms don't gate it (same rule as the stomp path)
         }
       }
       for (const b of bosses){
@@ -1646,6 +1691,7 @@ function update(){
     room.active = true; room.t = 720; room.px = 24;
     room.cans = [{x:90},{x:150},{x:215},{x:280},{x:345}].map(c => ({...c, got:false}));
     sPow();
+    return; // inside from THIS frame — the slop outside doesn't get a parting shot
   }
 
   // -------- HUMOR PATCH item 7: slop clones — shamble, die on touch, one is real --------
@@ -1662,6 +1708,7 @@ function update(){
   if (bosses[2].dead && slops.length){ slops = []; } // the model is unplugged; the content stops
 
   // -------- HUMOR PATCH item 6: the corgi --------
+  if (corgi.followT < 0) corgi.followT++; // post-shift cooldown ticks back toward adoptable
   if (!corgi.following && corgi.followT === 0 && Math.abs(p.x - corgi.x) < 26){
     corgi.following = true; corgi.followT = 1800; corgi.sitting = false; corgiHired = true;
     addPop(corgi.x - 10, GROUND_Y - 28, 'CORGI ACQUIRED (acqui-hire)', '#ffd94a');
@@ -1675,7 +1722,7 @@ function update(){
       const cdx = (p.x - 14 * p.face) - corgi.x;
       corgi.x += clamp(cdx * 0.08, -2.2, 2.2);
       if (Math.abs(cdx) > 2) corgi.face = cdx > 0 ? 1 : -1;
-      if (--corgi.followT <= 0){ corgi.following = false; }      // shift's over; heads back to the café
+      if (--corgi.followT <= 0){ corgi.following = false; corgi.followT = -600; } // shift's over — 10s cooldown, else standing next to it re-hires forever (burn never ticks)
     }
   } else if (Math.abs(corgi.x - CORGI_HOME) > 2){
     corgi.x += corgi.x > CORGI_HOME ? -0.8 : 0.8;                // trots home
@@ -2563,7 +2610,7 @@ function draw(){
   bubbleRects.length = 0;                   // speech-bubble stacking resets per frame
   lateDraws.length = 0;                     // post-player deferred draws reset per frame
   // hurt juice: 2-frame camera shake
-  if (shakeT > 0 && state === ST.PLAY){ cx.translate(frame % 2 ? 2 : -2, 0); shakeT--; }
+  if (shakeT > 0 && state === ST.PLAY){ cx.translate(frame % 2 ? 2 : -2, 0); }
 
   drawBG();
 
@@ -3266,7 +3313,6 @@ function draw(){
     }
     drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
     drawPedGear(cx, player.x - cam, player.y, 1);
-    if (player.coffeeT > 0 && frame % 5 === 0) parts.push({x:player.x - 2 + Math.random()*4, y:player.y + 14, vx:-player.face, vy:-0.5, t:14, c:'#c58bff'});
   }
   for (const fn of lateDraws) fn(); // boss quips + held signs render EVERY frame (they strobed with the hurt flash — audit)
 
@@ -3503,11 +3549,18 @@ function resumePlay(fromCheckpoint){
 function goHome(){
   ui.style.display = 'none';
   paused = false; clearAllInput();
+  // showEndUI hides the d-pad; the title must hand it back or the next run is unplayable on touch
+  if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
   reset(false); state = ST.TITLE;
 }
 document.getElementById('pauseChip').onclick = () => { if (state === ST.PLAY) paused = true; initAudio(); };
 document.getElementById('pmResume').onclick = () => { paused = false; };
 document.getElementById('pmQuit').onclick = () => goHome();
+// the backdrop swallows taps meant for the ⏸ chip under it — a tap anywhere off the card resumes
+document.getElementById('pauseMenu').addEventListener('click', e => { if (e.target.id === 'pauseMenu') paused = false; });
+document.getElementById('pauseMenu').addEventListener('touchstart', e => {
+  if (e.target.id === 'pauseMenu'){ e.preventDefault(); paused = false; }
+}, {passive:false});
 
 function makeBadge(won){
   const bc = document.createElement('canvas');
@@ -3787,6 +3840,7 @@ function showEndUI(won){
   track(won ? 'win' : 'badge_screen');
   // input hygiene: a held R must not wipe the badge; the d-pad must not sit on top of the buttons
   keys['r'] = false; touch.L = touch.R = touch.J = false;
+  endGraceT = 45; // and a fresh mash-press right after the bell must not either (0.75s)
   document.getElementById('touch').style.display = 'none';
 
   const isTouch = 'ontouchstart' in window;
@@ -3810,7 +3864,9 @@ function showEndUI(won){
   let canShareFiles = false;
   try { canShareFiles = !!(navigator.canShare && navigator.canShare({files:[new File([new Uint8Array(4)], 'b.png', {type:'image/png'})]})); } catch(err){}
 
-  const bShare = canShareFiles ? '<button id="bSh" class="alt">📤 SHARE</button>' : '';
+  // SHARE renders for EVERYONE (owner ask): native share sheet where it exists,
+  // and the post text + link ride the clipboard on every click either way
+  const bShare = '<button id="bSh" class="alt">📤 SHARE</button>';
   const bSave  = `<button id="bDl">${surfaces[cur].save}</button>`;
   const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button><button id="bHome">🏠 TITLE SCREEN</button>`;
   const bTog   = `<button id="bTg" style="font-size:12px; padding:6px 10px">${won ? 'view front page' : 'view classic badge'}</button>`;
@@ -3831,7 +3887,7 @@ function showEndUI(won){
   // the POST button needs the network, so it's http(s)-only
   const lbHtml = `
     <div style="margin-top:6px">
-      <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${(() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })()}"
+      <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${escHtml((() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })())}"
         style="width:170px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
       ${LB_ON ? '<button id="lbGo" class="alt">🏆 POST VALUATION</button>' : ''}
     </div>
@@ -3854,7 +3910,10 @@ function showEndUI(won){
     try { localStorage.setItem('fm_name', nm); } catch(e){}
     surfaces.badge.c = makeBadge(won);
     surfaces.obit.c = makeObituary(won);
-    surfaces.obit.text = `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${GAME_URL}`;
+    // the share TEXT follows the name too: the badge post was frozen with the pre-typing
+    // name (blank FOUNDER line on the unfurl) and the obit post was dropping the per-run link
+    surfaces.badge.text = shareText(won);
+    surfaces.obit.text = `I made the front page of Hypergrowth Daily: '${obitHeadline(won)}'. Play: ${resultUrl(won)}`;
     for (const k in surfaces){
       const sf = surfaces[k];
       sf.url = sf.c.toDataURL('image/png');
@@ -3867,23 +3926,32 @@ function showEndUI(won){
   };
   if (LB_ON){
     const listEl = document.getElementById('lbList');
+    let lbEraAll = false;  // this list toggles today ⇄ all-time
+    let lbBusted = false;  // after a confirmed post, every read skips the pre-post CDN copy
+    const eraBtn = () => `<button id="lbEra" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px; margin-left:6px">${lbEraAll ? '📅 TODAY' : '🏅 ALL-TIME'}</button>`;
+    const loader = () => lbEraAll ? lbLoadAll : lbLoad;
     const renderTop = () => {
-      lbLoad(5, (rows, label) => {
+      loader()(5, (rows, label) => {
         listEl.innerHTML = label + (rows.length ? '<br>' + lbRowsHtml(rows) : '') +
-          (rows.length ? '<br><button id="lbAll" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">🏆 VIEW TOP 100</button>' : '');
+          (rows.length ? '<br><button id="lbAll" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">🏆 VIEW TOP 100</button>' : '<br>') + eraBtn();
+        const era = document.getElementById('lbEra');
+        if (era) era.onclick = () => { lbEraAll = !lbEraAll; renderTop(); };
         const all = document.getElementById('lbAll');
-        if (all) all.onclick = () => lbLoad(100, (rows2, label2) => {
+        if (all) all.onclick = () => loader()(100, (rows2, label2) => {
           listEl.innerHTML = label2 + ' · top ' + rows2.length +
             `<div style="max-height:220px; overflow:auto; margin:6px auto 0; width:min(520px,84vw); padding:6px 12px; background:rgba(0,0,0,.35); text-align:left">${lbRowsHtml(rows2)}</div>` +
             '<button id="lbLess" class="alt" style="font-size:13px; padding:6px 12px; margin-top:4px">show top 5 ↑</button>';
           document.getElementById('lbLess').onclick = () => renderTop();
           listEl.scrollIntoView({ block: 'nearest' }); // the expand must be SEEN (fold bug, owner report)
-        });
-      });
+        }, lbBusted);
+      }, lbBusted);
     };
     renderTop();
     document.getElementById('lbGo').onclick = () => {
-      if (lbPostedRun === runId) return;                 // this run is already on the board
+      if (lbPostedRun === runId){                        // this run is already on the board — say so, don't just eat the click
+        document.getElementById('lbGo').textContent = '✓ already on the board';
+        return;
+      }
       const nm = (nameEl.value || 'YOU').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14) || 'YOU';
       try { localStorage.setItem('fm_name', nm); } catch(e){}
       const btn = document.getElementById('lbGo');
@@ -3896,9 +3964,10 @@ function showEndUI(won){
                                       : (j && j.reason ? '✗ ' + j.reason : 'board offline (very pre-seed)');
           if (j && j.ok){
             lbPostedRun = runId;                         // marked only when the board confirms
-            // bust the 60s CDN cache so the board under the checkmark shows the new row
+            lbBusted = true;                             // the list under the checkmark must skip the pre-post CDN copy
+            renderTop();
             fetch('/api/leaderboard?seed=' + SEED_N + '&limit=10&b=' + Math.floor(Math.random() * 1e9))
-              .then(r => r.json()).then(k => { if (k && k.ok){ lbTop = k.top; renderTop(); } }).catch(() => {});
+              .then(r => r.json()).then(k => { if (k && k.ok){ lbTop = k.top; } }).catch(() => {}); // title banner too
           }
         })
         .catch(() => { btn.textContent = 'board offline (very pre-seed)'; });
@@ -3911,13 +3980,24 @@ function showEndUI(won){
     document.getElementById('bDl').textContent = surfaces[cur].save;
     document.getElementById('bTg').textContent = cur === 'obit' ? 'view classic badge' : 'view front page';
   };
-  if (canShareFiles) document.getElementById('bSh').onclick = () => {
+  document.getElementById('bSh').onclick = () => {
     const s = surfaces[cur];
-    // picture + the game link: some targets drop text when files ride along,
-    // so the url field carries the link on its own
-    const data = s.file && navigator.canShare({files:[s.file]})
-      ? {files:[s.file], text:s.text, url: resultUrl(won)} : {text:s.text, url: resultUrl(won)};
-    navigator.share(data).catch(() => navigator.share({text:s.text}).catch(()=>{}));
+    const msg = document.getElementById('cpMsg');
+    // clipboard FIRST, every click (owner ask: the link lands on the clipboard
+    // as part of sharing) — paste works even if the share sheet is dismissed
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(s.text).then(() => { msg.textContent = 'post + link copied ✓ — paste it anywhere'; }, () => {});
+    } catch(e){}
+    if (navigator.share){
+      // picture + the game link: some targets drop text when files ride along,
+      // so the url field carries the link on its own
+      const data = canShareFiles && s.file && navigator.canShare({files:[s.file]})
+        ? {files:[s.file], text:s.text, url: resultUrl(won)} : {text:s.text, url: resultUrl(won)};
+      navigator.share(data).catch(() => navigator.share({text:s.text}).catch(()=>{}));
+    } else if (!(navigator.clipboard && navigator.clipboard.writeText)){
+      msg.textContent = 'no share sheet here — use ⬇ SAVE + COPY POST below';
+    }
   };
   document.getElementById('bDl').onclick = () => {
     // one button, both halves of a LinkedIn post: the PNG downloads and the
@@ -3967,8 +4047,11 @@ function stepGame(){
     document.getElementById('credit').style.display = 'none';
     document.getElementById('lbChip').style.display = 'none';
     document.getElementById('lbPanel').style.display = 'none';
+    if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block'; // belt to goHome's suspenders
     reset(false); state = ST.PLAY;
   }
+  if (shakeT > 0) shakeT--;                // decays here, not in draw() — sim owns all state
+  if (endGraceT > 0 && state !== ST.PLAY) endGraceT--;
   if (hitstopT > 0){ hitstopT--; return; } // hurt hitstop: freeze sim, keep drawing
   update();
 }
@@ -3982,7 +4065,7 @@ function drawPause(){
   cx.fillStyle = '#8d99ae'; cx.font = 'bold 8px monospace';
   cx.fillText('(the market, briefly, moves without you)', W/2, 134);
   cx.fillStyle = '#fff';
-  cx.fillText(('ontouchstart' in window) ? 'tap ⏸ to resume' : 'ESC resumes · buttons above', W/2, 150);
+  cx.fillText(('ontouchstart' in window) ? 'tap anywhere to resume' : 'ESC resumes · buttons above', W/2, 150);
   cx.textAlign = 'left';
 }
 let _pmShown = null, _pcShown = null; // cached DOM visibility (no per-frame style churn)

@@ -669,3 +669,80 @@ corrected; PARTNERS.md live-list note; README.md + docs/WHATS-BUILT.md created.
   still burns runway; smoke warns at 3s, tick at 6s, corgi/robotaxi exempt,
   the burnout obituary + WITNESSED HISTORY egg depend on it). AFK is now
   safe anyway: pause freezes the world and there's a button for it.
+
+## 2026-07-15 — [FIX-SWEEP] full-repo bug-hunt fix pack + ALL-TIME leaderboard — branch fix-sweep
+
+Four-lens adversarial review (sim / share-api / input-UI / test-integrity) over main @ 2cb4b93;
+every finding verified against source before fixing. Trio + full probe battery green after the pack.
+
+### P1 — launch blocker
+1. **Mobile soft-lock after 🏠 TITLE SCREEN** — `showEndUI` hides `#touch`; only `resumePlay` restored
+   it. `goHome()` and the title-start path now hand the d-pad back. New overnight-mobile leg guards it
+   (home → title → next run drivable).
+
+### Game fixes
+2. **draw() no longer mutates state** — cold-brew steam particles emitted from update() (a paused frame
+   was pushing 60 particles/s forever → unbounded array, FPS collapse); `shakeT` decays in stepGame().
+3. **Interview invincibility is the full 8s** — `ycT` granted when control returns, not at the end-card
+   transition (tickPowers was burning ~4s of it through the card).
+4. **POST VALUATION works after a retry** — checkpoint respawn clears `lbPostedRun` (server keeps best);
+   a second click on the same end screen now says "✓ already on the board" instead of eating the click.
+5. **Blur pauses a running game** — a visible-but-unfocused window kept simulating; burn rate could kill
+   an idle founder at a second monitor. Blur/hidden → pause (menu offers BACK TO WORK).
+6. **Bell mash can't wipe the win screen** — 45-frame end-screen grace before R restarts (`endGraceT`,
+   sim-clock, no wall time).
+7. **No coffee chats mid-boss-fight** — the CONTRARIAN table sits inside CHAD's arena; chats/interviews
+   now refuse to open while a boss is live, opening one ends the update frame (no same-frame hit), and
+   checkpoint respawn clears any frozen mini-game state.
+8. **Corgi shift-end cooldown (10s)** — expiry used to re-adopt instantly if you stood still, making
+   burn immunity permanent from x≈2596 on. followT parks at -600 and ticks back.
+9. **Hackathon room ticks buffs** — roomUpdate() now calls tickPowers() like chat/interview (the audited
+   "buffs don't park" invariant); entering the room ends the frame (no parting slop hit).
+10. **Title eggs don't move pickers** — SLOP's P was silently cycling the pedigree (non-cosmetic);
+    egg-prefix keys skip the picker, and CORGI's leading C-cycle is reverted when the word completes.
+11. **ZERO CHURN deck-kill path honors `inj`** — parity with the stomp paths (injected phantoms don't gate).
+12. **Share text follows the typed name** — the badge post text was frozen with the pre-typing name
+    (blank FOUNDER line on the unfurl) and the obit post dropped the per-run /api/r link on re-stamp.
+13. **fm_name escaped at the innerHTML sink** (self-XSS hardening; shared `escHtml`).
+
+### Leaderboard (client + api) — incl. the owner ask: DAILY + ALL-TIME boards
+14. **ALL-TIME leaderboard** — `GET /api/leaderboard?all=1` returns the best surviving row per founder
+    across every seed (dedup server-side, same 60s CDN cache). Toggles: 🏅 ALL-TIME on the end-card list
+    and on the title panel. Daily board unchanged (still resets with the seed).
+15. **Keep-best is won-aware** — the board ranks won→val→time but the overwrite compare ignored `won`:
+    a $500K death could bury a $300K win (and vice versa). Compare + PATCH now mirror board order.
+16. **PATCH races guarded** — concurrent improvements could leave the lesser run standing
+    (last-writer-wins); the PATCH now carries a still-worse filter.
+17. **Post-confirm board is fresh** — the list under "✓ ON THE BOARD" re-fetched the pre-post CDN copy
+    (the exact bug the bust param claimed to fix); busted reads now drive the visible list.
+18. **Seed clamp** — POST accepts today's seed ±1 day only (client seeds off the local calendar, server
+    UTC); nobody pre-fills next week's board. Closes RESEARCH-LOG F2.
+19. **Errors are no-store** — a Supabase blip was CDN-cached for 60s as "board unavailable".
+20. **Blocklist additions** (leet-collapsed slur variants); Scunthorpe false positives (HANCOCK, DICKENS)
+    consciously accepted — the rejection copy is part of the joke.
+21. **og/r time width 5→7** — a legal 100+ minute run rendered "TIME 103:2" on the share card.
+
+### Test integrity (the gates that could not fail)
+22. corgi-probe static scan read the FIRST script tag (the analytics loader) — vacuously green forever;
+    now scans the game script. obituary-probe's share-copy check compared a string to itself — now reads
+    the REAL clipboard write. celebs-probe's WALTMAN check asserted the probe's own write — now a
+    sign-pixel flip check. NEW: celebs-probe loads a RISKY_CAMEOS=false build and requires the celebs
+    gone (the one-const kill switch, exercised for the first time). leaderboard-probe's XSS check passed
+    on an empty list — the hostile row is now guaranteed present + escaped, stub server errors exit 1.
+    playtest asserts SDK crates actually drop. obituary-probe stages the 'sdk crate' death. NEW pause/home
+    coverage: minigames-probe (menu, resume, SHUT IT DOWN → clean title → fresh run), overnight-mobile
+    (⏸ menu, backdrop-tap resume, 🏠 d-pad restore + drivable next run).
+23. ci-sweep.sh: plausibility-clamp check is a HARD gate (was warn-only); secret scan covers
+    sk-ant-oat/sid, sk-proj, ghp_/github_pat_, AKIA, phx_ + CHANGELOG.md no longer excluded.
+    billboards-probe leak gate uses word boundaries (EXACT no longer trips EXA).
+24. research-sweep.yml: timeout 20→30min; CI-SWEEP-LOG header order bug fixed (verified broken on the
+    research branch); push races rebase+retry; an infra timeout can no longer file a "hard gate failing"
+    issue (empty gate_exit guarded).
+25. .gitignore += `.env*`; .vercelignore += `scripts/`, `.github/` (they were deploying to the public URL).
+
+### Known-accepted, unchanged
+- POST rate-limit still absent (RESEARCH-LOG F1, table-bloat only); rows remain forgeable within caps
+  (no-HMAC owner tradeoff); CONTRARIAN table stays at x6480 as set decoration (chat gated off instead).
+26. **📤 SHARE for everyone** (owner ask, same session): the button no longer requires file-share
+    support — native share sheet where it exists, and the post text + per-run link land on the
+    clipboard on EVERY click ("post + link copied ✓ — paste it anywhere").
