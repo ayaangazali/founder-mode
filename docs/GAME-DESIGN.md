@@ -54,8 +54,14 @@ How FOUNDER MODE works internally, and exactly where to change things. All refer
 - `shareText(won)` is the clipboard text for the COPY LINKEDIN POST button. Win and loss variants.
 - Both are wired up in `showEndUI(won)` — download uses `canvas.toDataURL`; copy uses `navigator.clipboard` with a graceful fallback message.
 
+### Identity & daily board (accounts-lite)
+- `normalizeName()` / `claimIdentity()` - the client name policy (uppercase, `A-Z0-9 .-`, max 14), mirroring the server checks in `api/leaderboard.mjs`. The name lives in `localStorage` key `fm_name`; it is optional, local-first, and never gates play.
+- Title-screen entry points: the `[L] TODAY'S BOARD` / `[N] CLAIM IDENTITY` rows drawn in `drawTitle()`, tap zones in `HOME_ZONES`, panels in `showLeaderboard()` / `showIdentityClaim()` / `closeHomePanel()` (END SCREENS area). Escape or the opening key closes a panel; `eggInProgress()` keeps L/N from firing while a title egg (CORGI/SLOP) is being typed.
+- Endpoint seam: `LB_ENDPOINT = window.FOUNDER_MODE_LEADERBOARD_URL || '/api/leaderboard'` - set the global before the game script to point at another deployment. `LB_ON` gates all network: on `file://` the game never fetches.
+- Board cache: a successful read lands in `localStorage` key `fm_board_<seed>` (prior days pruned); offline the board renders the cache or hides its entry point.
+
 ### Known v0.1 limitations (intentional scope cuts)
-- Leaderboard is not global (no backend) — see ROADMAP.md §3.
+- The daily leaderboard is global only once deployed with Supabase env vars set (`api/leaderboard.mjs` header has the setup). Unconfigured, the route answers ok:false and the board just stays empty; on `file://` with no cache the `[L]` title entry hides and the game falls back to the localStorage personal best.
 - Link previews use a static OG image — dynamic per-run badges need a serverless endpoint (ROADMAP.md §2).
 - The "Y" acceptance-letter power-up should be renamed/redrawn before public launch (research report §8 — trade-dress risk).
 - One level. That's a feature: research says finishable-in-minutes drives completion, and completion drives shares.

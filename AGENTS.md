@@ -43,7 +43,7 @@ grep -iE 'yc accepted|yc mode|patagonia|wework|y combinator' index.html
 - [ ] Replace `GAME_URL = 'https://foundermode.lol'` placeholder with the real deployed URL (or buy that domain).
 - [ ] BEFORE any public GitHub push: strip the "TIER 2 / risky" section from `design/CAMEOS.md` (right-of-publicity; see FINAL-REVIEW §4.4). qa/design-cameos.md is already ship-tier only.
 - [ ] M2: deploy (docs/BUILD-GUIDE.md Steps 2–4; `og.png` already exists at repo root — just add the meta tags when the domain is known).
-- [ ] M3: daily seed + `/api/og` + Supabase leaderboard (working code in docs/ROADMAP.md §7–9; the `api/` dir may be added — the GAME stays one file).
+- [ ] M3 remainder: create the Supabase project + set `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` env vars (until then `api/leaderboard.mjs` answers ok:false and the board stays empty). Daily seed, `api/og.mjs`, `api/leaderboard.mjs`, and the in-game board + optional local-first identity (`[L]`/`[N]` on the title, end-screen post) are already in - the GAME stays one file.
 - [ ] M5 (ONLY if docs/MASTER-PLAN §4.3 traction gate opens): paste `design/level-cerebral-valley.js` + v1.0 bestiary from `design/sprites.js` per the integration checklist in that file.
 
 ## Never

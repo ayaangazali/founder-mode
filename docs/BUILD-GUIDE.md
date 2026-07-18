@@ -8,7 +8,7 @@ The game is one HTML file with zero dependencies, so "building" is really just r
 
 Double-click `index.html`. It runs from the filesystem — no server needed.
 
-If you prefer a local server (needed only if you later add fetch calls):
+If you prefer a local server (optional - the game is fully playable from `file://`; only the daily-board fetches turn on over http(s), and the board quietly stays empty when the API isn't there):
 
 ```bash
 # any of these, from the kit folder:

@@ -14,6 +14,9 @@ display), checkpoint respawn with a −25% "bridge round" haircut, pick-your-fou
 badge), per-zone biomes, 6 background cameo legends, 3 discoverable easter eggs, zone-aware loss
 badges, and a hardened share loop (URL baked into the badge PNG, clipboard fallbacks, native share
 on mobile). All trademarks removed. `index.v0.1.bak.html` is the original v0.1, untouched.
+Newest additions: an optional, local-first claimed identity (`[N]` on the title screen, kept in
+localStorage - never a signup wall) and a daily `[L] TODAY'S BOARD` view backed by the serverless
+leaderboard; both degrade gracefully offline (hide or show the cached board) and never gate play.
 
 12 bugs were found by adversarial agents running live Playwright probes, independently re-verified,
 and fixed with tests green after every change — the paper trail is in `qa/`.
@@ -24,8 +27,9 @@ and fixed with tests green after every change — the paper trail is in `qa/`.
 |---|---|
 | `index.html` | **The entire game.** The only file you need to ship. |
 | `index.v0.1.bak.html` | Pristine v0.1 backup. |
-| `CLAUDE.md` | Session brief for Claude Code — read first, every session. |
+| `AGENTS.md` | Session brief for agents - read first, every session (`CLAUDE.md` is a symlink to it). |
 | `og.png` | 1200×630 link-preview image (wire up per BUILD-GUIDE Step 4). |
+| `api/` | Optional serverless routes: `leaderboard.mjs` (daily board, env-gated) + `og.mjs`. The game runs without them. |
 | `docs/FOUNDER-MODE-BIBLE.md` | **Start here.** The unified design bundle: routes, losses, eggs, speedruns, culture pack. |
 | `docs/MASTER-PLAN.md` | Lore bible, copy decks, progression, Claude Code milestones, traction gate. |
 | `docs/RESEARCH-REPORT.md` | Fact-checked research on why games like this go viral. |
@@ -36,12 +40,12 @@ and fixed with tests green after every change — the paper trail is in `qa/`.
 | `screenshots/` | v0.1-era screenshots (badges/bosses still representative). |
 
 ## Controls
-← → or A/D move · SPACE / ↑ / W jump · **C/H/V customize your founder (title screen)** · M mute · R restart.
+← → or A/D move · SPACE / ↑ / W jump · **C/H/V/X/P customize your founder · L today's board · N claim identity (title screen)** · M mute · R restart.
 Touch controls appear automatically on phones. Rotate to landscape — investors prefer landscape.
 
 ## Before you launch (the short list)
 1. Replace the `GAME_URL` placeholder in `index.html` with your real URL (or register foundermode.lol).
-2. Strip the risky tier from `design/CAMEOS.md` before any public repo push (see `CLAUDE.md`).
+2. Strip the risky tier from `design/CAMEOS.md` before any public repo push (see `AGENTS.md`).
 3. `docs/BUILD-GUIDE.md` Step 2 → public URL. Then `docs/LAUNCH-PLAYBOOK.md`, verbatim.
 
 ---

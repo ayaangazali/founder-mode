@@ -49,7 +49,7 @@ How: derive a seed from the date, use a tiny seeded RNG for enemy placement jitt
 ### 8. Dynamic per-player OG badges (Vercel serverless)
 Why: report §9 — when someone pastes their result URL on LinkedIn, *their* badge should be the preview image.
 How (verified path, Vercel docs current as of 2026-06):
-1. `npm i @vercel/og` and add `api/og.jsx`:
+1. `pnpm add @vercel/og` and add `api/og.jsx`:
 ```jsx
 import { ImageResponse } from '@vercel/og';
 export const config = { runtime: 'edge' };
@@ -81,6 +81,11 @@ How:
 3. Client: `@supabase/supabase-js` via CDN `<script>`, insert on win, `select ... where day = today order by ms asc limit 10` for the board. Show it on the win screen under the badge.
 4. Cheating: scores are client-side and forgeable. For a humor game, accept it — cap `raised` at the theoretical max (sanity check in a DB constraint) and consider the inevitable cheater screenshot to be free content.
 
+**Shipped (deviates from the sketch above; the code is the reference).**
+`api/leaderboard.mjs` talks to Supabase over plain REST behind a serverless route (no client SDK, service key stays server-side), with names ≤14 chars, a profanity blocklist, and one entry per name per day.
+The client (in `index.html`) shows the board on the end screen and behind `[L] TODAY'S BOARD` on the title, gates posting on an optional local-first claimed identity (`[N]`), caches the daily read to localStorage for offline, and takes its endpoint from `window.FOUNDER_MODE_LEADERBOARD_URL || '/api/leaderboard'`.
+What remains: the Supabase project + env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_KEY`); until they are set the route answers `ok:false` and the board stays empty - the game never blocks on it.
+
 ### 10. Instrument the funnel (optional)
 One free analytics pixel (e.g. Plausible/GoatCounter) + three custom events: `start`, `first_boss`, `win`. You want to know where feed traffic dies. Target: first-time players reaching *a* badge screen (win or death) >80% — the badge only spreads if people reach it.
 
@@ -89,5 +94,6 @@ One free analytics pixel (e.g. Plausible/GoatCounter) + three custom events: `st
 ## Explicitly cut (scope discipline is the strategy)
 - More levels, world map, characters select — no. 2048 was one board.
 - Accounts/logins — never. Signup is friction; friction kills virality.
+  (The optional local-first display name is not an account: it lives in localStorage, is needed only to post a score, and never sits between page-load and play.)
 - Mobile app builds — the browser IS the distribution.
 - Multiplayer — the leaderboard is the multiplayer.
