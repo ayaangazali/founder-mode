@@ -161,8 +161,8 @@ window.addEventListener('keydown', e => {
     else if (k === 'v') cycleLook('v');
     else if (k === 'x') cycleLook('x');
     else if (k === 'p') cycleLook('p');
-    else if (k === 'l') homePanel === 'board' ? closeHomePanel() : showLeaderboard();      // opening key toggles
-    else if (k === 'n') homePanel === 'identity' ? closeHomePanel() : showIdentityClaim();
+    else if (k === 'l' && !eggInProgress(k)) homePanel === 'board' ? closeHomePanel() : showLeaderboard();      // opening key toggles
+    else if (k === 'n' && !eggInProgress(k)) homePanel === 'identity' ? closeHomePanel() : showIdentityClaim();
     // item 10 eggs: type CORGI / SLOP on the title (sticky for the session)
     if (k.length === 1 && k >= 'a' && k <= 'z'){
       typed = (typed + k).slice(-5);
@@ -246,22 +246,18 @@ const HOME_ZONES = [
   { x:74, y:138, w:154, h:14, k:'board' },
   { x:244, y:138, w:164, h:14, k:'identity' },
 ];
-function pickerHit(clientX, clientY){
+function zoneHit(zones, clientX, clientY, padX, padY){
   const r = cv.getBoundingClientRect();
   const mx = (clientX - r.left) * W / r.width;
   const my = (clientY - r.top)  * H / r.height;
-  for (const z of PICKER_ZONES)
-    if (mx > z.x - 8 && mx < z.x + z.w + 8 && my > z.y - 5 && my < z.y + z.h + 5)
+  for (const z of zones)
+    if (mx > z.x - padX && mx < z.x + z.w + padX && my > z.y - padY && my < z.y + z.h + padY)
       return z.k;
   return null;
 }
+function pickerHit(clientX, clientY){ return zoneHit(PICKER_ZONES, clientX, clientY, 8, 5); }
 function homeHit(clientX, clientY){
-  const r = cv.getBoundingClientRect();
-  const mx = (clientX - r.left) * W / r.width;
-  const my = (clientY - r.top) * H / r.height;
-  for (const z of HOME_ZONES)
-    if (mx > z.x && mx < z.x + z.w && my > z.y && my < z.y + z.h) return z.k;
-  return null;
+  return zoneHit(HOME_ZONES.filter(z => z.k !== 'board' || LB_ON || lbCached), clientX, clientY, 0, 0);
 }
 cv.addEventListener('mousedown', e => {
   idleT = 0;
@@ -826,6 +822,14 @@ let cmoT = 0, cmoDone = false;
 // HUMOR PATCH item 10 eggs: title-typed codes (sticky for the session), the
 // classic cheat-code sequence (never rendered in-game), and café loyalty.
 let typed = '', pendingCorgi = false, pendingSlop = false, slopStyle = false;
+const EGG_WORDS = ['corgi', 'slop'];
+function eggInProgress(k){
+  const b = (typed + k).slice(-5);
+  for (const w of EGG_WORDS)
+    for (let n = Math.min(b.length, w.length); n >= 1; n--)
+      if (b.slice(-n) === w.slice(0, n)) return true;
+  return false;
+}
 let cafeRegular = false, cafeStill = 0;          // session-scoped: once a regular, always a regular
 const KONAMI = ['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
 let konamiIdx = 0, konamiDone = false;
@@ -3409,7 +3413,7 @@ function showLeaderboard(){
     const rows = live ? lbTop : lbCached;
     uicard.innerHTML = `<div style="max-width:min(540px,90vw); color:#cfd6e4; padding:20px; background:#141433; border:4px solid #ffd94a">
       <div style="font:bold 22px 'Courier New',monospace; color:#ffd94a">TODAY'S BOARD</div>
-      <div style="margin-top:5px; font-weight:bold; color:#8d99ae">seed #${SEED_N}${live ? '' : ' · cached offline'}</div>
+      <div style="margin-top:5px; font-weight:bold; color:#8d99ae">seed #${SEED_N}${!live && rows ? ' · cached offline' : ''}</div>
       ${boardRows(rows)}
       <button id="lbClose">← BACK TO PITCH</button>${playerName() ? '' : '<button id="lbClaimHome" class="alt">CLAIM IDENTITY</button>'}
     </div>`;
@@ -3789,11 +3793,13 @@ function showEndUI(won){
     document.getElementById('endImg').src = surfaces[cur].url;
     return true;
   };
-  document.getElementById('lbClaim').onclick = refreshNameSurfaces;
+  document.getElementById('lbClaim').onclick = () => {
+    document.getElementById('cpMsg').textContent = refreshNameSurfaces() ? 'identity claimed ✓' : 'enter a display name first';
+  };
   if (LB_ON){
     const listEl = document.getElementById('lbList');
     const renderRows = rows => rows.map((r, i) =>
-      `${i + 1}. ${normalizeName(r.name) || 'YOU'} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
+      `${i + 1}. ${normalizeName(r.name) || 'YOU'} — ${fmtMoney(r.val | 0)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms | 0)}`).join('<br>');
     const renderTop = () => {
       listEl.innerHTML = lbTop && lbTop.length
         ? "TODAY'S BOARD — seed #" + SEED_N + ' · ' + lbTop.length + (lbTop.length === 1 ? ' founder' : ' founders') +
