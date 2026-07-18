@@ -2,6 +2,7 @@
 # The workroom (docs, qa reports, design lab, tests, plans) and the
 # pre-sanitize v0.1 backup must never be reachable from the public URL.
 .claude/
+.sentrux/
 design/
 docs/
 node_modules/

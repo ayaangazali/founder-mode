@@ -2,3 +2,7 @@ node_modules/
 *.zip
 .DS_Store
 shot*.png
+
+# sentrux caches (rules.toml and baseline.json are tracked)
+.sentrux/cache.bin
+.sentrux/churn.bin
