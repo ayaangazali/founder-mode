@@ -1,4 +1,4 @@
-# CLAUDE.md — read this first, every session
+# AGENTS.md - read this first, every session (CLAUDE.md is a symlink to this file)
 
 ## What this is
 FOUNDER MODE: a single-file, pixel-art, Mario-style browser game satirizing SF startup culture, built to go viral on LinkedIn. The game is `index.html` — **one file, ~1,300 lines of vanilla JS + canvas. No frameworks. No build step. No image assets. Ever.** All sprites are `fillRect` calls on a 480×270 internal canvas.
@@ -48,7 +48,7 @@ grep -iE 'yc accepted|yc mode|patagonia|wework|y combinator' index.html
 
 ## Never
 - Add a framework, bundler, image asset, or second required file for the game itself.
-- Add signup, accounts, or anything between page-load and playing.
+- Gate play behind a signup wall, account, or anything between page-load and playing. (An optional, local-first display name is fine - it must never gate play; see the accounts/leaderboard work.)
 - Ship a thin-veil celebrity cameo, on any tier, under any name.
 - Mark a milestone done with a failing test.
 

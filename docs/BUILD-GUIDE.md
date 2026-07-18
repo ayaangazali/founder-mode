@@ -12,7 +12,7 @@ If you prefer a local server (needed only if you later add fetch calls):
 
 ```bash
 # any of these, from the kit folder:
-npx serve .
+pnpm dlx serve .
 python3 -m http.server 8000
 ```
 
@@ -95,7 +95,7 @@ Manual checklist (2 minutes):
 Automated (optional): from the kit root with Node installed:
 
 ```bash
-npm install playwright   # once; downloads its own browser
+pnpm install             # once; installs playwright (which downloads its own browser)
 node test/smoketest.js   # loads + starts the game, checks for JS errors
 node test/playtest.js    # full run: bosses, win screen, screenshots
 node test/deathtest.js   # death + R-restart flow

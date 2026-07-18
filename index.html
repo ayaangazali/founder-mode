@@ -148,6 +148,7 @@ let anyKeyPressed = false;
 window.addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
   if (e.key === 'Escape' && state === ST.PLAY){ paused = !paused; return; }
+  if (e.key === 'Escape' && homePanelOpen){ closeHomePanel(); return; }  // dismiss title board/identity panel
   keys[e.key.toLowerCase()] = true;
   if (e.key === ' ') keys['space'] = true;
   anyKeyPressed = true;
@@ -160,8 +161,8 @@ window.addEventListener('keydown', e => {
     else if (k === 'v') cycleLook('v');
     else if (k === 'x') cycleLook('x');
     else if (k === 'p') cycleLook('p');
-    else if (k === 'l') showLeaderboard();
-    else if (k === 'n') showIdentityClaim();
+    else if (k === 'l') homePanel === 'board' ? closeHomePanel() : showLeaderboard();      // opening key toggles
+    else if (k === 'n') homePanel === 'identity' ? closeHomePanel() : showIdentityClaim();
     // item 10 eggs: type CORGI / SLOP on the title (sticky for the session)
     if (k.length === 1 && k >= 'a' && k <= 'z'){
       typed = (typed + k).slice(-5);
@@ -524,13 +525,20 @@ function lbFetch(after){
   fetch(LB_ENDPOINT + '?seed=' + SEED_N + '&limit=200').then(r => r.json())
     .then(j => { if (j && j.ok){
       lbTop = Array.isArray(j.top) ? j.top : [];
-      try { localStorage.setItem('fm_board_' + SEED_N, JSON.stringify(lbTop)); } catch(e){}
+      try {
+        localStorage.setItem('fm_board_' + SEED_N, JSON.stringify(lbTop));
+        // one board key per day played; drop prior days' so the cache stays bounded
+        for (let i = localStorage.length - 1; i >= 0; i--){
+          const key = localStorage.key(i);
+          if (key && key.startsWith('fm_board_') && key !== 'fm_board_' + SEED_N) localStorage.removeItem(key);
+        }
+      } catch(e){}
       if (after) after();
     } }).catch(() => {});
 }
 lbFetch();
 function lbBest(){ try { return JSON.parse(localStorage.getItem('fm_best') || 'null'); } catch(e){ return null; } }
-function playerName(){ try { return (localStorage.getItem('fm_name') || '').trim(); } catch(e){ return ''; } }
+function playerName(){ try { return normalizeName(localStorage.getItem('fm_name')); } catch(e){ return ''; } }
 function normalizeName(value){ return String(value || '').toUpperCase().replace(/[^A-Z0-9 .-]/g, '').trim().slice(0, 14); }
 function claimIdentity(value){
   const name = normalizeName(value);
@@ -3359,6 +3367,7 @@ function drawTitle(){
 const ui = document.getElementById('ui');
 const uicard = document.getElementById('uicard');
 let homePanelOpen = false;
+let homePanel = '';  // '' | 'board' | 'identity' - which title-screen panel is open (guards stale async re-render)
 // M2 deployed 2026-07-11: live on Vercel. Swap to the joke domain when bought
 // (foundermode.lol still unregistered). HARDCODED on purpose — location.href
 // inside LinkedIn webviews can be a tracking redirector (ruling §2 amendments).
@@ -3379,13 +3388,13 @@ function badgeFlairs(won){
 }
 
 function resumePlay(fromCheckpoint){
-  homePanelOpen = false;
+  homePanelOpen = false; homePanel = '';
   ui.style.display = 'none';
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
   reset(fromCheckpoint); state = ST.PLAY;
 }
 
-function closeHomePanel(){ homePanelOpen = false; ui.style.display = 'none'; }
+function closeHomePanel(){ homePanelOpen = false; homePanel = ''; ui.style.display = 'none'; }
 function boardRows(rows){
   if (!rows || !rows.length) return '<div style="color:#8d99ae">no exits posted yet. enormous market opportunity.</div>';
   return `<div style="max-height:300px; overflow:auto; margin:12px auto; padding:10px 14px; background:rgba(0,0,0,.35); text-align:left; line-height:1.7">` +
@@ -3393,8 +3402,9 @@ function boardRows(rows){
 }
 function showLeaderboard(){
   if (!LB_ON && !lbCached) return;
-  homePanelOpen = true;
+  homePanelOpen = true; homePanel = 'board';
   const render = () => {
+    if (homePanel !== 'board') return;  // a slow fetch must not clobber a panel the player already left
     const live = lbTop !== null;
     const rows = live ? lbTop : lbCached;
     uicard.innerHTML = `<div style="max-width:min(540px,90vw); color:#cfd6e4; padding:20px; background:#141433; border:4px solid #ffd94a">
@@ -3410,7 +3420,7 @@ function showLeaderboard(){
   if (LB_ON) lbFetch(render);
 }
 function showIdentityClaim(){
-  homePanelOpen = true;
+  homePanelOpen = true; homePanel = 'identity';
   const current = playerName();
   uicard.innerHTML = `<div style="max-width:min(480px,90vw); color:#cfd6e4; padding:20px; background:#141433; border:4px solid #7ce0ff">
     <div style="font:bold 22px 'Courier New',monospace; color:#7ce0ff">CLAIM IDENTITY</div>
@@ -3421,7 +3431,7 @@ function showIdentityClaim(){
   </div>`;
   ui.style.display = 'flex';
   const input = document.getElementById('identityName');
-  input.onkeydown = e => e.stopPropagation();
+  input.onkeydown = e => { e.stopPropagation(); if (e.key === 'Escape') closeHomePanel(); };  // Escape dismisses even while typing
   document.getElementById('identityClose').onclick = closeHomePanel;
   document.getElementById('identitySave').onclick = () => {
     const name = claimIdentity(input.value);
@@ -3742,7 +3752,7 @@ function showEndUI(won){
   // after the player deliberately claims one; file:// never exposes a POST.
   const lbHtml = `
     <div style="margin-top:6px">
-      <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${(() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })()}"
+      <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${playerName()}"
         style="width:170px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
       <button id="lbClaim" class="alt">CLAIM IDENTITY</button>
       ${LB_ON ? '<button id="lbGo" class="alt">🏆 POST VALUATION</button>' : ''}
@@ -3783,7 +3793,7 @@ function showEndUI(won){
   if (LB_ON){
     const listEl = document.getElementById('lbList');
     const renderRows = rows => rows.map((r, i) =>
-      `${i + 1}. ${r.name} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
+      `${i + 1}. ${normalizeName(r.name) || 'YOU'} — ${fmtMoney(r.val)} ${r.won ? '🦄' : '💀'} ${fmtTime(r.time_ms)}`).join('<br>');
     const renderTop = () => {
       listEl.innerHTML = lbTop && lbTop.length
         ? "TODAY'S BOARD — seed #" + SEED_N + ' · ' + lbTop.length + (lbTop.length === 1 ? ' founder' : ' founders') +
@@ -3793,8 +3803,9 @@ function showEndUI(won){
     renderTop();
     document.getElementById('lbGo').onclick = () => {
       if (lbPostedRun === runId) return;                 // this run is already on the board
+      // commit whatever is typed in the field first, so the posted name can't diverge from what's shown
+      if (!refreshNameSurfaces()){ document.getElementById('cpMsg').textContent = 'claim an identity before posting'; return; }
       const nm = playerName();
-      if (!nm){ document.getElementById('cpMsg').textContent = 'claim an identity before posting'; return; }
       const btn = document.getElementById('lbGo');
       btn.textContent = '…syndicating…';
       fetch(LB_ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' },

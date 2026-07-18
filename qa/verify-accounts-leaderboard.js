@@ -40,7 +40,12 @@ const check = (name, ok, detail='') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await page.waitForSelector('#lbClose');
   check('title keyboard opens leaderboard', await page.locator('#lbClose').count() === 1);
   check('leaderboard renders API top run', (await page.locator('#uicard').innerText()).includes('MAYA'));
-  await page.locator('#lbClose').click();
+  // review-7: the opening key toggles the panel shut, and Escape dismisses it too
+  await page.keyboard.press('l'); await page.waitForTimeout(50);
+  check('opening key toggles board closed', await page.evaluate(() => !homePanelOpen && getComputedStyle(ui).display === 'none'));
+  await page.keyboard.press('l'); await page.waitForSelector('#lbClose');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(50);
+  check('Escape dismisses board panel', await page.evaluate(() => !homePanelOpen && getComputedStyle(ui).display === 'none'));
 
   await page.keyboard.press('n');
   await page.waitForSelector('#identityName');
@@ -52,6 +57,14 @@ const check = (name, ok, detail='') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await page.evaluate(() => { endTime = 90000; raised = 20; state = ST.WIN; showEndUI(true); });
   await page.locator('#lbGo').click(); await page.waitForTimeout(100);
   check('finished claimed run posts to backend contract', posts.length === 1 && posts[0].name === 'ADA FOUNDER', JSON.stringify(posts[0] || {}));
+  // review-2: editing the name field and hitting POST (without a separate CLAIM click)
+  // commits the typed name, so the posted name can't diverge from what's on screen.
+  posts = [];
+  await page.evaluate(() => { lbPostedRun = -1; });   // let this run post again for the test
+  await page.locator('#lbName').fill('Grace H');
+  await page.locator('#lbGo').click(); await page.waitForTimeout(100);
+  check('end POST commits the edited name field', posts.length === 1 && posts[0].name === 'GRACE H', JSON.stringify(posts[0] || {}));
+  check('edited name persisted to identity', await page.evaluate(() => localStorage.getItem('fm_name')) === 'GRACE H');
   check('zero page errors online', errors.length === 0, errors.join(' | '));
   await browser.close();
 

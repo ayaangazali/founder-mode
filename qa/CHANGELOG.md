@@ -1,5 +1,19 @@
 # FOUNDER MODE — CHANGELOG
 
+## 2026-07-18 — [ACCOUNTS + HOME BOARD] review-gate fixes (captain-adjudicated)
+
+Applied the captain's calls on the no-mistakes review findings for the accounts/leaderboard PR.
+
+- review-1 (async re-render): `showLeaderboard`'s deferred `lbFetch` callback now no-ops unless the board panel is still the open panel, so a slow response can't clobber the identity panel mid-edit or the end-screen share card.
+- review-2 (POST vs field): the end-screen POST now commits whatever is typed in the name field first (via `refreshNameSurfaces`), so the posted name can never diverge from what's shown.
+- review-5 (cache growth): a successful board read prunes prior days' `fm_board_*` keys, keeping the cache bounded to one entry.
+- review-6 (name sanitization on read): `playerName()` normalizes on read, and the end-screen input value and rendered API rows go through `normalizeName` for consistency with the home board.
+- review-7 (keyboard dismiss): Escape closes the title board/identity panels (even while typing a name), and each opening key (`L`/`N`) toggles its own panel shut.
+- review-3 (docs): kept the `CLAUDE.md` -> `AGENTS.md` symlink (fleet convention) and fixed the stale `# CLAUDE.md` H1 heading in `AGENTS.md`.
+- review-4 (canon): amended the `AGENTS.md` "Never" bullet to encode the real boundary - no signup wall, an optional local-first display name is fine, play is never gated.
+- review-8 (docs): switched `docs/BUILD-GUIDE.md` setup commands from npm to pnpm.
+- Extended `qa/verify-accounts-leaderboard.js` with toggle/Escape dismiss and edited-name-POST coverage (14 checks). All game tests + probes pass; sentrux gate shows no regression.
+
 ## 2026-07-13 — [ACCOUNTS + HOME BOARD]
 
 - Added an optional, local-first claimed display identity. It is deliberately not a signup wall: names
