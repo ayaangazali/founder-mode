@@ -898,3 +898,33 @@
 
 ---
 
+## 2026-07-20 11:13 UTC · main @ 0326176
+
+**Standing sweeps**
+- ✓ canon grep clean
+- ✓ secret scan clean (no key/JWT value shapes in tracked files)
+- npm audit: found 0 vulnerabilities
+- ✓ leaderboard plausibility clamps intact
+
+**Test battery (hard gates)**
+- ✓ smoketest
+- ✓ playtest
+- ✓ deathtest
+- ✓ billboards-probe
+- ✓ celebs-probe
+- ✓ corgi-probe
+- ✓ leaderboard-probe
+- ✓ minigames-probe
+- ✓ moments-probe
+- ✓ mood-probe
+- ✓ obituary-probe
+- ✓ verify-daily-seed
+
+**Fullrun bot (advisory — never fails the gate)**
+- clean profile PASS · 1 recoveries
+
+**RESULT: all hard gates green ✅**
+
+
+---
+
