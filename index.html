@@ -1139,7 +1139,7 @@ function reset(fromCheckpoint){
       }
     }
     raised = Math.floor(raised * 0.75);
-    addPop(player.x, player.y - 20, 'BRIDGE ROUND: -25%', '#ff8c37');
+    addPop(player.x, player.y - 20, 'BRIDGE ROUND: -25%', '#ff8c37', 150); // long enough to actually read the haircut
   }
 }
 // ------------------------- PHYSICS / UPDATE -------------------------
@@ -1393,8 +1393,13 @@ function update(){
   }
   if (Math.abs(p.vx) > 0.5 && p.onGround && frame % 6 === 0) p.runFrame ^= 1;
 
-  // checkpoints
-  for (const c of checkpoints) if (p.x > c && checkpoint < c) checkpoint = c;
+  // checkpoints — announced on first crossing (persona backlog #2: six personas
+  // never knew respawns existed until they died)
+  for (const c of checkpoints) if (p.x > c && checkpoint < c){
+    checkpoint = c;
+    addPop(c, GROUND_Y - 56, 'TERM SHEET SIGNED', '#7cffa5', 120);
+    beep(660, .08, 'triangle', .07); beep(880, .12, 'triangle', .07, 0, 0.09);
+  }
 
   // camera
   const target = clamp(p.x - 180, 0, LEVEL_W - W);
@@ -2681,6 +2686,18 @@ function draw(){
     px(x + 12 + wmax/2 - 2, GROUND_Y - 22, 4, 22, '#4a3a2a');
     cx.fillStyle = '#ffe9b3';
     sg.l.forEach((t, i) => cx.fillText(t, Math.round(x + 16), Math.round(GROUND_Y - 22 - sg.l.length * 10 + i * 10 + 8)));
+  }
+
+  // checkpoint flags — the respawn points were real but invisible (persona backlog #2);
+  // a term-sheet pennant marks each one, green once it's yours. Steady colors, no blink.
+  for (const c of checkpoints){
+    if (c <= 20) continue;                                  // the spawn point needs no flag
+    const x = c - cam;
+    if (x < -20 || x > W + 20) continue;
+    const mine = checkpoint >= c;
+    px(x - 1, GROUND_Y - 26, 2, 26, '#5d4a36');             // pole
+    px(x - 5, GROUND_Y, 10, 3, '#4a3a2a');                  // base
+    px(x + 1, GROUND_Y - 26, 8, 5, mine ? '#7cffa5' : '#8d99ae'); // pennant
   }
 
   // HUMOR PATCH item 3: post-boss beat — Chad pivoted, posthumously. The sign
