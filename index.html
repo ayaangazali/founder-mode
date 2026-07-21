@@ -2056,7 +2056,7 @@ const SKINS = [
   { skin:'#9a6a45', hair:'#241812', hairDk:'#170f0a' },
   { skin:'#84573a', hair:'#1d130c', hairDk:'#120b06' },
 ];
-const HAIRS = ['HOOD UP','BUZZ','CURLY','PONYTAIL'];   // style names shown in the picker
+const HAIRS = ['HOOD UP','BUZZ','CURLY','PONYTAIL','LONG','BUN'];   // style names shown in the picker (owner ask 2026-07-21: feminine options beyond the ponytail)
 const HOODIES = [
   { name:'FOG',      main:'#7f8ea3', pocket:'#5f6e83' },  // 0 = canon default
   { name:'MATCHA',   main:'#5da06b', pocket:'#41794e' },
@@ -2165,11 +2165,20 @@ function drawFounder(ctx2, x, y, s, face, runF, yc, lk){
       R(2,0,8,2, L.hair); R(1,0,1,3, L.hair); R(10,0,1,3, L.hair);
       R(2,2,1,1, L.hair); R(9,2,1,1, L.hair);
       R(3,0,1,1, L.hairDk); R(6,0,1,1, L.hairDk); R(4,1,1,1, L.hairDk); R(9,1,1,1, L.hairDk);
-    } else {                                       // PONYTAIL
+    } else if (st === 3){                          // PONYTAIL
       R(2,0,8,2, L.hair); R(2,2,1,2, L.hair); R(9,2,1,2, L.hair);
       const tx = face >= 0 ? 0 : 10;
       R(tx,1,2,7, L.hair); R(tx,4,2,1, L.hairDk);
       if (runF) R(tx,8,2,1, L.hair);
+    } else if (st === 4){                          // LONG — down both sides to the shoulders
+      R(2,0,8,2, L.hair);
+      R(1,1,2,7, L.hair); R(9,1,2,7, L.hair);
+      R(1,4,1,1, L.hairDk); R(10,4,1,1, L.hairDk); // strand shading
+      if (runF){ R(1,8,2,1, L.hair); R(9,8,2,1, L.hair); } // sway on the run frame
+    } else {                                       // BUN — top knot, clean sides
+      R(2,0,8,1, L.hair); R(3,1,6,1, L.hair);
+      R(2,2,1,1, L.hair); R(9,2,1,1, L.hair);
+      R(4,-2,4,2, L.hair); R(5,-1,2,1, L.hairDk);  // the knot rides above the hairline
     }
   }
 }
