@@ -8,7 +8,7 @@ const must = (cond, msg) => { if (!cond){ console.log('PLAYTEST FAIL:', msg); fa
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
 
-  await page.goto('file://' + require('path').resolve(__dirname, '../index.html'));
+  await page.goto(process.env.GAME_URL || 'file://' + require('path').resolve(__dirname, '../index.html'));
   await page.waitForTimeout(800);
   await page.screenshot({ path: 'shot1_title.png' });
 

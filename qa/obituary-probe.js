@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const GAME = 'file://' + path.resolve(__dirname, '../index.html');
+const GAME = process.env.GAME_URL || 'file://' + path.resolve(__dirname, '../index.html'); // GAME_URL=https://... runs the suite against a deployment
 const SHOTDIR = path.resolve(__dirname, 'overnight');
 let fails = 0;
 const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); if (!ok) fails++; };

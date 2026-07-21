@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const GAME = 'file://' + path.resolve(__dirname, '../index.html');
+const GAME = process.env.GAME_URL || 'file://' + path.resolve(__dirname, '../index.html'); // GAME_URL=https://... runs the suite against a deployment
 const SHOTDIR = path.resolve(__dirname, 'overnight');
 let fails = 0;
 const check = (name, ok, detail) => {
@@ -228,9 +228,11 @@ async function start(page){
     const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
     const msg = await page.evaluate(() => document.getElementById('cpMsg').textContent);
     const liveUrl = await page.evaluate(() => GAME_URL); // read, never hardcode — the canonical host moved once already
-    check('COPY puts the post on the clipboard (ends with GAME_URL)',
+    // file:// degrades the share link to the bare domain; http(s) contexts carry the
+    // per-run /api/r URL — both are correct, so accept either shape
+    check('COPY puts the post on the clipboard (carries the game link)',
           (clip.includes('SF SPEEDRUN') || clip.includes('Hypergrowth Daily')) // loss default = the obituary post
-          && clip.trim().endsWith(liveUrl), msg);
+          && (clip.trim().endsWith(liveUrl) || clip.includes(liveUrl + '/api/r?')), msg);
     check('no page errors (copy block)', errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

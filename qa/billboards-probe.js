@@ -30,7 +30,7 @@ const DENYLIST = /vercel|supabase|warp|replit|resend|firecrawl|deel|exa|stripe|o
   const p = await b.newPage({ viewport: { width: 960, height: 540 } });
   const errors = [];
   p.on('pageerror', e => errors.push(e.message));
-  await p.goto('file://' + path.resolve(__dirname, '../index.html'));
+  await p.goto(process.env.GAME_URL || 'file://' + path.resolve(__dirname, '../index.html'));
   await p.waitForTimeout(700);
   await p.keyboard.down('Space'); await p.waitForTimeout(200); await p.keyboard.up('Space');
   await p.waitForTimeout(300);

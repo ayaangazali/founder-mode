@@ -61,7 +61,7 @@ const lipDist = x => {                      // distance from player x to the cur
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
 
-  await page.goto('file://' + path.resolve(__dirname, '../index.html'));
+  await page.goto(process.env.GAME_URL || 'file://' + path.resolve(__dirname, '../index.html'));
   await page.waitForTimeout(900);
   await snap(page, `${TAG}-title.png`);
 

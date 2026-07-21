@@ -22,7 +22,7 @@ const tap = async (p, key, hold = 90) => { await p.keyboard.down(key); await p.w
   const p = await b.newPage({ viewport: { width: 960, height: 540 } });
   const errors = [];
   p.on('pageerror', e => errors.push(e.message));
-  await p.goto('file://' + path.resolve(__dirname, '../index.html'));
+  await p.goto(process.env.GAME_URL || 'file://' + path.resolve(__dirname, '../index.html'));
   await p.waitForTimeout(800);
   check('title reached PLAY', await start(p));
 

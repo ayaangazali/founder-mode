@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
   const errors = [];
   let fail = m => { console.log('DEATHTEST FAIL:', m); process.exitCode = 1; };
   page.on('pageerror', e => errors.push(e.message));
-  await page.goto('file://' + require('path').resolve(__dirname, '../index.html'));
+  await page.goto(process.env.GAME_URL || 'file://' + require('path').resolve(__dirname, '../index.html'));
   await page.waitForTimeout(1000);
   let st = 0;
   for (let tries = 0; tries < 3 && st !== 1; tries++){
