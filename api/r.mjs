@@ -13,14 +13,22 @@ export default function handler(req, res) {
   const p = String(Math.max(0, Math.min(6, parseInt(searchParams.get('p') || '0', 10) | 0)));
   const qs = `w=${w}&n=${encodeURIComponent(n)}&v=${v}&r=${r2}&t=${encodeURIComponent(t)}&p=${p}`;
   const og = `${HOST}/api/og?${qs}`;
-  const title = w === '1' ? 'CERTIFIED UNICORN — FOUNDER MODE' : 'OUT OF RUNWAY — FOUNDER MODE';
+  // unicorn gate holds on the unfurl too: sub-$1B wins are certified horses
+  const uni = parseInt(v, 10) >= 1000000;
+  const title = w === '1' ? `${uni ? 'CERTIFIED UNICORN' : 'CERTIFIED HORSE'} — FOUNDER MODE` : 'OUT OF RUNWAY — FOUNDER MODE';
+  // per-run description (n is already sanitized to [a-zA-Z0-9 .-] above, safe in an attribute)
+  const fm = k => { k = parseInt(k, 10) || 0; return k >= 1000000 ? '$' + (k / 1000000).toFixed(2) + 'B' : k >= 1000 ? '$' + (k / 1000).toFixed(1) + 'M' : '$' + k + 'K'; };
+  const who = n || 'a founder';
+  const desc = w === '1'
+    ? `${who} raised ${fm(r2)} and exited at ${fm(v)} in ${t || '??:??'}. your move.`
+    : `${who} raised ${fm(r2)} and died with a ${fm(v)} valuation (down round). SF claims another founder.`;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, s-maxage=86400, max-age=3600');
   res.status(200).send(`<!DOCTYPE html><html><head>
 <meta charset="utf-8">
 <title>${title}</title>
 <meta property="og:title" content="${title}">
-<meta property="og:description" content="the SF startup platformer. stomp churn, dodge VCs, ring the IPO bell.">
+<meta property="og:description" content="${desc}">
 <meta property="og:image" content="${og}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">

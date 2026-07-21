@@ -3597,6 +3597,8 @@ function drawTitle(){
   const ctw = cx.measureText(ctrl).width;
   cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(Math.round(W/2 - ctw/2 - 4), 175, Math.round(ctw + 8), 12);
   cx.fillStyle = '#8d99ae'; cx.fillText(ctrl, W/2, 184);
+  cx.font = 'bold 6px monospace'; cx.fillStyle = '#5a6478';
+  cx.fillText('*stanfurd is not a typo. ask berkeley.', W/2, H - 4); // (persona backlog #14: the newcomer filed it as a spelling bug)
   // ---- founder picker (C/H/V keys · tap/click the chips) ----
   cx.textAlign = 'left'; cx.font = 'bold 7px monospace';
   const chipDefs = [
@@ -3634,7 +3636,7 @@ function badgeFlairs(won){
   const f = [];
   if (!won) return f;
   if (enemies.every(e => e.dead || e.inj)) f.push('ZERO CHURN');
-  if ((endTime || playMs) < 180000) f.push('T2D3');
+  if ((endTime || playMs) < 180000) f.push('T2D3 (sub-3:00 exit)'); // self-glossing: the newcomer persona had no idea what T2D3 meant
   if (pedIdx === 0 && !momBacked) f.push('SELF-MADE (unfundable)'); // mom money isn't self-made (audit)
   if (internHiredCount >= 2) f.push('built a real team (allegedly)'); // 2 booths exist; 3 was unreachable (audit)
   if (internTypesHired.length && internTypesHired.every(t => t === 'ghost')) f.push('SERIAL DELEGATOR');
@@ -3688,9 +3690,12 @@ function makeBadge(won){
   b.textAlign = 'left';
   b.fillStyle = won ? '#ffd94a' : '#ff5a5a';
   b.font = 'bold 64px monospace';
-  b.fillText(won ? 'CERTIFIED UNICORN' : 'OUT OF RUNWAY', 320, 150);
+  // the badge headline honors the unicorn gate (persona backlog #14): sub-$1B wins
+  // are certified horses — same bar as the 🦄/🐴 emoji everywhere else
+  const uni = valuation(won).v >= 1000000;
+  b.fillText(won ? (uni ? 'CERTIFIED UNICORN' : 'CERTIFIED HORSE') : 'OUT OF RUNWAY', 320, 150);
   b.fillStyle = '#fff'; b.font = 'bold 34px monospace';
-  b.fillText(won ? 'survived SF · defeated SYNERGY.AI' : 'SF claims another founder', 320, 205);
+  b.fillText(won ? (uni ? 'survived SF · defeated SYNERGY.AI' : "you're a horse until you're a unicorn") : 'SF claims another founder', 320, 205);
   if (playerName()){ b.fillStyle = '#7ce0ff'; b.font = 'bold 30px monospace'; b.fillText('FOUNDER: ' + playerName().toUpperCase(), 320, 245); }
   const t = fmtTime(endTime || playMs);
   b.font = 'bold 44px monospace'; b.fillStyle = '#7cffa5';

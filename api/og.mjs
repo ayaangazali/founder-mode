@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
   const rows = [
     el('div', { color: won ? '#ffd94a' : '#ff5a5a', fontSize: 64, fontWeight: 700 },
-      won ? 'CERTIFIED UNICORN' : 'OUT OF RUNWAY'),
+      won ? (val >= 1000000 ? 'CERTIFIED UNICORN' : 'CERTIFIED HORSE') : 'OUT OF RUNWAY'), // unicorn gate: same $1B bar as the emoji
     name ? el('div', { color: '#7ce0ff', fontSize: 34 }, `FOUNDER: ${name}`) : null,
     el('div', { color: '#7cffa5', fontSize: 44 }, `RAISED  ${fmtMoney(raised)}`),
     el('div', { color: '#7ce0ff', fontSize: 44 }, `TIME    ${time}`),

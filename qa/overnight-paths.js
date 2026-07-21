@@ -104,7 +104,7 @@ async function start(page){
     void flairBoth;
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(700); await page.keyboard.up('ArrowRight');
     const f1 = await page.evaluate(() => badgeFlairs(true));
-    check('ZERO CHURN + T2D3 flairs on a fast full-clear win', f1.includes('ZERO CHURN') && f1.includes('T2D3'), f1.join('·'));
+    check('ZERO CHURN + T2D3 flairs on a fast full-clear win', f1.includes('ZERO CHURN') && f1.some(x => x.startsWith('T2D3')), f1.join('·')); // T2D3 self-glosses since backlog #14
     await page.screenshot({ path: path.join(SHOTDIR, 'paths-badge-bothflairs.png') });
     await ctx.close();
     check('no page errors (flairs block)', errors.length === 0, errors.join(' | '));
