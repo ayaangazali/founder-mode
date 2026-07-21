@@ -144,10 +144,6 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
                 pointer-events:none; }
   #shellBrand i { display:inline-block; width:6px; height:6px; border-radius:50%;
                   background:#7cffa5; margin-right:8px; vertical-align:1px; } /* power LED — steady, of course */
-  #grille { position:fixed; display:none; z-index:4; left:50%; transform:translateX(-50%) rotate(-14deg);
-            width:120px; height:54px; pointer-events:none;
-            background:repeating-linear-gradient(90deg, transparent 0 12px, #1a1c30 12px 18px);
-            border-radius:8px; } /* the speaker that plays nothing (the WebAudio does) */
   @media (pointer: coarse) {
     body { background:#101120; } /* the console body around the screen */
     canvas#game { outline:6px solid #060812; border-radius:4px; box-shadow:0 0 0 12px #1a1c30, 0 14px 40px rgba(0,0,0,.6); }
@@ -215,7 +211,6 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
 <div id="ui"><div class="card" id="uicard"></div></div>
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">START</div><div id="tS">SOUND</div></div>
 <div id="shellBrand"><i></i>SF SPEEDRUN</div>
-<div id="grille"></div>
 <button id="pauseChip">⏸ PAUSE</button>
 <div id="pauseMenu"><div class="card">
   <div style="color:#ffd94a; font-size:16px">PAUSED</div>
@@ -345,17 +340,14 @@ function fit() {
   }
   const brand = document.getElementById('shellBrand');
   brand.style.display = (isTouch && portrait) ? 'block' : 'none';
-  const grille = document.getElementById('grille');
   if (portrait){
     const deckTop = window.innerHeight - 120 - 80; // matches the d-pad bottom anchor
     const sb = stack.getBoundingClientRect().bottom;
     brand.style.top = Math.round(sb + Math.max(10, (deckTop - sb) / 2)) + 'px';
-    grille.style.display = 'block';
-    grille.style.top = Math.round(sb + Math.max(10, (deckTop - sb) / 2) + 34) + 'px';
-  } else grille.style.display = 'none';
+  }
   // install hint: iOS Safari, not yet installed, not dismissed, title only (stepGame hides it on start)
   const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-  let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs') === '1'; } catch(e){}
+  let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs2') === '1'; } catch(e){}
   let onTitle = true; try { onTitle = state === 0; } catch(e){} // boot fit() predates the state let-binding (TDZ throws even on typeof); 0 = ST.TITLE
   document.getElementById('a2hs').style.display =
     (isTouch && !standalone && !a2hsSeen && onTitle) ? 'block' : 'none';
@@ -383,7 +375,8 @@ document.getElementById('lbPanelClose').addEventListener('click', () => {
 document.getElementById('lbPanel').addEventListener('click', e => {
   if (e.target.id === 'lbPanel') document.getElementById('lbPanel').style.display = 'none';
 });
-const a2hsDismiss = () => { try { localStorage.setItem('fm_a2hs', '1'); } catch(e){} document.getElementById('a2hs').style.display = 'none'; };
+// v2 dismissal key: dismissing the old tiny hint must not hide the new button
+const a2hsDismiss = () => { try { localStorage.setItem('fm_a2hs2', '1'); } catch(e){} document.getElementById('a2hs').style.display = 'none'; };
 // Android/desktop Chrome fire beforeinstallprompt — capture it and installing is ONE tap.
 // Apple offers no API, so iOS gets a big per-browser instruction card instead.
 let bipEvent = null;

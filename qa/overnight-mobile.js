@@ -146,7 +146,7 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     await tapXY(page, dp.x, dp.y);
     await page.waitForTimeout(200);
     check('390x664: GOT IT closes the card and persists the dismissal', await page.evaluate(() => {
-      let seen = false; try { seen = localStorage.getItem('fm_a2hs') === '1'; } catch(e){}
+      let seen = false; try { seen = localStorage.getItem('fm_a2hs2') === '1'; } catch(e){}
       return document.getElementById('installCard').style.display === 'none' && seen;
     }));
 
