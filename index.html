@@ -167,7 +167,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
                 background:radial-gradient(circle at 34% 28%, #d0347c 0%, #b0135e 55%, #7e0f44 100%);
                 color:transparent; border-color:#5e0a33; overflow:visible;}
   #touch div#tJ::after, #touch div#tB::after { position:absolute; left:50%; bottom:-22px; transform:translateX(-50%);
-                content:'A'; color:#2d3a8c; font:bold italic 15px "Courier New",monospace; }
+                content:'A'; color:#3d4152; font:bold 14px "Courier New",monospace; letter-spacing:1px; }
   #touch div#tB::after { content:'B'; }
   /* deck-pickup hint: B pulses + a PITCH tag floats over it (time-boxed by deckHintT — not a standing strobe) */
   #touch div#tB.bhint { animation:bpulse .6s ease-in-out infinite; }
@@ -190,12 +190,15 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
     border-radius:13px; transform:rotate(0deg); color:#8d99ae; }
   #touch div#tP{ right:calc(12px + env(safe-area-inset-right, 0px)); }
   #touch div#tS{ right:calc(78px + env(safe-area-inset-right, 0px)); }
-  #shellBrand { position:fixed; display:none; z-index:4; left:24px; right:auto; text-align:left;
-                font:bold 11px "Courier New",monospace; color:#2d3a8c; letter-spacing:0;
-                pointer-events:none; }
-  #shellBrand b { font-size:11px; margin-right:6px; letter-spacing:1px; }
-  #shellBrand em { font-size:19px; font-style:italic; letter-spacing:1px; }
-  #shellBrand span { font-size:8px; vertical-align:super; }
+  /* launch-eve: house identity, NOT a console maker's lockup — dark chip, gold
+     monospace caps, no italics, no navy. The words are the parody; the look is ours. */
+  #shellBrand { position:fixed; display:none; z-index:4; left:20px; right:auto; text-align:left;
+                font:bold 12px "Courier New",monospace; color:#ffd94a; letter-spacing:2px;
+                background:rgba(8,8,20,.85); border:2px solid #8a6d00; border-radius:3px;
+                padding:6px 10px; box-shadow:0 3px 0 #5a4700; pointer-events:none; }
+  #shellBrand b { font-size:9px; margin-right:7px; letter-spacing:2px; color:#8d99ae; }
+  #shellBrand em { font-size:12px; font-style:normal; letter-spacing:2px; }
+  #shellBrand span { font-size:8px; vertical-align:super; color:#8d99ae; }
   #shellBrand i { display:inline-block; width:6px; height:6px; border-radius:50%;
                   background:#7cffa5; margin-right:8px; vertical-align:1px; } /* power LED — steady, of course */
   @media (pointer: coarse) {
@@ -214,11 +217,12 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
                                    border-color:#dfdbd0; border-width:2px; border-bottom-width:2px; border-radius:14px;
                                    box-shadow:inset 0 4px 6px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.6); }
     #touch div#tP::after, #touch div#tS::after { position:absolute; left:50%; bottom:-19px; transform:translateX(-50%);
-                                   content:'START'; color:#2d3a8c; font:bold 10px "Courier New",monospace; letter-spacing:1px; }
+                                   content:'START'; color:#3d4152; font:bold 10px "Courier New",monospace; letter-spacing:1px; }
     #touch div#tS::after { content:'SOUND'; }
   }
   #bezelLabel { position:fixed; display:none; z-index:4; left:0; right:0; text-align:center;
-                font:bold 8px "Courier New",monospace; color:#8a92a6; letter-spacing:2px; pointer-events:none; }
+                font:bold 8px "Courier New",monospace; color:#4d6f7e; letter-spacing:4px;
+                text-transform:none; pointer-events:none; } /* house cyan-slate, not the console maker's bezel print */
   #rot { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(8px + env(safe-area-inset-bottom, 0px));
          display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
          font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
