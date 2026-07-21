@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>FOUNDER MODE — the SF startup platformer</title>
-<meta property="og:title" content="FOUNDER MODE — the SF startup platformer">
+<title>FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.</title>
+<meta property="og:title" content="FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.">
 <meta property="og:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Can you reach the IPO bell?">
 <!-- BUILD-GUIDE Step 4 — og.png lives next to index.html on the live Vercel root
      (swap host when the joke domain is bought) -->
@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://sfspeedrun.com/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="FOUNDER MODE — the SF startup platformer">
+<meta name="twitter:title" content="FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.">
 <meta name="twitter:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Ring the IPO bell.">
 <meta name="twitter:image" content="https://sfspeedrun.com/og.png">
 <!-- Vercel Web Analytics, static-site flavor: no npm, no framework — the game
@@ -90,12 +90,16 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
          display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
          font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
   #rot span { color:#8d99ae; font-size:11px; display:block; margin-top:4px; }
-  #credit { position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); right:16px; z-index:6;
-            font:bold 17px "Courier New",monospace; color:#cfd6e4; display:none;
-            background:rgba(8,8,20,.85); border:3px solid #ffd94a; padding:8px 14px;
-            box-shadow:0 4px 0 #8a6d00; }
-  #credit a { color:#ffd94a; text-decoration:underline; }
-  #credit a:hover { color:#fff; background:#ffd94a22; }
+  /* credit demoted to lbChip weight + bottom-right (title-critique spec: the gold
+     17px box was out-shouting the wordmark, worst on portrait) */
+  #credit { position:fixed; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); right:16px; z-index:6;
+            font:bold 13px "Courier New",monospace; color:#8d99ae; display:none;
+            background:rgba(8,8,20,.85); border:2px solid #5d647a; padding:6px 10px; box-shadow:0 3px 0 #33323f; }
+  #credit a { color:#cfd6e4; text-decoration:underline; }
+  #credit a:hover { color:#fff; }
+  @media (orientation: portrait) and (pointer: coarse) {
+    #credit { font-size:11px; border:none; box-shadow:none; background:none; padding:2px 4px; }
+  }
   #lbChip { position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); left:16px; z-index:6;
             font:bold 13px "Courier New",monospace; color:#ffd94a; display:none; cursor:pointer;
             background:rgba(8,8,20,.85); border:2px solid #ffd94a; padding:6px 10px; box-shadow:0 3px 0 #8a6d00; }
@@ -327,7 +331,10 @@ const JUMP = () => keys['space'] || keys['arrowup'] || keys['w'] || touch.J;
 const touch = { L:false, R:false, J:false };
 if ('ontouchstart' in window) {
   const tEl = document.getElementById('touch');
-  tEl.style.display = 'block';
+  // d-pad hidden on the title (critique spec: in landscape tL/tR sat over the founder
+  // preview and swallowed its taps); the game-start branch shows it, so the goHome
+  // soft-lock the mobile probe guards cannot recur — probe expectation updated with it
+  tEl.style.display = 'none';
   const recompute = e => {
     touch.L = touch.R = touch.J = false;
     const rects = ['tL','tR','tJ'].map(id => document.getElementById(id).getBoundingClientRect());
@@ -340,7 +347,6 @@ if ('ontouchstart' in window) {
   };
   for (const ev of ['touchstart','touchmove','touchend','touchcancel'])
     tEl.addEventListener(ev, e => { e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio(); recompute(e); }, {passive:false});
-  document.getElementById('credit').style.right = '72px'; // clear of the ⏸ button on touch
   document.getElementById('tP').addEventListener('touchstart', e => {
     e.preventDefault(); e.stopPropagation();
     if (state === ST.PLAY) paused = !paused;
@@ -3662,8 +3668,9 @@ function resumePlay(fromCheckpoint){
 function goHome(){
   ui.style.display = 'none';
   paused = false; clearAllInput();
-  // showEndUI hides the d-pad; the title must hand it back or the next run is unplayable on touch
-  if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
+  // the title runs d-pad-free since the redesign; the start branch hands it back,
+  // so the old goHome soft-lock (hidden d-pad, undrivable run) cannot recur
+  if ('ontouchstart' in window) document.getElementById('touch').style.display = 'none';
   fit(); // re-decides the rotate banner the end screen hid
   reset(false); state = ST.TITLE;
 }

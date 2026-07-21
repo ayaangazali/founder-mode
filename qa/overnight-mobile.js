@@ -35,17 +35,20 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
   // ---------------- 667x375 landscape ----------------
   {
     const { ctx, page, errors } = await touchCtx(browser, 667, 375);
-    const touchShown = await page.evaluate(() => getComputedStyle(document.getElementById('touch')).display);
-    check('667x375: touch overlay shown', touchShown === 'block');
+    // title-redesign: the d-pad is hidden on the title by design; it must appear at game start
+    const touchOnTitle = await page.evaluate(() => document.getElementById('touch').style.display);
+    check('667x375: touch overlay hidden on the redesigned title', touchOnTitle === 'none', 'display=' + touchOnTitle);
     const tj = await page.evaluate(() => {
       const s = getComputedStyle(document.getElementById('tJ'));
       return `${s.width}/${s.height}/${s.borderRadius}`;
     });
     check('667x375: #tJ jump button is the big 86px circle', tj === '86px/86px/50%', tj);
 
-    await tapXY(page, 333, 180);                       // tap canvas to start
+    await tapXY(page, 333, 120);                       // tap canvas (upper half — lower half opens CUSTOMIZE since the redesign) to start
     await page.waitForTimeout(400);
     check('667x375: tap starts the game', await page.evaluate(() => state) === 1);
+    const touchInPlay = await page.evaluate(() => getComputedStyle(document.getElementById('touch')).display);
+    check('667x375: touch overlay shown once the run starts', touchInPlay === 'block', 'display=' + touchInPlay);
 
     // hold the ▶ button region → player moves right
     const x0 = await page.evaluate(() => player.x);
@@ -89,14 +92,15 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     check('667x375: d-pad hidden behind end screen', touchAfter === 'none');
     await page.screenshot({ path: path.join(SHOTDIR, 'mobile-667x375-endscreen.png') });
 
-    // 🏠 TITLE SCREEN must hand the d-pad back — the launch-blocking soft-lock
-    // this probe now guards: goHome left #touch hidden; the next run had no
-    // controls and burn rate ended it unattended
+    // 🏠 TITLE SCREEN: since the title-redesign the d-pad is hidden ON THE TITLE
+    // by design (landscape tL/tR covered the founder preview) and the game-start
+    // branch hands it back — the original soft-lock guard is now the drivability
+    // check below, which still fails if any path leaves #touch hidden in PLAY.
     await page.evaluate(() => document.getElementById('bHome').click());
     await page.waitForTimeout(300);
     check('667x375: 🏠 returns to the title', await page.evaluate(() => state) === 0);
     const touchBack = await page.evaluate(() => document.getElementById('touch').style.display);
-    check('667x375: d-pad restored on the title (soft-lock guard)', touchBack === 'block', 'display=' + touchBack);
+    check('667x375: d-pad stays hidden on the redesigned title', touchBack === 'none', 'display=' + touchBack);
     await tapXY(page, 333, 180); await page.waitForTimeout(500);
     check('667x375: next run starts after home', await page.evaluate(() => state) === 1);
     const hx0 = await page.evaluate(() => player.x);
@@ -116,12 +120,13 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     check('390x664: rotate prompt visible in portrait', rot === 'block');
     const canvasTop = await page.evaluate(() => document.getElementById('game').getBoundingClientRect().top);
     check('390x664: canvas top-aligned (not centered behind the prompt)', canvasTop < 5, `top=${Math.round(canvasTop)}`);
-    const btnPos = await page.evaluate(() => {
+    // button-position check moved below game start: the redesigned title hides #touch,
+    // and getBoundingClientRect on a display:none element reads 0
+    const measureBtns = () => page.evaluate(() => {
       const c = document.getElementById('game').getBoundingClientRect();
       const l = document.getElementById('tL').getBoundingClientRect();
       return { canvasBottom: Math.round(c.bottom), tLtop: Math.round(l.top) };
     });
-    check('390x664: touch buttons sit directly under the canvas', btnPos.tLtop >= btnPos.canvasBottom && btnPos.tLtop - btnPos.canvasBottom < 40, JSON.stringify(btnPos));
 
     // dismiss the prompt with a tap
     await page.evaluate(() => { const r = document.getElementById('rot').getBoundingClientRect(); window.__rot = { x: r.x + r.width/2, y: r.y + r.height/2 }; });
@@ -136,6 +141,8 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     await tapXY(page, 195, 100);
     await page.waitForTimeout(400);
     check('390x664: tap starts the game in portrait', await page.evaluate(() => state) === 1);
+    const btnPos = await measureBtns();
+    check('390x664: touch buttons sit directly under the canvas', btnPos.tLtop >= btnPos.canvasBottom && btnPos.tLtop - btnPos.canvasBottom < 40, JSON.stringify(btnPos));
     const x0 = await page.evaluate(() => player.x);
     const rRect = await page.evaluate(() => { const r = document.getElementById('tR').getBoundingClientRect(); return { x: r.x + r.width/2, y: r.y + r.height/2 }; });
     const cdp = await ctx.newCDPSession(page);
