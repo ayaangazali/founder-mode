@@ -746,3 +746,33 @@ every finding verified against source before fixing. Trio + full probe battery g
 26. **📤 SHARE for everyone** (owner ask, same session): the button no longer requires file-share
     support — native share sheet where it exists, and the post text + per-run link land on the
     clipboard on EVERY click ("post + link copied ✓ — paste it anywhere").
+
+## 2026-07-20 — [OVERNIGHT VERIFY] engine ruling + perf baseline + full gate + prod check (no game-code changes)
+
+Overnight /goal run against ARGUMENTS "decide the engine, optimize, test thoroughly, verify production."
+`index.html` was NOT modified — every deliverable is docs/QA/evidence. Verified-lines: all hard gates green
+at `b392b0e`, prod byte-identical to main.
+
+1. **Engine ruling recorded** (docs/PROJECT-CONTEXT.md ledger, 2026-07-20): vanilla JS + canvas 2D IS the
+   engine, re-affirmed on request. Phaser/PixiJS rejected (100KB+ runtime + build step for unused
+   features); Godot/Unity WebGL rejected (multi-megabyte multi-file exports break "one file, loads
+   instantly"). Future perf work optimizes within this choice, never by swapping runtimes.
+2. **`qa/perf-bench.js`** — advisory frame-cost benchmark (deliberately NOT a `*-probe`: perf numbers are
+   machine-noisy, so it never gates CI). Wraps `stepGame()`/`draw()` with `performance.now()` across
+   title, all five biomes, and the AI-boss arena.
+3. **Optimization verdict: none needed, measured first.** Worst-phase p95 step+draw = **0.70ms of the
+   16.67ms budget** (24× headroom, headless software raster — real GPUs are faster), zero over-budget
+   frames, heap flat at 9.5MB across 90s of continuous play, entity arrays bounded (popups cap, shots/
+   crates culled). Speculative micro-optimization of a 0.3ms draw = churn risk on a load-bearing loop for
+   zero payoff; ruled out.
+4. **Full gate re-run, all green** (`bash qa/ci-sweep.sh`): canon grep clean · secret scan clean ·
+   npm audit 0 · plausibility clamps intact · smoketest/playtest/deathtest · all 8 probes +
+   verify-daily-seed · clean fullrun PASS (badge 02:45, 4 recoveries of 6 budget). Plus:
+   overnight-paths ALL PASS, overnight-mobile ALL PASS, `fullrun --casual` PASS (badge 04:39,
+   9 recoveries of 12 budget, checkpoint haircut exact) — seed #201.
+5. **Production verified read-only, zero drift**: sfspeedrun.com + www + foundermode.vercel.app all
+   HTTP 200 serving a deploy **byte-identical to main HEAD**; live headless play session — 930ms load,
+   playable, seed #201, zero console errors (`qa/overnight/prod-live-2026-07-20.png`);
+   `/api/leaderboard` daily + `?all=1` healthy (all-time board live, AYAAN $1.107B 🦄 on top);
+   `/api/r` result page 200 with correct og tags; `/api/og` renders a 43KB PNG card; `og.png` 200.
+   No deploys, no writes, no accounts touched.

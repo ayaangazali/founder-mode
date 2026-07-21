@@ -1,3 +1,64 @@
+# MORNING REPORT — overnight run, 2026-07-20 (23:04–23:35 PDT)
+
+**Mission (ARGUMENTS):** decide the game engine → optimize for it → make sure the app runs smoothly → test thoroughly → verify production. **All five done. Zero changes to `index.html` — the honest finding is that the game needed evidence, not surgery.**
+
+## Verdicts
+
+| # | Ask | Verdict |
+|---|---|---|
+| 1 | Decide the engine | **DECIDED: vanilla JS + canvas 2D — the current build IS the engine.** Recorded as a dated ledger ruling in `docs/PROJECT-CONTEXT.md` (`525e859`). Phaser/PixiJS: 100KB+ runtime + build step for features the game doesn't use (the whole scene is `fillRect` on 480×270). Godot/Unity WebGL: multi-megabyte multi-file exports that break "one file, loads instantly, no build." The fixed-timestep accumulator + `playMs` clock already solve determinism, pause, and tab-throttle — the hard engine problems. This also just restates CLAUDE.md canon ("no framework, ever"), now with the rationale on the record. |
+| 2 | Optimize for it | **MEASURED FIRST; NO OPTIMIZATION JUSTIFIED.** New `qa/perf-bench.js` (`b392b0e`, advisory — never gates CI): worst-phase p95 step+draw = **0.70ms of the 16.67ms frame budget** — 24× headroom on a *software* rasterizer; real GPUs do better. Zero over-budget frames in any biome or boss arena. |
+| 3 | Runs smoothly | **PROVEN.** 90s continuous-play soak: heap flat at 9.5MB (no leak → no GC hitches), entity arrays bounded (popups capped, shots/crates culled). Touching a 0.3ms draw path on a load-bearing loop for zero payoff was ruled out on purpose — that's churn risk, not optimization. |
+| 4 | Tested thoroughly | **ALL GATES GREEN** at `b392b0e`, seed #201 — full table below. |
+| 5 | Works in production | **VERIFIED LIVE, ZERO DRIFT.** The deployed game is **byte-identical to main HEAD**. Live play session on sfspeedrun.com: 930ms load, playable, zero console errors. All four API surfaces healthy. Read-only throughout — no deploys, no writes. |
+
+## Test / probe status (tonight, seed #201)
+
+| Suite | Result |
+|---|---|
+| Canon greps + secret scan + npm audit + clamp gate | clean / clean / 0 vulns / intact |
+| `test/smoketest.js` · `playtest.js` · `deathtest.js` | PASS · PASS · PASS |
+| All 8 `qa/*-probe.js` + `qa/verify-daily-seed.js` | 9/9 PASS |
+| `qa/overnight-paths.js` | ALL PASS |
+| `qa/overnight-mobile.js` | ALL PASS |
+| `test/fullrun.js` (clean) | PASS — badge 02:45, 4 recoveries (budget 6) |
+| `test/fullrun.js --casual` | PASS — badge 04:39, 9 recoveries (budget 12), haircut exact |
+| `qa/perf-bench.js` (new, advisory) | worst p95 step+draw 0.70ms / 16.67ms, zero page errors |
+
+Note for the 07-11 report's open run-length question below: with Cerebral Valley live (world 9200), the casual bot now lands **4:39** — inside the 3–6 min band that was flagged PARTIAL back then. That question can be considered closed by content, not levers.
+
+## Production evidence (read-only, 2026-07-20 ~23:15 PDT)
+
+- `sfspeedrun.com`, `www.sfspeedrun.com`, `foundermode.vercel.app`: all HTTP 200, all serving the same 236,309-byte page, **diff vs local `index.html` = empty**.
+- Live headless play: load 930ms, PLAY state reached, player moves, seed #201 computed correctly, zero page/console errors. Screenshot: `qa/overnight/prod-live-2026-07-20.png`.
+- `GET /api/leaderboard?seed=201` → `{"ok":true,"top":[]}` (nobody played today yet — correct for a daily board). `?all=1` → all-time board live, AYAAN $1.107B 🦄 on top.
+- `GET /api/r?...` → 200, per-run og tags correct; the `og:image` it emits (`/api/og?...`) renders a 1200×630 PNG (43KB, `image/png`). Static `og.png` also 200.
+
+## What shipped (commits tonight)
+
+- `525e859` — Ledger: engine ruling (docs only).
+- `b392b0e` — QA: `qa/perf-bench.js` advisory benchmark + baseline numbers.
+- This report + CHANGELOG entry `[OVERNIGHT VERIFY]` + prod screenshot (final commit).
+
+## Skipped / not attempted, and why
+
+- **GOAL.md phases 0–5 as written**: already shipped by earlier runs (tags `v0.2-rc1`, `playable-rc1`; daily seed, api/, OG tags, sanitized CAMEOS all verified present tonight). Re-executing them would have re-litigated finished work; tonight re-ran their *verification* instead.
+- **Any perf code change**: measured 24× headroom; see verdict 2/3.
+- **Deploy-anything**: forbidden by GOAL — and unnecessary, prod already matches HEAD exactly.
+
+## Human-decision list (unchanged from CLAUDE.md TODOs)
+
+- (a) Rotate the Anthropic API key that leaked into chat history.
+- (b) PARTNERS.md outreach: collect written billboard yeses (unlocks SPOTTED).
+- (c) Pick the launch day and run `docs/LAUNCH-PLAYBOOK.md` (incl. LinkedIn Post Inspector + iOS Safari badge-save check).
+- (d) Refresh static `og.png` to current badge art, or lean on `/api/r` per-run cards.
+- (e) Before repo-public: purge/exclude `index.v0.1.bak.html` brand strings; re-check docs/qa.
+
+*Everything tonight was file-level, local, and read-only against prod. No deploys, no signups, no purchases, no posts.*
+
+---
+---
+
 # MORNING REPORT — overnight run, 2026-07-11 (05:24–06:30)
 
 ## PLAYABILITY VERDICT
