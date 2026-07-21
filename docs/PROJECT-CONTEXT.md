@@ -44,6 +44,15 @@ build step, no image assets. **Live at https://sfspeedrun.com.**
 - One file forever: no framework, bundler, image asset, or second required file
   for the game. `api/` (3 serverless functions) is the only sanctioned code
   outside `index.html`. `index.v0.1.bak.html` is the untouched original.
+- **Engine ruling (2026-07-20, re-affirmed on request): vanilla JS + canvas 2D
+  is the engine.** Alternatives were weighed and rejected: Phaser/PixiJS add a
+  100KB+ runtime and a build step for features the game doesn't use (the whole
+  scene is `fillRect` on 480×270); Godot/Unity WebGL exports are multi-megabyte
+  multi-file bundles that break "one file, loads instantly, no build". The
+  fixed-timestep accumulator + `playMs` sim clock already solve the hard
+  engine problems (determinism, pause, tab-throttle). Any future perf work
+  optimizes *within* this choice — culling, allocation discipline, layer
+  caching — never by swapping runtimes.
 
 **Two gated exceptions to "archetypes only"** (owner owns the business risk):
 - **RISKY_CAMEOS** — 6 parody tech celebs, draw-only, zero hitboxes, one const
