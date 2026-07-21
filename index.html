@@ -299,7 +299,10 @@ window.addEventListener('keydown', e => {
     }
   }
   if (nk === 'x' && !e.repeat) throwDeck(); // only fires while holding a PITCH DECK
-  if (nk === 'r' && !e.repeat && endGraceT <= 0 && (state === ST.DEAD || state === ST.WIN)){
+  if ((nk === 'r' || nk === 'space') && !e.repeat && endGraceT <= 0 && (state === ST.DEAD || state === ST.WIN)){
+    // space retries too (persona backlog #8): it's the only key the game ever taught,
+    // and it did nothing at the moment of highest retry intent. endGraceT still
+    // protects the obituary from a mash-through.
     resumePlay(state === ST.DEAD); // death retries from checkpoint; a win restart is a fresh run
   }
 });
@@ -3971,6 +3974,7 @@ function showEndUI(won){
     ${valHtml}
     ${isTouch ? '<div style="color:#8d99ae; font-weight:bold; font-size:12px; margin-top:4px">press &amp; hold the badge to save it. yes, really.</div>' : ''}
     <div style="margin-top:8px">${btns}</div>
+    ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:11px; margin-top:4px">R / SPACE to pivot</div>'}
     ${lbHtml}
     <div id="cpMsg" style="color:#7cffa5; font-weight:bold; min-height:20px; margin-top:4px"></div>
     ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:12px">or press R to run it back</div>'}`;
