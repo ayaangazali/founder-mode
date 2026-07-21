@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     el('div', { color: '#ffd94a', fontSize: 50 }, `VALUATION ${fmtMoney(val)}`),
     ped ? el('div', { color: '#ff8c37', fontSize: 30 }, `PEDIGREE: ${ped}`) : null,
     el('div', { color: '#8d99ae', fontSize: 28, marginTop: 20 },
-      'FOUNDER MODE — the SF startup platformer. can you beat it?'),
+      'SF SPEEDRUN — how fast can your startup IPO?'),
   ].filter(Boolean);
 
   const img = new ImageResponse(

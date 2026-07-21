@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.</title>
-<meta property="og:title" content="FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.">
+<title>SF SPEEDRUN — how fast can your startup IPO?</title>
+<meta property="og:title" content="SF SPEEDRUN — how fast can your startup IPO?">
 <meta property="og:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Can you reach the IPO bell?">
 <!-- BUILD-GUIDE Step 4 — og.png lives next to index.html on the live Vercel root
      (swap host when the joke domain is bought) -->
@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://sfspeedrun.com/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.">
+<meta name="twitter:title" content="SF SPEEDRUN — how fast can your startup IPO?">
 <meta name="twitter:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Ring the IPO bell.">
 <meta name="twitter:image" content="https://sfspeedrun.com/og.png">
 <!-- Vercel Web Analytics, static-site flavor: no npm, no framework — the game
@@ -3611,7 +3611,7 @@ function drawTitle(){
   if (idleT > 3600){
     const PITCH = [
       "hey. quick pitch while you're here.",
-      'FOUNDER MODE. pre-revenue. pre-you.',
+      'SF SPEEDRUN. pre-revenue. pre-you.',
       'TAM: everyone with a keyboard.',
       'traction: you read this far.',
       'the ask: one (1) press of SPACE.',
@@ -3631,11 +3631,11 @@ function drawTitle(){
   // elements above the fold, was 11; three hues; fixation order title → CTA → sprite)
   cx.textAlign = 'center';
   cx.fillStyle = '#000'; cx.font = 'bold 30px monospace';
-  cx.fillText('FOUNDER MODE', W/2 + 2, 92 + 2);
-  cx.fillStyle = '#ffd94a'; cx.fillText('FOUNDER MODE', W/2, 92);
-  // the pitch line IS the tagline now ('the SF startup platformer' cut — dev jargon)
+  cx.fillText('SF SPEEDRUN', W/2 + 2, 92 + 2);
+  cx.fillStyle = '#ffd94a'; cx.fillText('SF SPEEDRUN', W/2, 92);
+  // owner rename 2026-07-21: the game is SF SPEEDRUN and the tagline is the question
   cx.fillStyle = '#fff'; cx.font = 'bold 9px monospace';
-  cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 110);
+  cx.fillText('how fast can your startup IPO?', W/2, 110);
   // stakes line — gray, not green: the CTA owns green now. Absent = empty slot, fine.
   cx.font = 'bold 8px monospace'; cx.fillStyle = '#cfd6e4';
   if (lbTop && lbTop.length){
@@ -3794,7 +3794,7 @@ function makeBadge(won){
     ry += step;
   }
   b.fillStyle = '#ffd94a'; b.font = 'bold 30px monospace';
-  b.fillText('FOUNDER MODE · ' + GAME_URL.replace('https://',''), 320, 586);
+  b.fillText('SF SPEEDRUN · ' + GAME_URL.replace('https://',''), 320, 586);
   return bc;
 }
 
@@ -3988,10 +3988,10 @@ function shareText(won){
   const f = badgeFlairs(won);
   const val = valuation(won);
   return won
-    ? `I just beat FOUNDER MODE ${winEmoji(val.v)}\n\nRaised ${fmtMoney(raised)}, stomped the churn gremlins, out-jumped a VC whose vest is load-bearing, and defeated SYNERGY.AI in ${t}. Exit valuation: ${fmtMoney(val.v)}.` +
+    ? `I just beat SF SPEEDRUN ${winEmoji(val.v)}\n\nRaised ${fmtMoney(raised)}, stomped the churn gremlins, out-jumped a VC whose vest is load-bearing, and defeated SYNERGY.AI in ${t}. Exit valuation: ${fmtMoney(val.v)}.` +
       (f.length ? `\n\nFlair earned: ${f.join(' · ')}.` : '') +
       `\n\nCan you top my valuation?\n\nPlay: ${resultUrl(true)}`
-    : `FOUNDER MODE just took me out. Raised ${fmtMoney(raised)} and died in ${zoneName(player.x)} 💀 Final valuation: ${fmtMoney(val.v)} (down round).\n\nIt was a market timing issue.\n\nThink you can survive SF?\n\nPlay: ${resultUrl(false)}`;
+    : `SF SPEEDRUN just took me out. Raised ${fmtMoney(raised)} and died in ${zoneName(player.x)} 💀 Final valuation: ${fmtMoney(val.v)} (down round).\n\nIt was a market timing issue.\n\nThink you can survive SF?\n\nPlay: ${resultUrl(false)}`;
 }
 
 function showEndUI(won){

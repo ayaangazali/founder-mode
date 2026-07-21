@@ -15,7 +15,7 @@ export default function handler(req, res) {
   const og = `${HOST}/api/og?${qs}`;
   // unicorn gate holds on the unfurl too: sub-$1B wins are certified horses
   const uni = parseInt(v, 10) >= 1000000;
-  const title = w === '1' ? `${uni ? 'CERTIFIED UNICORN' : 'CERTIFIED HORSE'} — FOUNDER MODE` : 'OUT OF RUNWAY — FOUNDER MODE';
+  const title = w === '1' ? `${uni ? 'CERTIFIED UNICORN' : 'CERTIFIED HORSE'} — SF SPEEDRUN` : 'OUT OF RUNWAY — SF SPEEDRUN';
   // per-run description (n is already sanitized to [a-zA-Z0-9 .-] above, safe in an attribute)
   const fm = k => { k = parseInt(k, 10) || 0; return k >= 1000000 ? '$' + (k / 1000000).toFixed(2) + 'B' : k >= 1000 ? '$' + (k / 1000).toFixed(1) + 'M' : '$' + k + 'K'; };
   const who = n || 'a founder';
@@ -37,5 +37,5 @@ export default function handler(req, res) {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="${og}">
 <meta http-equiv="refresh" content="0;url=/">
-</head><body>redirecting to the game… <a href="/">play FOUNDER MODE</a></body></html>`);
+</head><body>redirecting to the game… <a href="/">play SF SPEEDRUN</a></body></html>`);
 }
