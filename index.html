@@ -447,11 +447,10 @@ function fit() {
   } else { bz.style.display = 'none'; grille.style.display = 'none'; }
   // install hint: iOS Safari, not yet installed, not dismissed, title only (stepGame hides it on start)
   const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-  let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs3') === '1'; } catch(e){}
   let onTitle = true; try { onTitle = state === 0; } catch(e){} // boot fit() predates the state let-binding (TDZ throws even on typeof); 0 = ST.TITLE
   let a2hsUsed = false; try { a2hsUsed = a2hsSession; } catch(e){} // boot fit() predates the binding
   document.getElementById('a2hs').style.display =
-    (isTouch && !standalone && !a2hsSeen && !a2hsUsed && onTitle) ? 'block' : 'none';
+    (isTouch && !standalone && !a2hsUsed && onTitle) ? 'block' : 'none';
 }
 window.addEventListener('resize', fit); fit();
 // title-screen leaderboard panel (chip shows only on the title, like #credit)
@@ -476,11 +475,11 @@ document.getElementById('lbPanelClose').addEventListener('click', () => {
 document.getElementById('lbPanel').addEventListener('click', e => {
   if (e.target.id === 'lbPanel') document.getElementById('lbPanel').style.display = 'none';
 });
-// the button is PERMANENT (owner call): only the ✕ writes the forever-dismissal;
-// GOT IT / the native prompt just hide it for the session (v3 key: prior GOT-IT
-// dismissals under v2 semantics must not keep hiding it)
-const a2hsDismiss = () => { try { localStorage.setItem('fm_a2hs3', '1'); } catch(e){} document.getElementById('a2hs').style.display = 'none'; };
-const a2hsHide = () => { document.getElementById('a2hs').style.display = 'none'; };
+// owner rule 2026-07-21 (v3): the button shows on EVERY title visit, both browsers.
+// ✕, GOT IT, the native prompt, or starting the game hide it for THIS title visit
+// only — nothing is ever persisted; returning to the title brings it back.
+const a2hsHide = () => { a2hsSession = true; document.getElementById('a2hs').style.display = 'none'; };
+const a2hsDismiss = a2hsHide; // legacy alias (the ✕ no longer writes localStorage)
 // Android/desktop Chrome fire beforeinstallprompt — capture it and installing is ONE tap.
 // Apple offers no API, so iOS gets a big per-browser instruction card instead.
 let bipEvent = null;
@@ -4141,11 +4140,12 @@ function goHome(){
   ui.style.display = 'none';
   const m = document.getElementById('uiMore'); if (m) m.remove();
   paused = false; clearAllInput(); customizeOpen = false;
+  a2hsSession = false; // every title visit gets the chip back (owner rule v3)
   // the title runs d-pad-free since the redesign; the start branch hands it back,
   // so the old goHome soft-lock (hidden d-pad, undrivable run) cannot recur
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'none';
-  fit(); // re-decides the rotate banner the end screen hid
   reset(false); state = ST.TITLE;
+  fit(); // AFTER the state flip — fit() decides title chrome (install chip) by state
 }
 document.getElementById('pauseChip').onclick = () => { if (state === ST.PLAY) paused = true; initAudio(); };
 document.getElementById('pmResume').onclick = () => { paused = false; };
