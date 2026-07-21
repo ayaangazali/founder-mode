@@ -3474,11 +3474,13 @@ function drawHUD(){
     cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
   }
   if (muted){ // the toggle was invisible: nobody could tell whether M took (persona backlog #5)
-    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 22, 56, 11); occlude(W - 62, 22, 56, 11);
-    cx.fillStyle = '#8d99ae'; cx.font = 'bold 7px monospace'; cx.fillText('[M] MUTED', W - 57, 30);
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 130, 22, 56, 11); occlude(W - 130, 22, 56, 11);
+    cx.fillStyle = '#8d99ae'; cx.font = 'bold 7px monospace'; cx.fillText('[M] MUTED', W - 125, 30);
   }
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14); occlude(W - 62, 6, 56, 14);
-  cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 56, 16);
+  // timer sits at W-130, not W-62: the fixed #pauseChip parks over the canvas's
+  // top-right corner on desktop and occluded the mm:ss readout (persona backlog #12)
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 130, 6, 56, 14); occlude(W - 130, 6, 56, 14);
+  cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 124, 16);
   // active powers — hidden inside mini-games (chat/interview/room): the world
   // is paused there and the ticking labels read as a visual bug (owner report)
   const inOverlay = chat || interview || room.active;
@@ -3639,6 +3641,7 @@ function badgeFlairs(won){
 function resumePlay(fromCheckpoint){
   ui.style.display = 'none';
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
+  fit(); // re-decides the rotate banner the end screen hid
   reset(fromCheckpoint); state = ST.PLAY;
 }
 // surrender / back-to-title from the pause menu or an end card (owner ask):
@@ -3648,6 +3651,7 @@ function goHome(){
   paused = false; clearAllInput();
   // showEndUI hides the d-pad; the title must hand it back or the next run is unplayable on touch
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
+  fit(); // re-decides the rotate banner the end screen hid
   reset(false); state = ST.TITLE;
 }
 document.getElementById('pauseChip').onclick = () => { if (state === ST.PLAY) paused = true; initAudio(); };
@@ -3941,6 +3945,7 @@ function showEndUI(won){
   keys['r'] = false; touch.L = touch.R = touch.J = false;
   endGraceT = 45; // and a fresh mash-press right after the bell must not either (0.75s)
   document.getElementById('touch').style.display = 'none';
+  document.getElementById('rot').style.display = 'none'; // the rotate banner parked on top of the name row in portrait (persona backlog #12); fit() re-decides on resume
 
   const isTouch = 'ontouchstart' in window;
   // two share surfaces on a loss: the obituary front page (default) and the
@@ -3991,15 +3996,18 @@ function showEndUI(won){
       ${LB_ON ? '<button id="lbGo" class="alt">🏆 POST VALUATION</button>' : ''}
     </div>
     <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:15px; margin-top:6px; line-height:1.6"></div>`;
+  const btnRows = `<div style="margin-top:8px">${btns}</div>
+    ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:11px; margin-top:4px">R / SPACE to pivot</div>'}`;
+  // short viewports (hidden-scrollbar laptops, landscape phones) sink the name/POST
+  // row below the fold behind four buttons — there, the name row goes first
+  // (persona backlog #12)
+  const shortView = !isTouch && window.innerHeight < 620; // desktop-only: on landscape phones the reorder shoved the buttons off-screen (mobile probe caught it)
   uicard.innerHTML = `
     <img id="endImg" src="${surfaces[cur].url}" style="width:min(720px,86vw,calc((100vh - 250px)*1.9)); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
     ${valHtml}
     ${isTouch ? '<div style="color:#8d99ae; font-weight:bold; font-size:12px; margin-top:4px">press &amp; hold the badge to save it. yes, really.</div>' : ''}
-    <div style="margin-top:8px">${btns}</div>
-    ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:11px; margin-top:4px">R / SPACE to pivot</div>'}
-    ${lbHtml}
-    <div id="cpMsg" style="color:#7cffa5; font-weight:bold; min-height:20px; margin-top:4px"></div>
-    ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:12px">or press R to run it back</div>'}`;
+    ${shortView ? lbHtml + btnRows : btnRows + lbHtml}
+    <div id="cpMsg" style="color:#7cffa5; font-weight:bold; min-height:20px; margin-top:4px"></div>`;
   ui.style.display = 'flex';
 
   const nameEl = document.getElementById('lbName');
