@@ -116,8 +116,10 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
   // ---------------- 390x664 portrait ----------------
   {
     const { ctx, page, errors } = await touchCtx(browser, 390, 664);
-    const rot = await page.evaluate(() => getComputedStyle(document.getElementById('rot')).display);
-    check('390x664: rotate prompt visible in portrait', rot === 'block');
+    // portrait is a first-class handheld mode since 2026-07-21: the rotate nag is gone,
+    // replaced by a dismissible add-to-home-screen hint (title-only, non-standalone)
+    const a2hs = await page.evaluate(() => document.getElementById('a2hs').style.display);
+    check('390x664: install hint visible on the portrait title', a2hs === 'block', 'display=' + a2hs);
     const canvasTop = await page.evaluate(() => document.getElementById('game').getBoundingClientRect().top);
     check('390x664: canvas top-aligned (not centered behind the prompt)', canvasTop < 5, `top=${Math.round(canvasTop)}`);
     // button-position check moved below game start: the redesigned title hides #touch,
@@ -128,12 +130,12 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
       return { canvasBottom: Math.round(c.bottom), tLtop: Math.round(l.top) };
     });
 
-    // dismiss the prompt with a tap
-    await page.evaluate(() => { const r = document.getElementById('rot').getBoundingClientRect(); window.__rot = { x: r.x + r.width/2, y: r.y + r.height/2 }; });
-    const rp = await page.evaluate(() => window.__rot);
+    // dismiss the hint with a tap (persists via localStorage)
+    await page.evaluate(() => { const r = document.getElementById('a2hs').getBoundingClientRect(); window.__a2 = { x: r.x + r.width/2, y: r.y + r.height/2 }; });
+    const rp = await page.evaluate(() => window.__a2);
     await tapXY(page, rp.x, rp.y);
     await page.waitForTimeout(200);
-    check('390x664: prompt dismissible', await page.evaluate(() => getComputedStyle(document.getElementById('rot')).display) === 'none');
+    check('390x664: install hint dismissible', await page.evaluate(() => document.getElementById('a2hs').style.display) === 'none');
 
     await page.screenshot({ path: path.join(SHOTDIR, 'mobile-390x664-portrait.png') });
 
@@ -142,7 +144,9 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     await page.waitForTimeout(400);
     check('390x664: tap starts the game in portrait', await page.evaluate(() => state) === 1);
     const btnPos = await measureBtns();
-    check('390x664: touch buttons sit directly under the canvas', btnPos.tLtop >= btnPos.canvasBottom && btnPos.tLtop - btnPos.canvasBottom < 40, JSON.stringify(btnPos));
+    // deck is bottom-anchored since the handheld pass: below the screen, inside the viewport
+    check('390x664: deck sits in the thumb zone (bottom-anchored, on-screen)',
+          btnPos.tLtop > btnPos.canvasBottom && btnPos.tLtop > 664 * 0.55 && btnPos.tLtop < 664 - 60, JSON.stringify(btnPos));
     const x0 = await page.evaluate(() => player.x);
     const rRect = await page.evaluate(() => { const r = document.getElementById('tR').getBoundingClientRect(); return { x: r.x + r.width/2, y: r.y + r.height/2 }; });
     const cdp = await ctx.newCDPSession(page);

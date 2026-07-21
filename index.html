@@ -71,6 +71,17 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { height:100%; background:#0b0b14; overflow:hidden; touch-action:none; }
   #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  /* portrait handheld mode (owner iPhone screenshots 2026-07-21): the canvas renders
+     1.22x and the stack crops the overflow (mostly look-back, left side) so the game
+     is actually readable one-handed; safe-area padding keeps the iOS clock off the HUD */
+  @media (pointer: coarse) and (orientation: portrait) {
+    #wrap { padding-top: env(safe-area-inset-top, 0px); }
+    #stack { overflow: hidden; }
+  }
+  #a2hs { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(52px + env(safe-area-inset-bottom, 0px));
+          display:none; z-index:20; background:rgba(8,8,20,.92); border:2px solid #7ce0ff; color:#7ce0ff;
+          font:bold 11px "Courier New",monospace; padding:8px 12px; text-align:center; max-width:92vw; }
+  #a2hs span { color:#8d99ae; display:block; margin-top:3px; font-size:10px; }
   canvas#game {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -205,7 +216,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   <button id="custDone">✓ DONE</button>
   <div class="foot" id="custHint">ESC — back · SPACE — ship it</div>
 </div></div>
-<div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
+<div id="a2hs">GET THE APP: tap share ⬆ then “add to home screen”<span>full screen · offline · zero VCs involved (tap to dismiss)</span></div>
 <div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener noreferrer">ayaan gazali</a></div>
 <div id="lbChip">🏆 LEADERBOARD</div>
 <div id="lbPanel"><div id="lbPanelCard"><div id="lbPanelHead"></div><div id="lbPanelList"></div><button id="lbPanelEra">🏅 all-time</button><button id="lbPanelClose">close</button></div></div>
@@ -232,6 +243,7 @@ cx.imageSmoothingEnabled = false;
 const tv = document.getElementById('txt');
 const tcx = tv.getContext('2d');
 let TS = 2; // game-unit → overlay-pixel scale; set by fit()
+let camCropX = 0; // world px hidden by the portrait left-crop; left-anchored UI shifts right by this (fit() sets it)
 cx.fillText = function(str, x, y){
   tcx.font = cx.font.replace(/(\d+(?:\.\d+)?)px/, (m0, n) => (parseFloat(n) * TS) + 'px');
   tcx.fillStyle = cx.fillStyle;
@@ -249,45 +261,70 @@ function occlude(x, y, w, h){ tcx.clearRect(Math.round(x) * TS, Math.round(y) * 
 // --- scale canvas to window, keep 16:9, integer-ish scale ---
 // portrait on touch: non-blocking (ruling 2.1) — top-align canvas, buttons directly under it,
 // dismissible in-fiction rotate prompt. never a wall, never an input pause.
-let rotDismissed = false;
 function fit() {
   // exact-fit scale (owner: integer flooring letterboxed up to a third of the
   // window in black — "why is it so zoomed out"). The floor existed to keep
   // upscaled 6px fonts crisp; text renders on the hi-res overlay now, so
   // fractional sprite scale costs only sub-pixel chunk irregularity.
-  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  const isTouch = 'ontouchstart' in window;
+  const portrait = isTouch && window.innerHeight > window.innerWidth;
+  // portrait handheld zoom: render 1.22x width-fit and crop the overflow, 70% off
+  // the LEFT (look-back) and 30% off the right — the sprites get readable and the
+  // lookahead only drops 300->274 world px. Landscape/desktop keep the exact fit.
+  const VIS_W = 394; // world px visible in portrait (480 / 1.22)
+  const s = portrait ? window.innerWidth / VIS_W
+                     : Math.min(window.innerWidth / W, window.innerHeight / H);
+  const stack = document.getElementById('stack');
   cv.style.width  = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';
-  // size the text overlay to the same CSS box, backed at devicePixelRatio
   const dpr = window.devicePixelRatio || 1;
   TS = Math.floor(W * s) / W * dpr;
   tv.width  = Math.round(W * TS); tv.height = Math.round(H * TS);
   tv.style.width = cv.style.width; tv.style.height = cv.style.height;
-  const isTouch = 'ontouchstart' in window;
-  const portrait = isTouch && window.innerHeight > window.innerWidth;
+  if (portrait){
+    const crop = Math.max(0, Math.floor(W * s) - window.innerWidth);
+    stack.style.width = window.innerWidth + 'px';
+    stack.style.height = Math.floor(H * s) + 'px';
+    cv.style.marginLeft = tv.style.marginLeft = -Math.round(crop * 0.7) + 'px';
+    camCropX = Math.round((crop * 0.7) / s);
+  } else {
+    stack.style.width = ''; stack.style.height = '';
+    cv.style.marginLeft = tv.style.marginLeft = '';
+    camCropX = 0;
+  }
   document.getElementById('wrap').style.alignItems = portrait ? 'flex-start' : 'center';
   // Game Boy layouts: portrait = GB classic (screen up top, deck below: d-pad left,
   // A right, START/SOUND pills centered under them, brand line at the bottom of the
   // deck). Landscape = GBA (d-pad mid-left of the screen, A mid-right — thumbs rest
   // where the hardware would put them, and nothing sits over the ground line).
-  const ch = Math.floor(H * s), midY = Math.max(0, (window.innerHeight - 70) * 0.62); // thumb arc, below the billboard band
+  const midY = Math.max(0, (window.innerHeight - 70) * 0.62); // landscape thumb arc, below the billboard band
   for (const id of ['tL','tR','tJ']){
     const el = document.getElementById(id);
-    if (portrait){ el.style.bottom = 'auto'; el.style.top = (ch + 14) + 'px'; }
-    else { el.style.bottom = 'auto'; el.style.top = (id === 'tJ' ? midY - 8 : midY) + 'px'; }
+    if (portrait){ // deck hugs the BOTTOM of the phone — thumbs live there, not mid-screen (owner screenshots)
+      el.style.top = 'auto'; el.style.bottom = 'calc(96px + env(safe-area-inset-bottom, 0px))';
+    } else { el.style.bottom = 'auto'; el.style.top = (id === 'tJ' ? midY - 8 : midY) + 'px'; }
   }
   const tP = document.getElementById('tP'), tS = document.getElementById('tS');
   if (portrait){
-    tP.style.top = (ch + 110) + 'px'; tP.style.right = 'auto'; tP.style.left = 'calc(50% + 8px)';
-    tS.style.top = (ch + 110) + 'px'; tS.style.right = 'calc(50% + 8px)';
+    tP.style.top = 'auto'; tP.style.bottom = 'calc(48px + env(safe-area-inset-bottom, 0px))'; tP.style.right = 'auto'; tP.style.left = 'calc(50% + 8px)';
+    tS.style.top = 'auto'; tS.style.bottom = 'calc(48px + env(safe-area-inset-bottom, 0px))'; tS.style.right = 'calc(50% + 8px)';
   } else {
-    tP.style.top = ''; tP.style.right = ''; tP.style.left = '';
-    tS.style.top = ''; tS.style.right = '';
+    tP.style.top = ''; tP.style.bottom = ''; tP.style.right = ''; tP.style.left = '';
+    tS.style.top = ''; tS.style.bottom = ''; tS.style.right = '';
   }
   const brand = document.getElementById('shellBrand');
   brand.style.display = (isTouch && portrait) ? 'block' : 'none';
-  brand.style.top = (ch + 148) + 'px';
-  document.getElementById('rot').style.display = (portrait && !rotDismissed) ? 'block' : 'none';
+  if (portrait){
+    const deckTop = window.innerHeight - 96 - 70; // matches the d-pad bottom anchor
+    const sb = stack.getBoundingClientRect().bottom;
+    brand.style.top = Math.round(sb + Math.max(10, (deckTop - sb) / 2)) + 'px';
+  }
+  // install hint: iOS Safari, not yet installed, not dismissed, title only (stepGame hides it on start)
+  const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs') === '1'; } catch(e){}
+  let onTitle = true; try { onTitle = state === 0; } catch(e){} // boot fit() predates the state let-binding (TDZ throws even on typeof); 0 = ST.TITLE
+  document.getElementById('a2hs').style.display =
+    (isTouch && !standalone && !a2hsSeen && onTitle) ? 'block' : 'none';
 }
 window.addEventListener('resize', fit); fit();
 // title-screen leaderboard panel (chip shows only on the title, like #credit)
@@ -312,8 +349,9 @@ document.getElementById('lbPanelClose').addEventListener('click', () => {
 document.getElementById('lbPanel').addEventListener('click', e => {
   if (e.target.id === 'lbPanel') document.getElementById('lbPanel').style.display = 'none';
 });
-document.getElementById('rot').addEventListener('touchstart', e => { e.preventDefault(); rotDismissed = true; fit(); }, {passive:false});
-document.getElementById('rot').addEventListener('mousedown', () => { rotDismissed = true; fit(); });
+const a2hsDismiss = () => { try { localStorage.setItem('fm_a2hs', '1'); } catch(e){} document.getElementById('a2hs').style.display = 'none'; };
+document.getElementById('a2hs').addEventListener('touchstart', e => { e.preventDefault(); a2hsDismiss(); }, {passive:false});
+document.getElementById('a2hs').addEventListener('mousedown', a2hsDismiss);
 
 // ------------------------- INPUT -------------------------
 const keys = {};
@@ -457,7 +495,7 @@ function pickerHit(clientX, clientY){
   const mx = (clientX - r.left) * W / r.width;
   const my = (clientY - r.top)  * H / r.height;
   const z = CUSTOMIZE_ZONE;
-  return (mx > z.x && mx < z.x + z.w && my > z.y && my < z.y + z.h) ? 'open' : null;
+  return (mx > z.x + camCropX && mx < z.x + z.w + camCropX && my > z.y && my < z.y + z.h) ? 'open' : null;
 }
 // customizeOpen is a flag, not a state: ST.TITLE stays live underneath, so the
 // typing eggs, idle pitch, and konami listener all keep working untouched.
@@ -3653,13 +3691,14 @@ function draw(){
 
 function drawHUD(){
   // raised
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(6, 6, 118, 30); occlude(6, 6, 118, 30);
+  const hx0 = 6 + camCropX; // portrait crop hides the left edge — the wallet moves with it
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(hx0, 6, 118, 30); occlude(hx0, 6, 118, 30);
   cx.fillStyle = '#ffd94a'; cx.font = 'bold 9px monospace';
-  cx.fillText('RAISED ' + fmtMoney(raised), 12, 18);
+  cx.fillText('RAISED ' + fmtMoney(raised), hx0 + 6, 18);
   // runway hearts
-  cx.fillStyle = '#9fe8b5'; cx.font = 'bold 7px monospace'; cx.fillText('RUNWAY', 12, 30);
+  cx.fillStyle = '#9fe8b5'; cx.font = 'bold 7px monospace'; cx.fillText('RUNWAY', hx0 + 6, 30);
   for (let i = 0; i < Math.max(maxHearts, 3); i++)
-    px(52 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
+    px(hx0 + 46 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
   // zone + timer
   if (!chat && !interview){ // mini-game headers own top-center while one is up
     cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14); occlude(W/2 - 55, 6, 110, 14);
@@ -3680,7 +3719,7 @@ function drawHUD(){
   const inOverlay = chat || interview || room.active;
   cx.font = 'bold 7px monospace';
   if (!inOverlay){
-  if (player.ycT > 0){ cx.fillStyle = '#ff8c37'; cx.fillText('DEMO DAY MODE ' + Math.ceil(player.ycT/60) + 's', 12, 44); }
+  if (player.ycT > 0){ cx.fillStyle = '#ff8c37'; cx.fillText('DEMO DAY MODE ' + Math.ceil(player.ycT/60) + 's', camCropX + 12, 44); }
   else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
   else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', 12, 44); }
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
@@ -3710,7 +3749,7 @@ function drawHUD(){
     occlude(W/2 - ctw/2 - 5, H - 20, ctw + 10, 12);
     cx.fillStyle = '#cfd6e4'; cx.fillText(ct, Math.round(W/2 - ctw/2), H - 11);
   }
-  if (corgi.following && !corgi.sitting && !inOverlay){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', 12, 84); }
+  if (corgi.following && !corgi.sitting && !inOverlay){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', camCropX + 12, 84); }
 }
 
 function drawTitle(){
@@ -3719,22 +3758,24 @@ function drawTitle(){
   // ground strip
   px(0, GROUND_Y, W, 5, '#8a8f9e'); px(0, GROUND_Y + 5, W, H - GROUND_Y, '#33323f');
   // s=3 live preview — walks in place, re-renders the chosen look every frame (it IS the preview)
-  drawFounder(cx, 56, GROUND_Y - 48, 3, 1, frame % 24 < 12 ? 1 : 0, false);
-  drawPedGear(cx, 56, GROUND_Y - 48, 3); // the picker shows the gear live
+  const tfx = 56 + camCropX; // the preview must survive the portrait left-crop (it is the customize tap target)
+  drawFounder(cx, tfx, GROUND_Y - 48, 3, 1, frame % 24 < 12 ? 1 : 0, false);
+  drawPedGear(cx, tfx, GROUND_Y - 48, 3); // the picker shows the gear live
   if (pendingCorgi){ // item 10 egg feedback: the corgi is already waiting at the title desk
     const cy = GROUND_Y - 8;
-    px(104, cy, 8, 5, '#e8a04c'); px(110, cy - 2, 4, 4, '#e8a04c');
-    px(112, cy - 1, 1, 1, '#111'); px(110, cy - 3, 1, 2, '#c77f33'); px(112, cy - 3, 1, 2, '#c77f33');
-    px(103, cy + (frame % 10 < 5 ? 0 : 1), 1, 2, '#e8a04c');
-    px(105, cy + 5, 1, 3, '#c77f33'); px(110, cy + 5, 1, 3, '#c77f33');
+    const cgx = 104 + camCropX;
+    px(cgx, cy, 8, 5, '#e8a04c'); px(cgx + 6, cy - 2, 4, 4, '#e8a04c');
+    px(cgx + 8, cy - 1, 1, 1, '#111'); px(cgx + 6, cy - 3, 1, 2, '#c77f33'); px(cgx + 8, cy - 3, 1, 2, '#c77f33');
+    px(cgx - 1, cy + (frame % 10 < 5 ? 0 : 1), 1, 2, '#e8a04c');
+    px(cgx + 1, cy + 5, 1, 3, '#c77f33'); px(cgx + 6, cy + 5, 1, 3, '#c77f33');
   }
   if (pendingSlop){
     cx.fillStyle = '#8fd18f'; cx.font = 'bold 6px monospace';
-    cx.fillText('slop mode queued', 12, 250);
+    cx.fillText('slop mode queued', camCropX + 12, 250);
   }
   try { if (localStorage.getItem('fm_alum')){                     // B4: the batch payoff, forever
     cx.fillStyle = '#d97706'; cx.font = 'bold 7px monospace';
-    cx.fillText('▸ ACCELERATOR ALUM', 12, 242);
+    cx.fillText('▸ ACCELERATOR ALUM', camCropX + 12, 242);
   } } catch(e){}
   // EGG: THE REVERSE PITCH — ignore the founder for 60s and they pitch YOU, deck loops
   // from slide one (a founder circling back and re-pitching IS the joke). textAlign is
@@ -3751,10 +3792,10 @@ function drawTitle(){
     const q = PITCH[Math.floor((idleT - 3600) / 240) % PITCH.length];
     cx.font = 'bold 6px monospace';
     const tw = cx.measureText(q).width;
-    const bx = clamp(74 - tw / 2 - 3, 2, W - tw - 8); // centered over the founder's head
+    const bx = clamp(74 + camCropX - tw / 2 - 3, 2 + camCropX, W - tw - 8); // centered over the founder's head
     // bubble band sits at y146-156 since the redesign — the promoted 14px CTA owns y160
     px(bx, 146, tw + 6, 10, '#fff'); occlude(bx, 146, tw + 6, 10);
-    px(72, 156, 4, 3, '#fff');                        // tail, points at the founder below
+    px(72 + camCropX, 156, 4, 3, '#fff');             // tail, points at the founder below
     cx.fillStyle = '#111';
     cx.fillText(q, Math.round(bx + 3), Math.round(153.5));
   }
@@ -3788,8 +3829,8 @@ function drawTitle(){
   // ---- ONE customize entry (chip · sprite tap · C/H/V/X/P keys) ----
   cx.textAlign = 'left'; cx.font = 'bold 7px monospace';
   const custTxt = ('ontouchstart' in window) ? 'CUSTOMIZE FOUNDER ▸' : '[C] CUSTOMIZE FOUNDER';
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(112, 209, 120, 12);
-  cx.fillStyle = '#7ce0ff'; cx.fillText(custTxt, 116, 218);
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(112 + camCropX, 209, 120, 12);
+  cx.fillStyle = '#7ce0ff'; cx.fillText(custTxt, 116 + camCropX, 218);
   cx.textAlign = 'center';
   cx.font = 'bold 8px monospace';
   cx.fillStyle = '#5d647a';
@@ -4131,7 +4172,7 @@ function showEndUI(won){
   keys['r'] = false; touch.L = touch.R = touch.J = false;
   endGraceT = 45; // and a fresh mash-press right after the bell must not either (0.75s)
   document.getElementById('touch').style.display = 'none';
-  document.getElementById('rot').style.display = 'none'; // the rotate banner parked on top of the name row in portrait (persona backlog #12); fit() re-decides on resume
+  document.getElementById('a2hs').style.display = 'none'; // no install pitch over the badge
 
   const isTouch = 'ontouchstart' in window;
   // two share surfaces on a loss: the obituary front page (default) and the
@@ -4344,6 +4385,7 @@ function stepGame(){
   if (state === ST.TITLE && (JUMP()) && frame > 30){
     track('start');
     customizeOpen = false; // SPACE inside the panel ships it — the CTA's one promise never goes dead
+    document.getElementById('a2hs').style.display = 'none'; // hint is title-only chrome
     document.getElementById('credit').style.display = 'none';
     document.getElementById('lbChip').style.display = 'none';
     document.getElementById('lbPanel').style.display = 'none';

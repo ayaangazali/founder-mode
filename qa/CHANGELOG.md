@@ -882,3 +882,16 @@ Playwright-screenshot verified on desktop + both mobile orientations.
 3. **iMessage (GamePigeon-style) ruled out honestly**: native iMessage App Extension = Xcode + App
    Store + Apple dev account; not reachable from a web repo. Nearest shipped equivalent: iMessage
    link → per-run unfurl card → installable standalone app.
+
+## 2026-07-21 — [HANDHELD PORTRAIT PASS] (owner iPhone screenshots)
+
+Portrait is a first-class handheld mode now. (1) 1.22x zoomed view: the canvas renders larger and the
+stack crops the overflow 70/30 toward the look-back side — sprites readable one-handed, lookahead only
+300→274 world px. New `camCropX` shifts every left-anchored UI element (wallet HUD, title founder +
+corgi + CUSTOMIZE chip + earned flags, reverse-pitch bubble, tap zone) so nothing falls off the cropped
+edge. (2) Deck bottom-anchored at thumb height (d-pad + A above START/SOUND pills), brand line centers
+the gap; safe-area padding keeps the iOS status bar off the HUD in standalone. (3) ROTATE YOUR PHONE
+nag deleted — replaced by a dismissible GET THE APP hint (title-only, touch, non-standalone,
+localStorage-persisted). iOS offers no programmatic install; the hint is the fewest-clicks path there
+is. (4) Boot-order TDZ guarded (fit() predates the state binding). Probe expectations updated
+consciously: install-hint legs replace rotate-prompt legs; deck asserted bottom-anchored on-screen.
