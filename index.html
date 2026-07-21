@@ -4002,23 +4002,34 @@ function showEndUI(won){
     document.getElementById('bDl').textContent = surfaces[cur].save;
     document.getElementById('bTg').textContent = cur === 'obit' ? 'view classic badge' : 'view front page';
   };
+  const manualCopy = (msg, text) => { // last resort: visible readonly textarea, still shippable
+    msg.textContent = 'copy blocked — select all + copy manually:';
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.readOnly = true;
+    ta.style.cssText = 'display:block; margin:6px auto 0; width:min(480px,80vw); height:88px; font:12px "Courier New",monospace;';
+    msg.appendChild(ta); ta.focus(); ta.select();
+  };
   document.getElementById('bSh').onclick = () => {
     const s = surfaces[cur];
     const msg = document.getElementById('cpMsg');
+    // feedback on EVERY tap, synchronously — a silent share button reads as broken
+    // (persona backlog #4: LinkedIn/Instagram in-app webviews have no share sheet
+    // AND a rejecting clipboard, which used to leave nothing on screen at all)
+    msg.textContent = navigator.share ? 'opening share sheet…' : 'copying…';
     // clipboard FIRST, every click (owner ask: the link lands on the clipboard
     // as part of sharing) — paste works even if the share sheet is dismissed
     try {
       if (navigator.clipboard && navigator.clipboard.writeText)
-        navigator.clipboard.writeText(s.text).then(() => { msg.textContent = 'post + link copied ✓ — paste it anywhere'; }, () => {});
-    } catch(e){}
+        navigator.clipboard.writeText(s.text).then(() => { msg.textContent = 'post + link copied ✓ — paste it anywhere'; },
+                                                   () => { if (!navigator.share) manualCopy(msg, s.text); });
+      else if (!navigator.share) manualCopy(msg, s.text);
+    } catch(e){ if (!navigator.share) manualCopy(msg, s.text); }
     if (navigator.share){
       // picture + the game link: some targets drop text when files ride along,
       // so the url field carries the link on its own
       const data = canShareFiles && s.file && navigator.canShare({files:[s.file]})
         ? {files:[s.file], text:s.text, url: resultUrl(won)} : {text:s.text, url: resultUrl(won)};
       navigator.share(data).catch(() => navigator.share({text:s.text}).catch(()=>{}));
-    } else if (!(navigator.clipboard && navigator.clipboard.writeText)){
-      msg.textContent = 'no share sheet here — use ⬇ SAVE + COPY POST below';
     }
   };
   document.getElementById('bDl').onclick = () => {
@@ -4031,13 +4042,7 @@ function showEndUI(won){
     const text = surfaces[cur].text;
     const badgeBlob = surfaces[cur].blob;
     const ok = () => msg.textContent = 'saved ✓ + post copied ✓ — paste on LinkedIn, attach the image';
-    const manual = () => { // last resort: visible readonly textarea, still shippable
-      msg.textContent = 'copy blocked — select all + copy manually:';
-      const ta = document.createElement('textarea');
-      ta.value = text; ta.readOnly = true;
-      ta.style.cssText = 'display:block; margin:6px auto 0; width:min(480px,80vw); height:88px; font:12px "Courier New",monospace;';
-      msg.appendChild(ta); ta.focus(); ta.select();
-    };
+    const manual = () => manualCopy(msg, text);
     const legacy = () => {
       try {
         const ta = document.createElement('textarea');
