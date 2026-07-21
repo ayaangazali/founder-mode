@@ -1,3 +1,17 @@
+# MORNING REPORT — part 4, 2026-07-21 (02:30–02:55 PDT): SF SPEEDRUN
+
+**Owner asks, live:** rename to SF SPEEDRUN with 'how fast can your startup IPO?' under it · female founder styles · remove the clouds · make backgrounds unmistakably SF · add small gags. All shipped, full gate green (ci-sweep + paths + mobile, clean bot PASS 3 recoveries).
+
+- **Rename** everywhere player-facing: wordmark, tab/og/twitter, badge footer, share texts, /api/r + og card. Kept: konami FOUNDER-MODE mood payoff (a mode, not a brand), HYPERGROWTH DAILY.
+- **LONG + BUN** hair styles join the picker (screenshot-verified: `qa/persona/hair-*.png`).
+- **Clouds gone** — ambient Karl bands deleted; fog only remains as the FOG THICK TODAY daily modifier.
+- **Skyline**: twin-peaks horizon hills, Coit Tower, painted-ladies row in the Mission (Salesforce/Transamerica/Sutro/bridge were already there).
+- **Gags**: NO LEFT TURN (EVER) · FOR RENT $4,600 cozy* (*no windows) · 2HR PARKING (towed anyway) · rideshare scooter graveyard · STEALTH HQ porta-potty.
+- Nothing deployed; prod still serves the pre-rename build until the owner ships.
+
+---
+---
+
 # MORNING REPORT — overnight run part 3, 2026-07-21 (01:45–02:20 PDT): the title redesign
 
 **Mission (owner, live):** the start screen is too crowded, copy reads dev-facing, customization should be a tab. Five design critics (visual hierarchy, deadpan copy, first-time player, mobile, Rams-minimalist) analyzed the shipped title from screenshots + source; a judge merged them into one spec (`qa/persona/title-redesign-spec-2026-07-21.json`); shipped in two commits with Playwright screenshot verification at every step (`qa/persona/title-v2-*.png` vs `title-baseline-*.png`).

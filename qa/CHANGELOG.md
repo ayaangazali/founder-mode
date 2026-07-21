@@ -849,3 +849,19 @@ Playwright-screenshot verified on desktop + both mobile orientations.
 5. **Probe updates (item-33 rule, consciously)**: overnight-mobile asserts d-pad hidden-on-title +
    shown-in-play (drivability guard retained); overnight-paths reverse-pitch sample band follows the
    bubble to y146-156 (moved clear of the taller CTA).
+
+## 2026-07-21 — [SF SPEEDRUN] rename + female styles + skyline pass (owner asks, live session)
+
+1. **The game is SF SPEEDRUN** — wordmark, tab/og/twitter titles ('SF SPEEDRUN — how fast can your
+   startup IPO?'), badge footer, both share texts, /api/r titles, og-card tagline, reverse-pitch egg.
+   Kept: the konami mood-meter FOUNDER MODE payoff (a mode, not a brand) and HYPERGROWTH DAILY.
+   Paths-probe share-clip expectation follows the brand.
+2. **LONG + BUN hair styles** — feminine silhouettes beyond PONYTAIL; HAIRS drives the picker/panel
+   so no extra wiring; screenshot-verified at preview scale (`qa/persona/hair-*.png`).
+3. **Ambient Karl-fog bands deleted** (owner: 'the clouds ruin it') — fog now exists only as the
+   FOG THICK TODAY modifier's street overlay. B.fog/B.foggy remain in the biome table, unused.
+4. **Skyline pass**: steady sine-sum twin-peaks hills (parallax .12), Coit Tower in the far loop,
+   painted-ladies row in THE MISSION (parallax .5).
+5. **Street gags** (draw-only, no hitboxes, invented names only): NO LEFT TURN (EVER) · FOR RENT
+   1BR $4,600 cozy* *no windows · 2HR PARKING (towed anyway) · rideshare scooter graveyard ·
+   STEALTH HQ porta-potty.
