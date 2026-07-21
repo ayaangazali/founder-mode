@@ -865,3 +865,20 @@ Playwright-screenshot verified on desktop + both mobile orientations.
 5. **Street gags** (draw-only, no hitboxes, invented names only): NO LEFT TURN (EVER) · FOR RENT
    1BR $4,600 cozy* *no windows · 2HR PARKING (towed anyway) · rideshare scooter graveyard ·
    STEALTH HQ porta-potty.
+
+## 2026-07-21 — [GAME BOY MOBILE + APP FEEL] (owner asks, live session)
+
+1. **Game Boy shell on touch**: chunky hardware d-pad halves (pressed-in active state), big crimson A,
+   START/SOUND pills — SOUND is the first in-game touch mute (wired to setMuted, dims while muted).
+   Portrait = GB classic: bezeled screen up top (outline — zero layout shift), deck below, pills
+   centered, steady power-LED 'SF SPEEDRUN' brand line. Landscape = GBA: d-pad mid-left, A mid-right
+   at 62% height (below billboards, above the ground line). Desktop untouched; mobile suite green
+   with zero expectation changes.
+2. **Installable app**: apple-mobile-web-app meta set + manifest.json + sw.js + icons (founder sprite
+   + SF wordmark, rendered from the game's own draw code). Standalone fullscreen from the home
+   screen, offline via network-first SW that never touches /api/ and registers only on
+   https+non-localhost (probes stay hermetic). All new files are OPTIONAL (og.png/api class); the
+   game remains one file.
+3. **iMessage (GamePigeon-style) ruled out honestly**: native iMessage App Extension = Xcode + App
+   Store + Apple dev account; not reachable from a web repo. Nearest shipped equivalent: iMessage
+   link → per-run unfurl card → installable standalone app.

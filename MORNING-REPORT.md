@@ -1,3 +1,15 @@
+# MORNING REPORT — part 5, 2026-07-21 (02:55–03:15 PDT): the phone is a Game Boy
+
+**Owner asks:** make mobile feel like a handheld console, make it feel like an app not a website, GamePigeon-style iMessage play if possible.
+
+- **Game Boy shell shipped**: hardware-styled d-pad + big crimson A + START/SOUND pills (SOUND = new in-game touch mute). Portrait = GB classic (bezeled screen, deck below, power-LED brand line); landscape = GBA (d-pad mid-left, A mid-right at thumb height). Screenshots: `qa/persona/gb-*.png`.
+- **App feel shipped**: share-sheet → Add to Home Screen now installs SF SPEEDRUN as a fullscreen standalone app with its own icon (founder sprite, generated from the game's draw code) and offline play via a service worker that never touches /api/. All new files optional — the game is still one file.
+- **iMessage: not possible from a web repo** — GamePigeon is a native iMessage App Extension (Xcode, Apple dev account, App Store review). Nearest shipped equivalent: paste the link in iMessage → per-run card unfurls → recipient taps into the installable app.
+- **Gate**: all hard gates green + overnight-paths + overnight-mobile (zero expectation changes needed for the shell).
+
+---
+---
+
 # MORNING REPORT — part 4, 2026-07-21 (02:30–02:55 PDT): SF SPEEDRUN
 
 **Owner asks, live:** rename to SF SPEEDRUN with 'how fast can your startup IPO?' under it · female founder styles · remove the clouds · make backgrounds unmistakably SF · add small gags. All shipped, full gate green (ci-sweep + paths + mobile, clean bot PASS 3 recoveries).
