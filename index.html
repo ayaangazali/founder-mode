@@ -1269,6 +1269,13 @@ function momRound(){
 }
 
 function addPop(x,y,txt,c,life=60){
+  // de-overlap (persona backlog #9): boss fights stack popups on one spot and the
+  // scrims turn to soup — a newcomer within a text row of a live popup shifts up.
+  let guard = 8;
+  for (let i = 0; i < popups.length && guard > 0; i++){
+    const q = popups[i];
+    if (Math.abs(q.x - x) < 70 && Math.abs(q.y - y) < 11){ y = q.y - 12; i = -1; guard--; }
+  }
   popups.push({x,y,txt,c,t:life});
   if (popups.length > 6) popups.shift(); // playtest: cap the on-screen chatter
 }
