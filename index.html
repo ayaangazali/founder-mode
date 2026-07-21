@@ -376,15 +376,16 @@ cv.addEventListener('mousedown', e => {
 // ------------------------- AUDIO -------------------------
 let AC = null, muted = false;
 function initAudio(){ if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } }
-function beep(freq, dur, type='square', vol=0.08, slide=0) {
+function beep(freq, dur, type='square', vol=0.08, slide=0, at=0) {
   if (!AC || muted) return;
+  const t0 = AC.currentTime + at; // `at` = start offset scheduled on the audio clock, never setTimeout
   const o = AC.createOscillator(), g = AC.createGain();
-  o.type = type; o.frequency.setValueAtTime(freq, AC.currentTime);
-  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), AC.currentTime+dur);
-  g.gain.setValueAtTime(vol, AC.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime+dur);
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide), t0+dur);
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
   o.connect(g); g.connect(AC.destination);
-  o.start(); o.stop(AC.currentTime+dur);
+  o.start(t0); o.stop(t0+dur);
 }
 const sJump  = () => beep(300, .18, 'square', .06, 260);
 const sCoin  = () => { beep(880,.07,'square',.06); setTimeout(()=>beep(1320,.12,'square',.06),60); };
@@ -393,6 +394,7 @@ const sHurt  = () => beep(160, .3, 'sawtooth', .09, -110);
 const sPow   = () => { [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.1,'square',.07),i*70)); };
 const sBoss  = () => beep(80, .5, 'sawtooth', .1, -30);
 const sWin   = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.08),i*130)); };
+const sDead  = () => [392,311,262,196].forEach((f,i)=>beep(f,.24,'triangle',.09,-20,i*0.14)); // market-close bell, going down
 window.addEventListener('keydown', e => { if (normKey(e)==='m') muted = !muted; });
 
 // ------------------------- HELPERS -------------------------
@@ -1202,6 +1204,7 @@ function hurtPlayer(cause, word){
     endTime = playMs;
     recordDeathSpot(player.x);
     state = ST.DEAD;
+    sDead();
     showEndUI(false);
   }
 }
@@ -1341,7 +1344,7 @@ function update(){
     hearts--; sHurt();
     addPop(cam+220, 120, zoneName(p.x) === 'THE CLOUD' ? '-1 RUNWAY (the 0.01% downtime)' : '-1 RUNWAY (pivot failed)', '#ff5a5a');
     if (hearts <= 0){
-      if (!momRound()){ endTime = playMs; recordDeathSpot(p.x); state = ST.DEAD; showEndUI(false); return; }
+      if (!momRound()){ endTime = playMs; recordDeathSpot(p.x); state = ST.DEAD; sDead(); showEndUI(false); return; }
     }
     p.x = checkpoint; p.y = GROUND_Y - 40; p.vx = 0; p.vy = 0; p.hurtT = 90;
     cam = Math.max(0, checkpoint - 100);
