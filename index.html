@@ -2617,6 +2617,15 @@ function drawBG(){
     cx.fillRect(sx, sy, 1, 1); // steady — the sky doesn't flicker (owner call)
   }
   if (!B.voidZone){ // THE CLOUD: the city is gone
+  // SF hills on the horizon (parallax .12) — the city sits on them (owner: 'very
+  // much SF'). Two-bump twin-peaks profile from a steady sine sum, no randomness.
+  const oh = cam * 0.12;
+  cx.fillStyle = B.far;
+  for (let i = 0; i < W; i += 3){
+    const wx = (i + oh) * 0.012;
+    const hh = 26 + Math.sin(wx) * 14 + Math.sin(wx * 2.3 + 1.7) * 7;
+    cx.fillRect(i, Math.round(150 - hh), 3, Math.round(hh) + 4);
+  }
   // far skyline (parallax .25)
   const o1 = -(cam * 0.25) % 300;
   cx.fillStyle = B.far;
@@ -2630,6 +2639,8 @@ function drawBG(){
     cx.fillRect(bx + 210, 135, 30, 110);
     // sutro tower
     cx.fillRect(bx + 262, 78, 3, 60); cx.fillRect(bx + 274, 78, 3, 60); cx.fillRect(bx + 260, 96, 19, 3);
+    // coit tower on its hill bump
+    cx.fillRect(bx + 118, 112, 8, 34); cx.fillRect(bx + 116, 108, 12, 4); cx.fillRect(bx + 120, 104, 4, 4);
   }
   // near skyline (parallax .5) with lit windows
   const o2 = -(cam * 0.5) % 260;
@@ -2676,14 +2687,25 @@ function drawBG(){
       for (let f = 0; f < 4; f++){ cx.fillStyle = PICADO[f];
         cx.fillRect(bx + 6 + f*15, 89, 7, 5); cx.fillRect(bx + 8 + f*15, 94, 3, 2); }    // flag + cut-paper tail
     }
+    // painted ladies — a row of bay-windowed victorians (parallax .5, steady pastels)
+    const o4 = -(cam * 0.5) % 260;
+    const LADY = ['#7a6a8f', '#6f8577', '#8f7a6a', '#6a7a8f', '#8f6a7d'];
+    for (let bx = o4 - 260; bx < W + 260; bx += 260){
+      for (let h5 = 0; h5 < 5; h5++){
+        const hx = bx + 132 + h5 * 19;
+        cx.fillStyle = LADY[h5];
+        cx.fillRect(hx, 196, 17, 36);                       // body
+        cx.fillRect(hx + 2, 190, 13, 6);                    // gable
+        cx.fillRect(hx + 6, 186, 5, 4);                     // peak
+        cx.fillStyle = 'rgba(255,233,179,.7)';
+        cx.fillRect(hx + 3, 202, 4, 6); cx.fillRect(hx + 10, 202, 4, 6); // bay windows, lit
+        cx.fillRect(hx + 6, 222, 5, 10);                    // doorway
+      }
+    }
   }
-  // Karl the Fog (recolored per zone)
-  const fx = (frame * 0.2) % (W + 200) - 100;
-  cx.fillStyle = B.fog[0];
-  cx.fillRect(0, 110, W, 26);
-  cx.fillStyle = B.fog[1];
-  cx.fillRect(fx - 60, 104, 200, 20); cx.fillRect(fx + 180, 116, 160, 16);
-  if (B.foggy){ cx.fillStyle = B.fog[0]; cx.fillRect(0, 60, W, 20); cx.fillRect(0, 140, W, 34); } // Cerebral Valley only
+  // (owner call 2026-07-21: the ambient Karl-fog bands are gone — they smeared the
+  // skyline. Karl survives ONLY as the FOG THICK TODAY daily modifier's street
+  // overlay, which is mechanic-linked. B.fog/B.foggy stay in the biome table unused.)
 
   // billboards — mid-ground .5, in FRONT of the fog (the y110 haze band washed
   // out panel tops when boards drew earlier), behind the .85 bridge + gameplay.
@@ -2838,6 +2860,47 @@ function draw(){
     px(x - 5, GROUND_Y, 10, 3, '#4a3a2a');                  // base
     px(x + 1, GROUND_Y - 26, 8, 5, mine ? '#7cffa5' : '#8d99ae'); // pennant
   }
+
+  // street-level SF set dressing (owner ask 2026-07-21) — draw-only, zero hitboxes,
+  // archetypes only, steady. Each gag is a handful of rects + one deadpan line.
+  { const gx = 390 - cam; if (gx > -50 && gx < W + 50){       // SOMA: the sign every driver knows
+      px(gx, GROUND_Y - 34, 2, 34, '#8d99ae');
+      px(gx - 21, GROUND_Y - 50, 44, 18, '#e8ecf5'); px(gx - 19, GROUND_Y - 48, 40, 14, '#c0402a');
+      cx.font = 'bold 5px monospace'; cx.fillStyle = '#fff'; cx.textAlign = 'center';
+      cx.fillText('NO LEFT TURN', gx + 1, GROUND_Y - 42); cx.fillText('(EVER)', gx + 1, GROUND_Y - 36);
+      cx.textAlign = 'left';
+  } }
+  { const gx = 1430 - cam; if (gx > -60 && gx < W + 60){      // SOMA: the listing
+      px(gx, GROUND_Y - 52, 46, 24, '#2b2d42'); px(gx + 2, GROUND_Y - 50, 42, 20, '#ffe9b3');
+      cx.font = 'bold 5px monospace'; cx.fillStyle = '#3a2a1e';
+      cx.fillText('FOR RENT: 1BR', Math.round(gx + 5), GROUND_Y - 43);
+      cx.fillText('$4,600 · cozy*', Math.round(gx + 5), GROUND_Y - 37);
+      cx.fillText('*no windows', Math.round(gx + 5), GROUND_Y - 31);
+  } }
+  { const gx = 2650 - cam; if (gx > -50 && gx < W + 50){      // MISSION: parking, in theory
+      px(gx, GROUND_Y - 30, 2, 30, '#8d99ae');
+      px(gx - 24, GROUND_Y - 48, 50, 18, '#e8ecf5'); px(gx - 22, GROUND_Y - 46, 46, 14, '#1f6feb');
+      cx.font = 'bold 5px monospace'; cx.fillStyle = '#fff'; cx.textAlign = 'center';
+      cx.fillText('2HR PARKING', gx + 1, GROUND_Y - 40); cx.fillText('(towed anyway)', gx + 1, GROUND_Y - 34);
+      cx.textAlign = 'left';
+  } }
+  { const gx = 3120 - cam; if (gx > -60 && gx < W + 60){      // MISSION: the scooter reef
+      for (let sc = 0; sc < 5; sc++){
+        const sx2 = gx + sc * 9, sy2 = GROUND_Y - 4 - (sc % 2) * 3;
+        px(sx2, sy2, 12, 2, sc % 2 ? '#39c46d' : '#ff8c37'); // deck, on its side (they are always on their side)
+        px(sx2 + 10, sy2 - 5, 2, 6, '#8d99ae');              // stem
+        px(sx2 + 2, sy2 + 2, 3, 2, '#222'); px(sx2 + 8, sy2 + 2, 3, 2, '#222');
+      }
+      cx.font = 'bold 5px monospace'; cx.fillStyle = '#5d647a';
+      cx.fillText('rideshare graveyard', Math.round(gx), GROUND_Y - 14);
+  } }
+  { const gx = 6060 - cam; if (gx > -40 && gx < W + 40){      // SAND HILL: the office
+      px(gx, GROUND_Y - 30, 20, 30, '#2e5c43'); px(gx + 2, GROUND_Y - 28, 16, 4, '#3d7a59');
+      px(gx + 8, GROUND_Y - 18, 4, 6, '#1d3b2b');            // vent
+      cx.font = 'bold 5px monospace'; cx.fillStyle = '#9fe8b5';
+      cx.fillText('STEALTH', Math.round(gx + 2), GROUND_Y - 8);
+      cx.fillText('HQ', Math.round(gx + 6), GROUND_Y - 2);
+  } }
 
   // HUMOR PATCH item 3: post-boss beat — Chad pivoted, posthumously. The sign
   // lights up behind his arena only once he's dead (so it never sits in a live
