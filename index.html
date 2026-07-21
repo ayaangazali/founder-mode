@@ -74,18 +74,38 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   #ui button:active { transform:translateY(3px); box-shadow:0 1px 0 #8a6d00; }
   #ui button.alt { background:#7ce0ff; box-shadow:0 4px 0 #1a6b85; }
   #ui button.alt:active { box-shadow:0 1px 0 #1a6b85; }
+  /* GAME BOY SHELL (owner ask 2026-07-21): on touch the phone IS the console.
+     Screen gets a bezel (outline — zero layout shift, probe geometry survives),
+     the deck gets chunky hardware buttons: dark d-pad halves, one big A, and
+     START/SOUND pills. Landscape goes GBA (d-pad left of screen, A right). */
   #touch { position:fixed; inset:0; pointer-events:none; display:none; z-index:5; }
   #touch div {
     position:absolute; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); width:70px; height:70px; border-radius:14px;
-    background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35);
-    color:#fff; font:bold 26px "Courier New",monospace; text-align:center; line-height:66px;
+    background:#23253a; border:2px solid #101120; border-bottom-width:5px;
+    color:#9aa0b8; font:bold 26px "Courier New",monospace; text-align:center; line-height:62px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.08);
     pointer-events:auto; user-select:none; -webkit-user-select:none;
   }
-  #tL{left:calc(18px + env(safe-area-inset-left, 0px))}
-  #tR{left:calc(104px + env(safe-area-inset-left, 0px))}
-  #touch div#tJ{right:calc(18px + env(safe-area-inset-right, 0px)); width:86px; height:86px; line-height:82px; border-radius:50%;}
-  #touch div#tP{top:calc(10px + env(safe-area-inset-top, 0px)); bottom:auto; right:calc(12px + env(safe-area-inset-right, 0px));
-                width:40px; height:40px; line-height:37px; font-size:18px; border-radius:10px;}
+  #touch div:active { border-bottom-width:2px; transform:translateY(3px); }
+  #tL{left:calc(18px + env(safe-area-inset-left, 0px)); border-radius:14px 4px 4px 14px}
+  #tR{left:calc(104px + env(safe-area-inset-left, 0px)); border-radius:4px 14px 14px 4px}
+  #touch div#tJ{right:calc(18px + env(safe-area-inset-right, 0px)); width:86px; height:86px; line-height:78px; border-radius:50%;
+                background:#a83355; color:#ffd6e0; border-color:#5e1b30;}
+  #touch div#tP, #touch div#tS{
+    top:calc(10px + env(safe-area-inset-top, 0px)); bottom:auto;
+    width:58px; height:26px; line-height:24px; font-size:10px; letter-spacing:1px;
+    border-radius:13px; transform:rotate(0deg); color:#8d99ae; }
+  #touch div#tP{ right:calc(12px + env(safe-area-inset-right, 0px)); }
+  #touch div#tS{ right:calc(78px + env(safe-area-inset-right, 0px)); }
+  #shellBrand { position:fixed; display:none; z-index:4; left:0; right:0; text-align:center;
+                font:bold 11px "Courier New",monospace; color:#3f4258; letter-spacing:3px;
+                pointer-events:none; }
+  #shellBrand i { display:inline-block; width:6px; height:6px; border-radius:50%;
+                  background:#7cffa5; margin-right:8px; vertical-align:1px; } /* power LED — steady, of course */
+  @media (pointer: coarse) {
+    body { background:#101120; } /* the console body around the screen */
+    canvas#game { outline:6px solid #060812; border-radius:4px; box-shadow:0 0 0 12px #1a1c30, 0 14px 40px rgba(0,0,0,.6); }
+  }
   #rot { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(8px + env(safe-area-inset-bottom, 0px));
          display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
          font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
@@ -147,7 +167,8 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
 <body>
 <div id="wrap"><div id="stack"><canvas id="game" width="480" height="270"></canvas><canvas id="txt"></canvas></div></div>
 <div id="ui"><div class="card" id="uicard"></div></div>
-<div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">⏸</div></div>
+<div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">START</div><div id="tS">SOUND</div></div>
+<div id="shellBrand"><i></i>SF SPEEDRUN</div>
 <button id="pauseChip">⏸ PAUSE</button>
 <div id="pauseMenu"><div class="card">
   <div style="color:#ffd94a; font-size:16px">PAUSED</div>
@@ -229,11 +250,27 @@ function fit() {
   const isTouch = 'ontouchstart' in window;
   const portrait = isTouch && window.innerHeight > window.innerWidth;
   document.getElementById('wrap').style.alignItems = portrait ? 'flex-start' : 'center';
+  // Game Boy layouts: portrait = GB classic (screen up top, deck below: d-pad left,
+  // A right, START/SOUND pills centered under them, brand line at the bottom of the
+  // deck). Landscape = GBA (d-pad mid-left of the screen, A mid-right — thumbs rest
+  // where the hardware would put them, and nothing sits over the ground line).
+  const ch = Math.floor(H * s), midY = Math.max(0, (window.innerHeight - 70) * 0.62); // thumb arc, below the billboard band
   for (const id of ['tL','tR','tJ']){
     const el = document.getElementById(id);
-    if (portrait){ el.style.bottom = 'auto'; el.style.top = (Math.floor(H * s) + 14) + 'px'; }
-    else { el.style.bottom = ''; el.style.top = ''; }
+    if (portrait){ el.style.bottom = 'auto'; el.style.top = (ch + 14) + 'px'; }
+    else { el.style.bottom = 'auto'; el.style.top = (id === 'tJ' ? midY - 8 : midY) + 'px'; }
   }
+  const tP = document.getElementById('tP'), tS = document.getElementById('tS');
+  if (portrait){
+    tP.style.top = (ch + 110) + 'px'; tP.style.right = 'auto'; tP.style.left = 'calc(50% + 8px)';
+    tS.style.top = (ch + 110) + 'px'; tS.style.right = 'calc(50% + 8px)';
+  } else {
+    tP.style.top = ''; tP.style.right = ''; tP.style.left = '';
+    tS.style.top = ''; tS.style.right = '';
+  }
+  const brand = document.getElementById('shellBrand');
+  brand.style.display = (isTouch && portrait) ? 'block' : 'none';
+  brand.style.top = (ch + 148) + 'px';
   document.getElementById('rot').style.display = (portrait && !rotDismissed) ? 'block' : 'none';
 }
 window.addEventListener('resize', fit); fit();
@@ -380,6 +417,10 @@ if ('ontouchstart' in window) {
     e.preventDefault(); e.stopPropagation();
     if (state === ST.PLAY) paused = !paused;
   }, {passive:false});
+  document.getElementById('tS').addEventListener('touchstart', e => {
+    e.preventDefault(); e.stopPropagation();
+    initAudio(); setMuted(!muted);
+  }, {passive:false});
   cv.addEventListener('touchstart', e => {
     e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio();
     if (state === ST.TITLE){
@@ -440,6 +481,8 @@ function setMuted(m){
   try { localStorage.setItem('fm_muted', m ? '1' : '0'); } catch(e){}
   const b = document.getElementById('pmSound');
   if (b) b.textContent = m ? '🔇 SOUND: OFF' : '🔊 SOUND: ON';
+  const ts = document.getElementById('tS');
+  if (ts) ts.style.color = m ? '#5e6178' : '#8d99ae'; // the pill dims while muted
   if (!m) beep(880, .06, 'square', .06); // unmute confirms audibly; mute is, by definition, silent — the HUD tag carries it
 }
 function initAudio(){ if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } }
