@@ -31,7 +31,10 @@ if (/^https?:$/.test(location.protocol)){
 // of the official snippet. localhost excluded so the qa probes stay hermetic.
 // The key is the project's public ingest token (client-side by design).
 window.phQ = []; window.phReady = false;
-if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'){
+// DNT / Global Privacy Control opt-outs are honored before the loader ever
+// touches the network (persona backlog #13 — the HN commenter checks)
+if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
+    && navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl){
   const p = document.createElement('script');
   p.async = true; p.crossOrigin = 'anonymous';
   p.src = 'https://us-assets.i.posthog.com/static/array.js';
