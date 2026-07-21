@@ -1,3 +1,18 @@
+# MORNING REPORT — part 6, 2026-07-21 (04:40–05:20 PDT): the night pack (owner went to bed)
+
+**Asks:** zoom out (character was leaving the screen), a hint toward the fire button on deck pickup, two new powerups (bike + one of my choosing). All live on sfspeedrun.com.
+
+- **Dynamic portrait window** — the crop follows the player (~32% from the visible left edge, eased per frame, presentation-only). Spawn/walk-back can't hide the founder anymore; zoom relaxed 1.45x → 1.33x.
+- **PITCH ▼ hint** — deck pickup on touch pulses the B button for 4s with a floating tag; copy says 'hit B'.
+- **OMNICORP CAMPUS BIKE** — owner's Gemini-bike idea, archetyped per canon (no real brands): +speed, a mob hit dismounts instead of costing RUNWAY (verified: hearts 3→3 through a gremlin), pits still kill, 10s.
+- **LOST EARBUDS** — flow state, coins ×2 for 10s, both collection paths.
+- Earlier in the session (also all live): DMG-accurate OMNICORP GAME BRO™ deck with a working B=pitch button, frictionless install flow (native one-tap on Android/Chrome, per-browser cards elsewhere, permanent button with ✕-only forever-dismiss), vintage shell, burn-rate warnings, SF SPEEDRUN rebrand.
+- **Gate:** all hard gates green · mobile ✓ · paths ✓ · clean bot PASS · casual bot PASS 3:27, 4 recoveries (budget 12).
+- **Open:** pedigree leaderboard column (Supabase migration), PostHog vs first-party (owner calls), og.png refresh, key rotation, PARTNERS outreach.
+
+---
+---
+
 # MORNING REPORT — part 5, 2026-07-21 (02:55–03:15 PDT): the phone is a Game Boy
 
 **Owner asks:** make mobile feel like a handheld console, make it feel like an app not a website, GamePigeon-style iMessage play if possible.
