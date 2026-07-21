@@ -133,6 +133,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'){
   <div style="color:#ffd94a; font-size:16px">PAUSED</div>
   <div style="color:#8d99ae; font-size:11px; margin-top:4px">(the market, briefly, moves without you)</div>
   <button id="pmResume">▶ BACK TO WORK</button>
+  <button id="pmSound">🔊 SOUND: ON</button>
   <button id="pmQuit" class="alt2">🏳 SHUT IT DOWN (title screen)</button>
 </div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
@@ -375,6 +376,14 @@ cv.addEventListener('mousedown', e => {
 
 // ------------------------- AUDIO -------------------------
 let AC = null, muted = false;
+try { muted = localStorage.getItem('fm_muted') === '1'; } catch(e){} // sound choice survives reloads (persona backlog #5)
+function setMuted(m){
+  muted = m;
+  try { localStorage.setItem('fm_muted', m ? '1' : '0'); } catch(e){}
+  const b = document.getElementById('pmSound');
+  if (b) b.textContent = m ? '🔇 SOUND: OFF' : '🔊 SOUND: ON';
+  if (!m) beep(880, .06, 'square', .06); // unmute confirms audibly; mute is, by definition, silent — the HUD tag carries it
+}
 function initAudio(){ if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } }
 function beep(freq, dur, type='square', vol=0.08, slide=0, at=0) {
   if (!AC || muted) return;
@@ -395,7 +404,7 @@ const sPow   = () => { [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.1
 const sBoss  = () => beep(80, .5, 'sawtooth', .1, -30);
 const sWin   = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.08),i*130)); };
 const sDead  = () => [392,311,262,196].forEach((f,i)=>beep(f,.24,'triangle',.09,-20,i*0.14)); // market-close bell, going down
-window.addEventListener('keydown', e => { if (normKey(e)==='m') muted = !muted; });
+window.addEventListener('keydown', e => { if (normKey(e)==='m') setMuted(!muted); });
 
 // ------------------------- HELPERS -------------------------
 const clamp = (v,a,b) => v<a?a:(v>b?b:v);
@@ -3408,6 +3417,10 @@ function drawHUD(){
     const zn = zoneName(player.x);
     cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
   }
+  if (muted){ // the toggle was invisible: nobody could tell whether M took (persona backlog #5)
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 22, 56, 11); occlude(W - 62, 22, 56, 11);
+    cx.fillStyle = '#8d99ae'; cx.font = 'bold 7px monospace'; cx.fillText('[M] MUTED', W - 57, 30);
+  }
   cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 62, 6, 56, 14); occlude(W - 62, 6, 56, 14);
   cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 56, 16);
   // active powers — hidden inside mini-games (chat/interview/room): the world
@@ -3578,6 +3591,8 @@ function goHome(){
 document.getElementById('pauseChip').onclick = () => { if (state === ST.PLAY) paused = true; initAudio(); };
 document.getElementById('pmResume').onclick = () => { paused = false; };
 document.getElementById('pmQuit').onclick = () => goHome();
+document.getElementById('pmSound').onclick = () => { initAudio(); setMuted(!muted); }; // touch players' first reachable sound control
+if (muted) document.getElementById('pmSound').textContent = '🔇 SOUND: OFF';           // boot state from localStorage
 // the backdrop swallows taps meant for the ⏸ chip under it — a tap anywhere off the card resumes
 document.getElementById('pauseMenu').addEventListener('click', e => { if (e.target.id === 'pauseMenu') paused = false; });
 document.getElementById('pauseMenu').addEventListener('touchstart', e => {
