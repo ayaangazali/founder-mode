@@ -130,12 +130,25 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
       return { canvasBottom: Math.round(c.bottom), tLtop: Math.round(l.top) };
     });
 
-    // dismiss the hint with a tap (persists via localStorage)
+    // tapping the chip opens the per-browser install card; GOT IT dismisses and persists
     await page.evaluate(() => { const r = document.getElementById('a2hs').getBoundingClientRect(); window.__a2 = { x: r.x + r.width/2, y: r.y + r.height/2 }; });
     const rp = await page.evaluate(() => window.__a2);
     await tapXY(page, rp.x, rp.y);
     await page.waitForTimeout(200);
-    check('390x664: install hint dismissible', await page.evaluate(() => document.getElementById('a2hs').style.display) === 'none');
+    const cardState = await page.evaluate(() => ({
+      chip: document.getElementById('a2hs').style.display,
+      card: document.getElementById('installCard').style.display,
+      steps: document.querySelectorAll('#installSteps li').length,
+    }));
+    check('390x664: GET THE APP opens the install card with steps', cardState.chip === 'none' && cardState.card === 'flex' && cardState.steps === 3, JSON.stringify(cardState));
+    await page.evaluate(() => { const r = document.getElementById('installDone').getBoundingClientRect(); window.__id = { x: r.x + r.width/2, y: r.y + r.height/2 }; });
+    const dp = await page.evaluate(() => window.__id);
+    await tapXY(page, dp.x, dp.y);
+    await page.waitForTimeout(200);
+    check('390x664: GOT IT closes the card and persists the dismissal', await page.evaluate(() => {
+      let seen = false; try { seen = localStorage.getItem('fm_a2hs') === '1'; } catch(e){}
+      return document.getElementById('installCard').style.display === 'none' && seen;
+    }));
 
     await page.screenshot({ path: path.join(SHOTDIR, 'mobile-390x664-portrait.png') });
 

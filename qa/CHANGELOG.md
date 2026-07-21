@@ -895,3 +895,18 @@ nag deleted — replaced by a dismissible GET THE APP hint (title-only, touch, n
 localStorage-persisted). iOS offers no programmatic install; the hint is the fewest-clicks path there
 is. (4) Boot-order TDZ guarded (fit() predates the state binding). Probe expectations updated
 consciously: install-hint legs replace rotate-prompt legs; deck asserted bottom-anchored on-screen.
+
+## 2026-07-21 — [FRICTIONLESS INSTALL + PORTRAIT POLISH + BURN CLARITY] (owner asks)
+
+1. **Install flow**: the tiny hint text became a real ⊞ GET THE APP button. On Android/desktop Chrome
+   it captures beforeinstallprompt → native install in ONE tap. Everywhere else it opens a big
+   per-browser card (iOS Safari: share ⬆ · iOS Chrome: address-bar share · Android menu ⋮ · in-app
+   browsers get told to open a real browser). GOT IT persists the dismissal; backdrop = maybe later.
+   Apple exposes no install API — this is the fewest-clicks flow physics allows.
+2. **Portrait void filled**: zoom 1.22→1.28x (lookahead 300→255 world px), d-pad 80px + A 104px,
+   deck raised, speaker-grille shell texture under the brand line. The gap now reads as console
+   hardware, not emptiness.
+3. **Burn rate explains itself**: at 3s idle, 'burn rate ticking — MOVE. this is SF.' warns before
+   any damage; the tick itself now reads 'BURN RATE — no time for breaks'. Verified live: warning →
+   tick → -1 RUNWAY.
+4. Mobile probe updated to walk the real install flow (chip → card with 3 steps → GOT IT persists).

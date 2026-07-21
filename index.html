@@ -79,9 +79,24 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
     #stack { overflow: hidden; }
   }
   #a2hs { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(52px + env(safe-area-inset-bottom, 0px));
-          display:none; z-index:20; background:rgba(8,8,20,.92); border:2px solid #7ce0ff; color:#7ce0ff;
-          font:bold 11px "Courier New",monospace; padding:8px 12px; text-align:center; max-width:92vw; }
-  #a2hs span { color:#8d99ae; display:block; margin-top:3px; font-size:10px; }
+          display:none; z-index:20; background:#7ce0ff; border:0; color:#0d0d1f;
+          font:bold 16px "Courier New",monospace; padding:14px 22px; text-align:center; max-width:92vw;
+          border-radius:4px; box-shadow:0 5px 0 #1b5e75; }
+  #a2hs:active { transform:translateX(-50%) translateY(3px); box-shadow:0 2px 0 #1b5e75; }
+  #a2hs span { color:#123c4d; display:block; margin-top:3px; font-size:11px; font-weight:bold; }
+  #installCard { position:fixed; inset:0; z-index:32; display:none; align-items:center; justify-content:center;
+                 background:rgba(0,0,0,.72); }
+  #installCard .card { background:#141433; border:3px solid #7ce0ff; box-shadow:0 6px 0 #1b5e75;
+                       padding:20px 22px; max-width:min(420px,90vw); font-family:"Courier New",monospace; }
+  #installCard h3 { margin:0 0 4px; color:#ffd94a; font-size:18px; }
+  #installCard .why { color:#8d99ae; font-size:12px; font-weight:bold; margin-bottom:12px; }
+  #installCard ol { margin:0 0 6px; padding-left:22px; color:#fff; font-size:15px; font-weight:bold; line-height:1.9; }
+  #installCard .ic { display:inline-block; background:#23253a; border:1px solid #3f4258; border-radius:5px;
+                     padding:1px 7px; color:#7ce0ff; }
+  #installCard button { display:block; width:100%; margin-top:14px; min-height:46px;
+                        font:bold 15px "Courier New",monospace; background:#7ce0ff; color:#0d0d1f;
+                        border:0; box-shadow:0 4px 0 #1b5e75; cursor:pointer; }
+  #installCard button:active { transform:translateY(3px); box-shadow:0 1px 0 #1b5e75; }
   canvas#game {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -129,6 +144,10 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
                 pointer-events:none; }
   #shellBrand i { display:inline-block; width:6px; height:6px; border-radius:50%;
                   background:#7cffa5; margin-right:8px; vertical-align:1px; } /* power LED — steady, of course */
+  #grille { position:fixed; display:none; z-index:4; left:50%; transform:translateX(-50%) rotate(-14deg);
+            width:120px; height:54px; pointer-events:none;
+            background:repeating-linear-gradient(90deg, transparent 0 12px, #1a1c30 12px 18px);
+            border-radius:8px; } /* the speaker that plays nothing (the WebAudio does) */
   @media (pointer: coarse) {
     body { background:#101120; } /* the console body around the screen */
     canvas#game { outline:6px solid #060812; border-radius:4px; box-shadow:0 0 0 12px #1a1c30, 0 14px 40px rgba(0,0,0,.6); }
@@ -196,6 +215,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
 <div id="ui"><div class="card" id="uicard"></div></div>
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">START</div><div id="tS">SOUND</div></div>
 <div id="shellBrand"><i></i>SF SPEEDRUN</div>
+<div id="grille"></div>
 <button id="pauseChip">⏸ PAUSE</button>
 <div id="pauseMenu"><div class="card">
   <div style="color:#ffd94a; font-size:16px">PAUSED</div>
@@ -216,7 +236,13 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   <button id="custDone">✓ DONE</button>
   <div class="foot" id="custHint">ESC — back · SPACE — ship it</div>
 </div></div>
-<div id="a2hs">GET THE APP: tap share ⬆ then “add to home screen”<span>full screen · offline · zero VCs involved (tap to dismiss)</span></div>
+<div id="a2hs">⊞ GET THE APP<span>full screen · offline · zero VCs involved</span></div>
+<div id="installCard"><div class="card">
+  <h3>SF SPEEDRUN, the app</h3>
+  <div class="why">full screen · works offline · lives on your home screen like it pays rent</div>
+  <ol id="installSteps"></ol>
+  <button id="installDone">GOT IT</button>
+</div></div>
 <div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener noreferrer">ayaan gazali</a></div>
 <div id="lbChip">🏆 LEADERBOARD</div>
 <div id="lbPanel"><div id="lbPanelCard"><div id="lbPanelHead"></div><div id="lbPanelList"></div><button id="lbPanelEra">🏅 all-time</button><button id="lbPanelClose">close</button></div></div>
@@ -271,7 +297,7 @@ function fit() {
   // portrait handheld zoom: render 1.22x width-fit and crop the overflow, 70% off
   // the LEFT (look-back) and 30% off the right — the sprites get readable and the
   // lookahead only drops 300->274 world px. Landscape/desktop keep the exact fit.
-  const VIS_W = 394; // world px visible in portrait (480 / 1.22)
+  const VIS_W = 375; // world px visible in portrait (1.28x zoom; lookahead 300→255 world px)
   const s = portrait ? window.innerWidth / VIS_W
                      : Math.min(window.innerWidth / W, window.innerHeight / H);
   const stack = document.getElementById('stack');
@@ -301,24 +327,32 @@ function fit() {
   for (const id of ['tL','tR','tJ']){
     const el = document.getElementById(id);
     if (portrait){ // deck hugs the BOTTOM of the phone — thumbs live there, not mid-screen (owner screenshots)
-      el.style.top = 'auto'; el.style.bottom = 'calc(96px + env(safe-area-inset-bottom, 0px))';
-    } else { el.style.bottom = 'auto'; el.style.top = (id === 'tJ' ? midY - 8 : midY) + 'px'; }
+      el.style.top = 'auto'; el.style.bottom = 'calc(120px + env(safe-area-inset-bottom, 0px))';
+      if (id === 'tJ'){ el.style.width = el.style.height = '104px'; el.style.lineHeight = '96px'; }
+      else { el.style.width = el.style.height = '80px'; el.style.lineHeight = '72px'; }
+    } else {
+      el.style.bottom = 'auto'; el.style.top = (id === 'tJ' ? midY - 8 : midY) + 'px';
+      el.style.width = el.style.height = el.style.lineHeight = '';
+    }
   }
   const tP = document.getElementById('tP'), tS = document.getElementById('tS');
   if (portrait){
-    tP.style.top = 'auto'; tP.style.bottom = 'calc(48px + env(safe-area-inset-bottom, 0px))'; tP.style.right = 'auto'; tP.style.left = 'calc(50% + 8px)';
-    tS.style.top = 'auto'; tS.style.bottom = 'calc(48px + env(safe-area-inset-bottom, 0px))'; tS.style.right = 'calc(50% + 8px)';
+    tP.style.top = 'auto'; tP.style.bottom = 'calc(64px + env(safe-area-inset-bottom, 0px))'; tP.style.right = 'auto'; tP.style.left = 'calc(50% + 8px)';
+    tS.style.top = 'auto'; tS.style.bottom = 'calc(64px + env(safe-area-inset-bottom, 0px))'; tS.style.right = 'calc(50% + 8px)';
   } else {
     tP.style.top = ''; tP.style.bottom = ''; tP.style.right = ''; tP.style.left = '';
     tS.style.top = ''; tS.style.bottom = ''; tS.style.right = '';
   }
   const brand = document.getElementById('shellBrand');
   brand.style.display = (isTouch && portrait) ? 'block' : 'none';
+  const grille = document.getElementById('grille');
   if (portrait){
-    const deckTop = window.innerHeight - 96 - 70; // matches the d-pad bottom anchor
+    const deckTop = window.innerHeight - 120 - 80; // matches the d-pad bottom anchor
     const sb = stack.getBoundingClientRect().bottom;
     brand.style.top = Math.round(sb + Math.max(10, (deckTop - sb) / 2)) + 'px';
-  }
+    grille.style.display = 'block';
+    grille.style.top = Math.round(sb + Math.max(10, (deckTop - sb) / 2) + 34) + 'px';
+  } else grille.style.display = 'none';
   // install hint: iOS Safari, not yet installed, not dismissed, title only (stepGame hides it on start)
   const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs') === '1'; } catch(e){}
@@ -350,8 +384,33 @@ document.getElementById('lbPanel').addEventListener('click', e => {
   if (e.target.id === 'lbPanel') document.getElementById('lbPanel').style.display = 'none';
 });
 const a2hsDismiss = () => { try { localStorage.setItem('fm_a2hs', '1'); } catch(e){} document.getElementById('a2hs').style.display = 'none'; };
-document.getElementById('a2hs').addEventListener('touchstart', e => { e.preventDefault(); a2hsDismiss(); }, {passive:false});
-document.getElementById('a2hs').addEventListener('mousedown', a2hsDismiss);
+// Android/desktop Chrome fire beforeinstallprompt — capture it and installing is ONE tap.
+// Apple offers no API, so iOS gets a big per-browser instruction card instead.
+let bipEvent = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); bipEvent = e; });
+function installSteps(){
+  const ua = navigator.userAgent;
+  const inApp = /FBAN|FBAV|Instagram|LinkedInApp|Line\/|Twitter/i.test(ua);
+  const iOS = /iPhone|iPad|iPod/.test(ua);
+  if (inApp) return ['this in-app browser can\u2019t install apps', 'open <span class="ic">sfspeedrun.com</span> in Safari or Chrome', 'tap GET THE APP again there'];
+  if (iOS && /CriOS/.test(ua)) return ['tap the share icon <span class="ic">\u2934</span> top right, in the address bar', 'scroll down \u2192 <span class="ic">Add to Home Screen</span>', 'tap <span class="ic">Add</span> \u2014 done'];
+  if (iOS) return ['tap the share button <span class="ic">\u2b06</span> at the bottom of Safari', 'scroll down \u2192 <span class="ic">Add to Home Screen</span>', 'tap <span class="ic">Add</span> \u2014 done'];
+  return ['tap the menu <span class="ic">\u22ee</span> top right', 'tap <span class="ic">Add to Home screen</span> (or <span class="ic">Install app</span>)', 'confirm \u2014 done'];
+}
+function installTap(){
+  if (bipEvent){ // the frictionless path: real native install prompt, one tap
+    const ev = bipEvent; bipEvent = null;
+    ev.prompt(); ev.userChoice.finally(a2hsDismiss);
+    return;
+  }
+  document.getElementById('installSteps').innerHTML = installSteps().map(t => '<li>' + t + '</li>').join('');
+  document.getElementById('installCard').style.display = 'flex';
+  document.getElementById('a2hs').style.display = 'none';
+}
+document.getElementById('a2hs').addEventListener('touchstart', e => { e.preventDefault(); installTap(); }, {passive:false});
+document.getElementById('a2hs').addEventListener('mousedown', installTap);
+document.getElementById('installDone').addEventListener('pointerdown', e => { e.preventDefault(); document.getElementById('installCard').style.display = 'none'; a2hsDismiss(); });
+document.getElementById('installCard').addEventListener('pointerdown', e => { if (e.target.id === 'installCard') document.getElementById('installCard').style.display = 'none'; }); // backdrop = maybe later (chip returns next visit)
 
 // ------------------------- INPUT -------------------------
 const keys = {};
@@ -1597,11 +1656,13 @@ function update(){
   if (Math.abs(p.vx) < 0.3 && p.onGround && !p.onTaxi && !(corgi.following && !corgi.sitting)) p.burnT = (p.burnT || 0) + 1; else p.burnT = 0;
   if (p.burnT > 60 * 3 && frame % 10 === 0)
     parts.push({x:p.x + 4 + Math.random()*4, y:p.y + 2, vx:0, vy:-0.6, t:20, c:'#8d99ae'}); // smoke warning
+  if (p.burnT === 60 * 3 + 1) // one explicit warning per idle stretch, before the hit ever lands
+    addPop(p.x - 30, p.y - 24, 'burn rate ticking — MOVE. this is SF.', '#ff8c37', 140);
   if (p.burnT >= BURN_FRAMES){
     if (p.hurtT > 0 || p.ycT > 0){ p.burnT = BURN_FRAMES - 30; } // invulnerable: re-tick shortly, no fake popup (audit)
     else {
       p.burnT = 0;
-      addPop(p.x, p.y - 14, 'BURN RATE', '#ff5a5a');
+      addPop(p.x, p.y - 14, 'BURN RATE — no time for breaks', '#ff5a5a', 120);
       hurtPlayer('burn'); if (state !== ST.PLAY) return;
     }
   }
