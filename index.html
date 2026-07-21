@@ -1047,6 +1047,7 @@ function throwDeck(){
 }
 
 let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
+let deckTipAt = 0; // playMs when a PITCH DECK first entered camera (persona backlog #6: teach the verb when the noun appears)
 
 function makeEnemy(d){
   const base = { x:d.x, y:GROUND_Y-14, w:14, h:14, t:d.t, dir:-1, dead:false, vy:0, hopT:0 };
@@ -1065,6 +1066,7 @@ function reset(fromCheckpoint){
              shield:0, deckT:0 };   // GOOD PRESS charge / PITCH DECK attack window
   cam = Math.max(0, startX - 100);
   if (!fromCheckpoint){
+    deckTipAt = 0; // the "that briefcase = your deck" tip re-arms per fresh run
     coins = [];
     coinRows.forEach(r => { for(let i=0;i<r.n;i++) coins.push({x:r.x+i*16, y:r.y, w:8, h:10, got:false}); });
     enemies = enemyDefs.map(makeEnemy);
@@ -1437,6 +1439,7 @@ function update(){
 
   // -------- powerups --------
   for (const pw of powers){
+    if (!deckTipAt && !pw.got && pw.t === 'deck' && pw.x > cam && pw.x < cam + W) deckTipAt = playMs; // sim-side sighting; draw only reads it
     if (!pw.got && aabb(p, pw)){
       pw.got = true; sPow();
       if (pw.t === 'rug') moodDown(); else moodUp(); // getting rugged is a mood
@@ -1635,11 +1638,16 @@ function update(){
             addParts(b.x+b.w/2, b.y+b.h/2, '#ffd94a', 24);
           }
         }
-        else if (p.pogo && !(b.hitT > 0) && !b.hinted){
+        else if (p.pogo && !(b.hitT > 0)){
           // the invisible wall between casuals and a win: a bounce without a fresh
-          // jump press does no damage, and nothing ever said so. Say so. Once.
-          b.hinted = true;
-          addPop(b.x - 44, b.y - 48, 'TIP: PRESS JUMP AGAIN TO STOMP', '#7ce0ff', 150);
+          // jump press does no damage, and nothing ever said so. Say so. Once —
+          // but WHIFF audibly every time (persona backlog #6: zero-damage bounces
+          // were indistinguishable from hits by ear).
+          beep(140, .08, 'triangle', .06);
+          if (!b.hinted){
+            b.hinted = true;
+            addPop(b.x - 44, b.y - 48, 'TIP: PRESS JUMP AGAIN TO STOMP', '#7ce0ff', 150);
+          }
         }
         p.pogo = true; // disarm until the next jump press / ground touch
       } else { hurtPlayer(b.id === 'vc' ? 'VC terms' : b.id === 'platform' ? 'platform boss' : 'buzzword', 'SYNERGY'); if (state !== ST.PLAY) return; }
@@ -3443,9 +3451,15 @@ function drawHUD(){
   } // end !inOverlay
   // first 6s of a run: controls strip along the bottom (playtest: powers went
   // unread; new players never learned X existed)
-  if (playMs < 6000 && !chat && !interview){
-    const ct = ('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies · grab a DECK, then tap to pitch'
-                                          : '←→ move · SPACE jump · stomp enemies · grab a DECK, then X to pitch';
+  // (persona backlog #6): the old strip taught DECK 2000px before one exists — four
+  // personas hunted for a briefcase in SOMA. Verbs are now taught when their nouns appear.
+  const deckTipUp = deckTipAt && playMs >= deckTipAt && playMs < deckTipAt + 5000;
+  if ((playMs < 6000 || deckTipUp) && !chat && !interview){
+    const ct = deckTipUp
+      ? (('ontouchstart' in window) ? 'that briefcase = your PITCH DECK — grab it, then tap to pitch'
+                                    : 'that briefcase = your PITCH DECK — grab it, then X to pitch')
+      : (('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies'
+                                    : '←→ move · SPACE jump · stomp enemies');
     cx.font = 'bold 7px monospace';
     const ctw = cx.measureText(ct).width;
     cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(W/2 - ctw/2 - 5), H - 20, Math.round(ctw + 10), 12);
