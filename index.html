@@ -125,6 +125,8 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
      the deck gets chunky hardware buttons: dark d-pad halves, one big A, and
      START/SOUND pills. Landscape goes GBA (d-pad left of screen, A right). */
   #touch { position:fixed; inset:0; pointer-events:none; display:none; z-index:5; }
+  #touch.ovl #tJ, #touch.ovl #tB { opacity:.14; }        /* unused during dialogue */
+  #touch.ovl #dpad { opacity:.45; }                      /* still the answer input, but the text wins */
   #touch div {
     position:absolute; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); width:70px; height:70px; border-radius:14px;
     background:linear-gradient(180deg, #33364a 0%, #23253a 45%, #191b2a 100%);
@@ -337,6 +339,8 @@ let TS = 2; // game-unit → overlay-pixel scale; set by fit()
 let camCropX = 0; // world px hidden by the portrait left-crop; left-anchored UI shifts right by this (fit() sets it)
 let camCX = 240;  // world x of the VISIBLE center — centered UI anchors here, not at W/2
 let cropTotalW = 0, portS = 1, portMode = false; // portrait crop state; loop() slides the window each frame
+let camVisW = 480; // world px actually visible (fit() sets; transient UI clamps into [camCropX, camCropX+camVisW])
+let overlayFitMode = false; // true while a full-frame minigame owns the canvas (portrait zoom suspends)
 cx.fillText = function(str, x, y){
   tcx.font = cx.font.replace(/(\d+(?:\.\d+)?)px/, (m0, n) => (parseFloat(n) * TS) + 'px');
   tcx.fillStyle = cx.fillStyle;
@@ -364,8 +368,10 @@ function fit() {
   // portrait handheld zoom: render 1.22x width-fit and crop the overflow, 70% off
   // the LEFT (look-back) and 30% off the right — the sprites get readable and the
   // lookahead only drops 300->274 world px. Landscape/desktop keep the exact fit.
-  const VIS_W = 360; // world px visible in portrait (1.33x — owner: 1.45 felt too tight; the crop window is DYNAMIC now, loop() keeps the player ~32% from the visible left edge)
-  const s = portrait ? window.innerWidth / VIS_W
+  const VIS_W = 400; // world px visible in portrait (1.2x — third owner calibration; the dynamic window keeps the player ~32% from the visible left edge)
+  // full-frame scenes (coffee chat / interview / hackathon room) lay out across the whole
+  // 480 canvas — while one is up, portrait falls back to width-fit so nothing is cropped
+  const s = portrait ? window.innerWidth / (overlayFitMode ? W : VIS_W)
                      : Math.min(window.innerWidth / W, window.innerHeight / H);
   const stack = document.getElementById('stack');
   cv.style.width  = Math.floor(W * s) + 'px';
@@ -379,6 +385,7 @@ function fit() {
     stack.style.width = window.innerWidth + 'px';
     stack.style.height = Math.floor(H * s) + 'px';
     portMode = true; portS = s; cropTotalW = Math.max(0, W - window.innerWidth / s);
+    camVisW = W - cropTotalW;
     camCropX = Math.min(camCropX, cropTotalW); // keep continuity across resizes; loop() eases it per frame
     camCX = Math.round(camCropX + (window.innerWidth / s) / 2);
     cv.style.marginLeft = tv.style.marginLeft = '0px';
@@ -387,7 +394,7 @@ function fit() {
     stack.style.width = ''; stack.style.height = '';
     cv.style.marginLeft = tv.style.marginLeft = '';
     cv.style.transform = tv.style.transform = '';
-    portMode = false; camCropX = 0; camCX = W / 2;
+    portMode = false; camCropX = 0; camCX = W / 2; camVisW = W;
   }
   document.getElementById('wrap').style.alignItems = portrait ? 'flex-start' : 'center';
   // Game Boy layouts: portrait = GB classic (screen up top, deck below: d-pad left,
@@ -1154,7 +1161,7 @@ const CHATS = [
     win:"$200K. spend it on compute or don't call me.",
     mid:'$50K, earmarked for GPUs. i will check.',
     lose:'come back with benchmarks. or a meaner eval.' },
-  { x:6480, name:'THE CONTRARIAN', amt:250, done:false,
+  { x:6260, // was 6480 — INSIDE Chad's trigger (6420): standing at the table woke the boss and the boss-gate refused the chat forever (owner: broken on all devices). New owner ruling supersedes the set-decoration call. name:'THE CONTRARIAN', amt:250, done:false,
     lk:{ skin:'#d9a06b', hair:'#0f0f14', hairDk:'#0a0a0e', hood:'#d9748f', pocket:'#a84e66', hairStyle:0 },
     intro:'everyone hates coffee chats, so i love them. sit.',
     qs:[
@@ -1598,6 +1605,7 @@ function momRound(){
 }
 
 function addPop(x,y,txt,c,life=60){
+  y = Math.min(y, 168); // transient text lives ABOVE the sign band (~176+); it floats up anyway
   // de-overlap (persona backlog #9): boss fights stack popups on one spot and the
   // scrims turn to soup — a newcomer within a text row of a live popup shifts up.
   let guard = 8;
@@ -1635,7 +1643,7 @@ function update(){
     if ((atTable >= 0 || atDoor) && !bossLive){
       const still = Math.abs(p.vx) < 0.3;
       chatStill = still ? chatStill + 1 : 0;
-      const go = keys['c'] || (('ontouchstart' in window) && chatStill >= 150);
+      const go = keys['c'] || (('ontouchstart' in window) && chatStill >= 110); // 1.8s — 2.5s collided with the 3s burn warning and read as broken
       if (go){ if (atDoor) interviewStart(); else chatStart(atTable); return; } // the world waits from THIS frame — no same-frame hit
     } else chatStill = 0;
   }
@@ -2786,8 +2794,8 @@ function drawInternFair(){
       px(x + 21, y + 4, 8, 6, INTERN_SHIRT[T.id]);
       px(x + 24, y + 4, 2, 5, '#ffd94a');                        // the lanyard
       px(x + 22, y + 10, 3, 3, '#2b2d42'); px(x + 26, y + 10, 3, 3, '#2b2d42');
-      if (Math.abs(player.x - bo.x) < 44 && state === ST.PLAY)
-        celebBubble(x + 25, y + 2, T.name + (T.cost ? ' — $' + T.cost + 'K. stand here to hire.' : ' — free. stand here to hire.'));
+      if (Math.abs(player.x - bo.x) < 30 && state === ST.PLAY) // tighter: only when actually AT the booth
+        celebBubble(x + 25, y - 26, T.name + (T.cost ? ' — $' + T.cost + 'K · stand to hire' : ' — free · stand to hire'));
     }
   }
   // interns work remote (owner pass) — the HUD TEAM line is their presence;
@@ -2822,7 +2830,9 @@ function drawChatTables(){
     px(x - 4, GROUND_Y - 19, 5, 5, '#e8ecf5');                       // the cup
     if (!c.done) drawFounder(cx, x + 12, GROUND_Y - 16, 1, -1, 0, false, c.lk);
     if (!c.done && Math.abs(player.x - c.x) < 40 && state === ST.PLAY){
-      celebBubble(x, GROUND_Y - 22, ('ontouchstart' in window) ? '☕ stand here — coffee chat' : '☕ press C — coffee chat');
+      const gated = bosses.some(bb => bb.active && !bb.dead); // mirrors the chat-entry gate
+      celebBubble(x, GROUND_Y - 22, gated ? '☕ coffee AFTER the round closes'
+                                          : ('ontouchstart' in window) ? '☕ stand still here — coffee chat' : '☕ press C — coffee chat');
     }
   }
 }
@@ -2836,8 +2846,8 @@ let lateDraws = [];   // deferred draw thunks: bubbles/signs that must render OV
 function celebBubble(sxCenter, topY, line){
   cx.font = 'bold 8px monospace';
   const tw = cx.measureText(line).width;
-  const bx = clamp(sxCenter - tw/2 - 4, 2, W - tw - 10);
-  let by = topY - 30;
+  const bx = clamp(sxCenter - tw/2 - 4, camCropX + 2, camCropX + camVisW - tw - 10);
+  let by = topY - 42; // above the sign text band — bubbles were parking on top of signs (owner screenshots)
   let guard = 0;
   while (guard++ < 8 && bubbleRects.some(r =>
     bx < r.x + r.w + 4 && bx + tw + 8 > r.x - 4 && by < r.y + r.h + 2 && by + 12 > r.y - 2)) by -= 15;
@@ -2849,7 +2859,10 @@ function celebBubble(sxCenter, topY, line){
 
 function drawCameoBubble(c){
   const x = c.x - cam; if (x < -40 || x > W + 40) return;
-  if (Math.abs(player.x - (c.x + 7)) > 60) return;
+  const d = Math.abs(player.x - (c.x + 7));
+  if (d > 44) return;                                              // was 60 — bubbles were carpeting the scene (owner)
+  // one voice at a time: only the NEAREST in-range cameo speaks
+  if (cameos.some(o => o !== c && Math.abs(player.x - (o.x + 7)) < d)) return;
   if (c.id === 'stealth' && frame % 90 > 85) return;               // can't talk while nonexistent
   celebBubble(x + 7, GROUND_Y - c.h + 2, c.line);                  // same geometry, now stack-aware
 }
@@ -3143,7 +3156,7 @@ function draw(){
       cx.fillText('NO LEFT TURN', gx + 1, GROUND_Y - 42); cx.fillText('(EVER)', gx + 1, GROUND_Y - 36);
       cx.textAlign = 'left';
   } }
-  { const gx = 1430 - cam; if (gx > -60 && gx < W + 60){      // SOMA: the listing
+  { const gx = 1720 - cam; if (gx > -60 && gx < W + 60){      // SOMA: the listing (moved off the intern fair — owner: crowded)
       px(gx, GROUND_Y - 52, 46, 24, '#2b2d42'); px(gx + 2, GROUND_Y - 50, 42, 20, '#ffe9b3');
       cx.font = 'bold 5px monospace'; cx.fillStyle = '#3a2a1e';
       cx.fillText('FOR RENT: 1BR', Math.round(gx + 5), GROUND_Y - 43);
@@ -3671,12 +3684,20 @@ function draw(){
       px(x + 9, pw.y + 4 + bob, 3, 4, '#7ce0ff');                           // the flattering photo
       if ((frame >> 3) % 2) px(x - 1, pw.y - 1 + bob, 15, 1, 'rgba(124,224,255,.5)'); // press glow
     } else if (pw.t === 'bike'){
-      // OMNICORP CAMPUS BIKE: corporate primary colors, permanently mislaid
-      px(x, pw.y + 8 + bob, 5, 5, '#1b1c26'); px(x + 9, pw.y + 8 + bob, 5, 5, '#1b1c26');   // wheels
-      px(x + 1, pw.y + 9 + bob, 3, 3, '#3a3d4d'); px(x + 10, pw.y + 9 + bob, 3, 3, '#3a3d4d');
-      px(x + 2, pw.y + 6 + bob, 10, 2, '#e8483f');                                          // frame
-      px(x + 4, pw.y + 4 + bob, 2, 3, '#3a7bd5'); px(x + 8, pw.y + 4 + bob, 2, 3, '#3fae5a'); // seat + head tube
-      px(x + 7, pw.y + 3 + bob, 4, 1, '#f2b53c');                                           // bars
+      // OMNICORP CAMPUS BIKE: an actual bicycle — hollow wheels, diamond frame,
+      // corporate primary accents (owner: 'this should be a cycle pls')
+      const wy = pw.y + 8 + bob;
+      for (const wx of [x, x + 10]){                                          // two wheels
+        px(wx, wy, 6, 6, '#14151c');                                          // tire
+        px(wx + 1, wy + 1, 4, 4, '#2c2f3d');                                  // rim
+        px(wx + 2, wy + 2, 2, 2, '#6d7288');                                  // hub
+      }
+      px(x + 3, wy - 1, 10, 2, '#e8483f');                                    // down tube (red)
+      px(x + 4, wy - 3, 2, 2, '#3a7bd5');                                     // seat tube (blue)
+      px(x + 10, wy - 3, 2, 2, '#3fae5a');                                    // head tube (green)
+      px(x + 3, wy - 4, 4, 1, '#1b1c26');                                     // saddle
+      px(x + 10, wy - 5, 4, 1, '#f2b53c');                                    // bars (yellow)
+      px(x + 7, wy + 2, 2, 2, '#1b1c26');                                     // crank
     } else if (pw.t === 'buds'){
       // LOST EARBUDS: a pristine white case on the sidewalk. finders keepers.
       px(x + 2, pw.y + 4 + bob, 9, 7, '#f2f2f5');
@@ -3819,14 +3840,29 @@ function draw(){
       cx.lineWidth = 1;
       cx.strokeRect(Math.round(player.x - cam - 3) + 0.5, Math.round(player.y - 3) + 0.5, player.w + 6, player.h + 6);
     }
-    if (player.bikeT > 0){ // the borrowed bike, under the founder
-      const bx2 = player.x - cam - 2, by2 = player.y + 12;
-      px(bx2, by2 + 2, 5, 5, '#1b1c26'); px(bx2 + 11, by2 + 2, 5, 5, '#1b1c26');
-      px(bx2 + 1, by2 + 3, 3, 3, '#3a3d4d'); px(bx2 + 12, by2 + 3, 3, 3, '#3a3d4d');
-      px(bx2 + 2, by2, 12, 2, '#e8483f');
-      if (frame % 4 < 2) px(bx2 - 2 - (player.face > 0 ? 2 : -18), by2 + 5, 2, 1, '#8d99ae'); // road dust
+    if (player.bikeT > 0){ // the borrowed bike, ridden properly (owner: make it nice)
+      const moving = Math.abs(player.vx) > 0.5;
+      const rideBob = moving ? (frame >> 3) % 2 : 0;                          // gentle 3.75Hz saddle bob
+      const ph = (frame >> 2) % 4;                                            // wheel/pedal phase
+      const f2 = player.face;
+      const bx2 = player.x - cam - 3, by2 = player.y + 8 - rideBob;
+      for (const wx of [bx2, bx2 + 12]){                                      // wheels
+        px(wx, by2 + 6, 6, 6, '#14151c');                                     // tire
+        px(wx + 1, by2 + 7, 4, 4, '#2c2f3d');                                 // rim
+        const sp = [[2,7],[3,8],[2,9],[1,8]][ph];                             // spoke glint orbits the hub
+        if (moving) px(wx + sp[0], by2 + sp[1], 1, 1, '#9aa0b8');
+        px(wx + 2, by2 + 8, 2, 2, '#5a5f6e');                                 // hub
+      }
+      px(bx2 + 3, by2 + 5, 12, 2, '#e8483f');                                 // main tube
+      px(bx2 + (f2 > 0 ? 5 : 11), by2 + 3, 2, 2, '#3a7bd5');                  // seat tube trails
+      px(bx2 + (f2 > 0 ? 11 : 5), by2 + 3, 2, 2, '#3fae5a');                  // head tube leads
+      px(bx2 + (f2 > 0 ? 4 : 10), by2 + 2, 4, 1, '#1b1c26');                  // saddle
+      px(bx2 + (f2 > 0 ? 11 : 1), by2 + 1, 4, 1, '#f2b53c');                  // bars on the facing side
+      px(bx2 + 8, by2 + 7 + (ph % 2 ? 2 : 0), 2, 1, '#1b1c26');               // pedals crank
+      if (moving && frame % 3 === 0)                                          // road dust off the back wheel
+        px(bx2 + (f2 > 0 ? -3 : 19), by2 + 10, 2, 1, 'rgba(141,153,174,.6)');
     }
-    drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
+    drawFounder(cx, player.x - cam, player.y - (player.bikeT > 0 && Math.abs(player.vx) > 0.5 ? (frame >> 3) % 2 : 0), 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
     drawPedGear(cx, player.x - cam, player.y, 1);
   }
   for (const fn of lateDraws) fn(); // boss quips + held signs render EVERY frame (they strobed with the hurt flash — audit)
@@ -3852,12 +3888,18 @@ function draw(){
   // popups + HUD only during play (end screens keep the frame clean behind the card)
   if (state === ST.PLAY){
     cx.font = 'bold 8px monospace'; // readable at 1-2x (playtest)
+    const drawnPops = [];
     for (const q of (chat || interview || room.active ? [] : popups)){
       cx.fillStyle = 'rgba(0,0,0,.55)';
       const tw = cx.measureText(q.txt).width;
-      cx.fillRect(Math.round(q.x - cam - 2), Math.round(q.y - 9), tw + 4, 12);
-      occlude(q.x - cam - 2, q.y - 9, tw + 4, 12);
-      cx.fillStyle = q.c; cx.fillText(q.txt, Math.round(q.x - cam), Math.round(q.y));
+      // clamp into the VISIBLE window — a popup cut by the portrait crop is useless (owner screenshots)
+      const qx = clamp(q.x - cam, camCropX + 4, camCropX + camVisW - tw - 6);
+      let qy = q.y, g = 6; // clamping can pile popups on the same edge — re-stack at draw time
+      while (g-- > 0 && drawnPops.some(r => qx < r.x + r.w + 4 && qx + tw + 4 > r.x - 4 && qy < r.y + 12 && qy > r.y - 12)) qy -= 13;
+      drawnPops.push({ x: qx, y: qy, w: tw + 4 });
+      cx.fillRect(Math.round(qx - 2), Math.round(qy - 9), tw + 4, 12);
+      occlude(qx - 2, qy - 9, tw + 4, 12);
+      cx.fillStyle = q.c; cx.fillText(q.txt, Math.round(qx), Math.round(qy));
     }
     for (const c of cameos) drawCameoBubble(c); // proximity dialogue, never hidden behind entities
     drawHUD();
@@ -3903,23 +3945,25 @@ function drawHUD(){
     const zn = zoneName(player.x);
     cx.fillText(zn, Math.round(camCX - cx.measureText(zn).width/2), 16);
   }
-  if (muted){ // the toggle was invisible: nobody could tell whether M took (persona backlog #5)
-    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 130, 22, 56, 11); occlude(W - 130, 22, 56, 11);
-    cx.fillStyle = '#8d99ae'; cx.font = 'bold 7px monospace'; cx.fillText('[M] MUTED', W - 125, 30);
+  if (!chat && !interview){ // the mini-games own the top band and carry their own clock
+    if (muted){ // the toggle was invisible: nobody could tell whether M took (persona backlog #5)
+      cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 130, 22, 56, 11); occlude(W - 130, 22, 56, 11);
+      cx.fillStyle = '#8d99ae'; cx.font = 'bold 7px monospace'; cx.fillText('[M] MUTED', W - 125, 30);
+    }
+    // timer sits at W-130, not W-62: the fixed #pauseChip parks over the canvas's
+    // top-right corner on desktop and occluded the mm:ss readout (persona backlog #12)
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 130, 6, 56, 14); occlude(W - 130, 6, 56, 14);
+    cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 124, 16);
   }
-  // timer sits at W-130, not W-62: the fixed #pauseChip parks over the canvas's
-  // top-right corner on desktop and occluded the mm:ss readout (persona backlog #12)
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 130, 6, 56, 14); occlude(W - 130, 6, 56, 14);
-  cx.fillStyle = '#fff'; cx.fillText(fmtTime(playMs), W - 124, 16);
   // active powers — hidden inside mini-games (chat/interview/room): the world
   // is paused there and the ticking labels read as a visual bug (owner report)
   const inOverlay = chat || interview || room.active;
   cx.font = 'bold 7px monospace';
   if (!inOverlay){
   if (player.ycT > 0){ cx.fillStyle = '#ff8c37'; cx.fillText('DEMO DAY MODE ' + Math.ceil(player.ycT/60) + 's', camCropX + 12, 44); }
-  else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', 12, 44); }
-  else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', 12, 44); }
-  else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', 12, 44); }
+  else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', camCropX + 12, 44); }
+  else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', camCropX + 12, 44); }
+  else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', camCropX + 12, 44); }
   if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText((('ontouchstart' in window) ? 'PITCHING · tap fires · ' : 'PITCHING · X fires · ') + Math.ceil(player.deckT/60) + 's', 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', 12, 64); }
   if (bmSyncT > 0){ cx.fillStyle = '#8d99ae'; cx.fillText('BOARD SYNC ' + Math.ceil(bmSyncT / 60) + 's', 12, 94); }
@@ -3936,7 +3980,7 @@ function drawHUD(){
   const deckTipUp = deckTipAt && playMs >= deckTipAt && playMs < deckTipAt + 5000;
   if ((playMs < 6000 || deckTipUp) && !chat && !interview){
     const ct = deckTipUp
-      ? (('ontouchstart' in window) ? 'that briefcase = your PITCH DECK — grab it, then tap to pitch'
+      ? (('ontouchstart' in window) ? 'that briefcase = your PITCH DECK — grab it, then B to pitch'
                                     : 'that briefcase = your PITCH DECK — grab it, then X to pitch')
       : (('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies'
                                     : '←→ move · SPACE jump · stomp enemies');
@@ -4059,6 +4103,7 @@ function badgeFlairs(won){
 
 function resumePlay(fromCheckpoint){
   ui.style.display = 'none';
+  const m = document.getElementById('uiMore'); if (m) m.remove();
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block';
   fit(); // re-decides the rotate banner the end screen hid
   reset(fromCheckpoint); state = ST.PLAY;
@@ -4067,6 +4112,7 @@ function resumePlay(fromCheckpoint){
 // a full fresh run is staged so the next SPACE press starts clean
 function goHome(){
   ui.style.display = 'none';
+  const m = document.getElementById('uiMore'); if (m) m.remove();
   paused = false; clearAllInput(); customizeOpen = false;
   // the title runs d-pad-free since the redesign; the start branch hands it back,
   // so the old goHome soft-lock (hidden d-pad, undrivable run) cannot recur
@@ -4433,6 +4479,18 @@ function showEndUI(won){
     ${shortView ? lbHtml + btnRows : btnRows + lbHtml}
     <div id="cpMsg" style="color:#7cffa5; font-weight:bold; min-height:20px; margin-top:4px"></div>`;
   ui.style.display = 'flex';
+  // short screens bury TITLE SCREEN/toggle below the fold with zero affordance (QA agent):
+  // a fixed '▼ more' chip shows until the first scroll
+  setTimeout(() => {
+    if (ui.scrollHeight > window.innerHeight + 24 && !document.getElementById('uiMore')){
+      const m = document.createElement('div');
+      m.id = 'uiMore'; m.textContent = '▼ more';
+      m.style.cssText = 'position:fixed; left:50%; transform:translateX(-50%); bottom:6px; z-index:11; ' +
+        'background:rgba(8,8,20,.9); color:#7ce0ff; font:bold 11px "Courier New",monospace; padding:4px 10px; border-radius:10px; pointer-events:none;';
+      document.body.appendChild(m);
+      ui.addEventListener('scroll', () => m.remove(), { once: true });
+    }
+  }, 350);
 
   const nameEl = document.getElementById('lbName');
   nameEl.onkeydown = e => e.stopPropagation();        // typing must not steer the game
@@ -4607,7 +4665,7 @@ function drawPause(){
   cx.fillText(('ontouchstart' in window) ? 'tap anywhere to resume' : 'ESC resumes · buttons above', camCX, 150);
   cx.textAlign = 'left';
 }
-let _pmShown = null, _pcShown = null, _cuShown = null, _bhShown = null; // cached DOM visibility (no per-frame style churn)
+let _pmShown = null, _pcShown = null, _cuShown = null, _bhShown = null, _ovShown = null; // cached DOM visibility (no per-frame style churn)
 function pauseUiSync(){
   const menu = paused && state === ST.PLAY, chip = !paused && state === ST.PLAY;
   if (menu !== _pmShown){ document.getElementById('pauseMenu').style.display = menu ? 'flex' : 'none'; _pmShown = menu; }
@@ -4617,6 +4675,8 @@ function pauseUiSync(){
   if (cust !== _cuShown){ document.getElementById('custPanel').style.display = cust ? 'flex' : 'none'; _cuShown = cust; }
   const bh = deckHintT > 0 && state === ST.PLAY;         // B pulses while the fresh deck begs to be pitched
   if (bh !== _bhShown){ document.getElementById('tB').classList.toggle('bhint', bh); _bhShown = bh; }
+  const ovl = !!(chat || interview);                     // mini-game up: controls fade so the dialogue reads (QA agent: d-pad covered the teaching line)
+  if (ovl !== _ovShown){ document.getElementById('touch').classList.toggle('ovl', ovl); _ovShown = ovl; }
 }
 function loop(now){
   acc += Math.min(now - (last || now), 100); last = now;
@@ -4625,7 +4685,9 @@ function loop(now){
   else while (acc >= STEP){ stepGame(); acc -= STEP; }
   // portrait window slide (presentation only — reads sim, mutates CSS): keep the
   // player ~32% from the visible left edge; clamped so spawn/walk-backs never hide them
-  if (portMode){
+  const wantOverlayFit = !!(chat || interview || room.active);
+  if (wantOverlayFit !== overlayFitMode){ overlayFitMode = wantOverlayFit; camCropX = 0; fit(); } // scene cut: snap, don't ease
+  if (portMode && !overlayFitMode){
     const visW = W - cropTotalW;
     const target = state === ST.PLAY
       ? clamp((player.x - cam) - visW * 0.32, 0, cropTotalW)
