@@ -404,6 +404,28 @@ const sPow   = () => { [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.1
 const sBoss  = () => beep(80, .5, 'sawtooth', .1, -30);
 const sWin   = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.08),i*130)); };
 const sDead  = () => [392,311,262,196].forEach((f,i)=>beep(f,.24,'triangle',.09,-20,i*0.14)); // market-close bell, going down
+
+// ---- MUSIC: in-code chiptune loop (persona backlog #7 — six personas flagged the dead air) ----
+// A 16-step sequencer driven by the SIMULATED clock: pause, hitstop, blur and minigames all
+// silence it for free because playMs stops or the tick is gated. Notes are scheduled on the
+// audio clock (AC.currentTime) one step at a time — no setTimeout, no drift, no asset files.
+const MUSIC = {
+  bass: [-24,null,-17,null,-24,null,-15,null,-24,null,-17,null,-12,null,-15,null], // triangle, the office hum
+  lead: [0,null,3,null,7,null,3,null,0,null,3,null,10,7,3,null],                   // square, the ambition
+  // per-zone [transpose semitones, step ms]: the same loop, re-keyed as the raise progresses
+  zones: { 'SOMA':[0,125], 'THE MISSION':[5,125], 'CEREBRAL VALLEY':[3,110], 'SAND HILL ROAD':[8,140], 'THE CLOUD':[12,110] },
+};
+let musStep = -1;
+function musicTick(){
+  if (!AC || muted) return;
+  const zc = MUSIC.zones[zoneName(cam + W/2)] || [0, 125];
+  const s = Math.floor(playMs / zc[1]) % 16;
+  if (s === musStep) return;
+  musStep = s;
+  const f = n => 440 * Math.pow(2, (n + zc[0]) / 12);
+  if (MUSIC.bass[s] !== null) beep(f(MUSIC.bass[s]), .12, 'triangle', .033, 0, 0.02);
+  if (MUSIC.lead[s] !== null) beep(f(MUSIC.lead[s]), .09, 'square', .02, 0, 0.02);
+}
 window.addEventListener('keydown', e => { if (normKey(e)==='m') setMuted(!muted); });
 
 // ------------------------- HELPERS -------------------------
@@ -1257,6 +1279,7 @@ function update(){
   if (state !== ST.PLAY) return;
   playMs += 1000 / 60; // simulated play clock — the only clock the HUD/badge trust
   const p = player;
+  if (!room.active && !chat && !interview) musicTick(); // minigames get their own silence
 
   // HUMOR PATCH item 8: inside the hackathon house, the outside world waits
   if (room.active){ roomUpdate(); return; }
