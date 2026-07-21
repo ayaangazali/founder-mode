@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🦄 FOUNDER MODE
+# 🦄 SF SPEEDRUN
 
-### The SF startup platformer.
+### how fast can your startup IPO?
 
 **Stomp churn. Dodge VCs. Survive the accelerator. Ring the IPO bell.**
 
@@ -16,115 +16,56 @@
 ![no build step](https://img.shields.io/badge/build_step-none-7cffa5?style=flat-square&labelColor=141433)
 ![no assets](https://img.shields.io/badge/image_assets-zero-7cffa5?style=flat-square&labelColor=141433)
 ![vanilla js](https://img.shields.io/badge/stack-vanilla_JS_%2B_canvas-c58bff?style=flat-square&labelColor=141433)
-![~4k lines](https://img.shields.io/badge/~4%2C000-lines-8d99ae?style=flat-square&labelColor=141433)
+![~4.7k lines](https://img.shields.io/badge/~4%2C700-lines-8d99ae?style=flat-square&labelColor=141433)
 
 <br>
 
-<img src="og.png" width="640" alt="FOUNDER MODE">
+<img src="og.png" width="640" alt="SF SPEEDRUN">
 
 <br>
 
 *Arrow keys / WASD to move · Space to jump · one file, no signup, no loading screen.*
 <br>
-*made by [ayaan gazali](https://www.linkedin.com/in/ayaangazali)*
+*made by [ayaan gazali](https://www.linkedin.com/in/ayaangazali) · this page, as a website: [sfspeedrun.com/about.html](https://sfspeedrun.com/about.html)*
 
 </div>
 
 ---
 
-## The pitch
+## What it is
 
-You're a hoodie founder sprinting from a SOMA garage to the IPO bell across five
-zones of the Bay Area. The satire lives in the **mechanics**, not the labels:
+SF SPEEDRUN is a Mario-style pixel platformer that satirizes San Francisco startup culture, built to be shared on LinkedIn and played in the gap between two meetings. You are a founder in a hoodie. You run east across 9,200 pixels of San Francisco — from the neon dark of SoMa, through the papel-picado glow of the Mission, up through Cerebral Valley's GPU-lit hacker houses, down Sand Hill Road at golden hour, and finally into THE CLOUD, a white void where the city itself has been deprecated and only the billboards remain. Money is **RAISED**. Health is **RUNWAY**. Death is **OUT OF RUNWAY**. You stomp churn gremlins, dodge sentient calendar invites labeled MTG, out-jump a VC whose gilet is load-bearing, defeat a rogue AI called SYNERGY.AI, and — if you survive — mash a button to ring the IPO bell under a confetti storm while a five-note chiptune fanfare plays. Then the game does the most SF thing possible: it computes your **VALUATION** with visible multiplier math (RAISED × growth story × capital discipline × whether a corgi was on payroll × your pedigree), and if you didn't clear a billion dollars it stamps your share card **CERTIFIED HORSE — you're a horse until you're a unicorn.**
 
-- 💰 Money is **RAISED**. ❤️ Health is **RUNWAY**. ☠️ Death is **OUT OF RUNWAY**.
-- 🪙 Coins are funding — unless you picked the **CMO cofounder**, in which case
-  they're *impressions* and pay $0 REAL DOLLARS.
-- 🏆 You're ranked on **VALUATION** (RAISED × a stack of multipliers), because
-  raising money and being worth money are famously different things.
-- 👶 **NEPO FOUNDER** pedigree multiplies your valuation ×50 *and* makes the game
-  easier. That's the joke. It's also the leaderboard meta. That's also the joke.
-- 🦄 The unicorn is earned: 🦄 only at a $1B valuation — below that you're a 🐴.
+The joke is never just a label. That's the design constitution's first law: *satire lives in the mechanics.* Standing still literally costs you money — idle three seconds and orange text warns "burn rate ticking — MOVE. this is SF." before the tick lands as "BURN RATE — no time for breaks" and eats a heart. Dying doesn't give you a game-over screen; it gives you the front page of **HYPERGROWTH DAILY**, a pixel-perfect newspaper whose headline depends on what killed you ("CHURN FINALLY GETS HIM"), with a two-column obituary, a tilted framed photo of your founder "pictured at peak conviction," a pull quote that reads *"it was a market timing issue" — you, on LinkedIn*, and a stock-ticker footer mourning your current pivot. Retrying isn't retrying — the button says **PIVOT**, it costs you 25% of your money (a "BRIDGE ROUND" haircut), and it renames your company every time: THE COMPANY IS NOW SYNERGYLESS. Die again: SOMETHING WITH AGENTS. The player is the butt of the joke, lovingly, always.
 
-## The run
+## The heresy of the architecture
 
-**Five zones** — SOMA → The Mission → Sand Hill Road → Cerebral Valley → The
-Cloud. **Three bosses, and they're your funding rounds:** PRE-SEED (the Platform
-Shift), SEED (the VC — sign a term sheet mid-air and find out), and SERIES A
-(the AI that was supposed to be your moat). Beat Series A and, technically, you
-can IPO.
+The entire game is **one HTML file** — roughly 4,700 lines of vanilla JavaScript, no framework, no bundler, no build step, and **zero image or audio assets**. Every sprite you see — the founder, the corgi, the Transamerica Pyramid, the Golden Gate towers, the painted-ladies row with lit bay windows, the pixel newspaper — is drawn live, every frame, as stacks of `fillRect` calls on a 480×270 canvas. The founder is about thirty rectangles. His hair is six of them, and there are six interchangeable hairstyles (hood up, buzz, curly, ponytail, long, bun) because character customization is five pickers in a handheld-style panel: skin tone, hair, hoodie color, cofounder (including YOUR MOM, who guarantees a once-per-run rescue when you hit zero runway — the phone rings, the screen holds its breath for 72 frames, and the seed round comes through), and pedigree, a ×1-to-×100 valuation multiplier that ranges from SELF-MADE to STANFURD DROPOUT — visible on your sprite as actual gear, and yes, *stanfurd is not a typo. ask berkeley.*
 
-**Along the way:** coffee-chat trivia, the ACCELERATOR interview (7 questions,
-15 seconds *total*, a batch stamp if you ace it), an intern fair, 16 real
-startups on billboards, six parody tech celebs arguing about whether code is
-dead, a corgi, three easter eggs, and — if you go broke — **the mom round**
-($2K and two hearts, she believes in you).
+Text is the one place raw canvas scaling would look bad, so the game runs a second, invisible trick: every piece of text is mirrored onto a **hi-resolution overlay canvas** backed at the device's real pixel ratio, so on a 3× phone screen the pixel art stays chunky and nostalgic while every letter stays razor crisp. Two canvases, perfectly registered, one aesthetic.
 
-**Every day is a new market.** A daily seed sets the conditions — bull run, DOWN
-ROUND SEASON, AI hype cycle — and the leaderboard resets with it. Post your run,
-chase the top 100.
+The heartbeat is a **fixed-timestep simulation**: exactly 60 simulation steps per second through an accumulator, regardless of whether the display runs at 60Hz, 120Hz, or a throttled background tab. State mutates only in `update()`, never in `draw()` — the comments enforce it like a code review. Time itself is simulated: a `playMs` clock that only advances while you're actually playing, so backgrounding the tab doesn't burn your runway and the speedrun timer can't be cheated by the wall clock. The single sanctioned exception is the calendar: every real-world day derives a **daily seed** that picks one of ten market conditions — AUDIT WEEK makes burn tick faster, rate cuts change what a coin is worth, FOG THICK TODAY rolls Karl the Fog over the pits — so the leaderboard resets daily and everyone plays the same weather.
 
-**Win:** mash R, confetti over the Golden Gate. **Lose:** your startup's
-obituary runs as the front page of *HYPERGROWTH DAILY*, your name in the
-headline, ready to post.
+## The world
 
-## Play it
+Physics are a speedrun contract — jump velocity −6.6, gravity 0.35, run speed 1.7 — documented and frozen, because sub-three-minute runs earn the T2D3 badge flair and speedrunners get lawyerly about frames. Around those constants sits real platformer DNA: a 6-frame jump buffer, 5 frames of coyote time, variable jump height, head-bonk corner forgiveness, stomp bounces with hit-stop and screenshake. Enemies are the culture: **churn gremlins** (retention was "a Q3 priority"), **standing meetings** (a white calendar rectangle with legs and eyes in its header), **scooter bros**, **thought leaders** (they hover, haloed, and periodically *post*), **compliance phantoms**. Three bosses are your funding rounds: THE PLATFORM (pre-seed, a DevRel mecha that drops SDK crates that hurt, because breaking changes should break something), CHAD CAPITAL (seed, lobs term sheets in arcs), and SYNERGY.AI (Series A, fires buzzword pills — SLOP, AI-NATIVE, WEB-SCALE — each pill sized to its own text). Your weapon, when you find a briefcase, is your **pitch deck**, thrown flat like a paper shuriken; DECKED! is what it says when it connects.
 
-| | |
-|---|---|
-| **Online** | **[sfspeedrun.com](https://sfspeedrun.com)** — the full experience (leaderboard, share cards) |
-| **Locally** | `git clone` this repo, then `open index.html` — that's the whole install |
+Between fights: **coffee chats** (three investors at sidewalk tables run timed dialogue minigames — answer "when did you last ship?" with "this morning. twice." and the Operator Angel wires $150K), a seven-question **accelerator interview** behind a door, an **intern fair** (equity: no · exposure: yes), a hackathon house frozen at HOUR 46 OF 48, a rideable robotaxi, a hireable corgi Chief Morale Officer who pauses your burn rate, and powerups that are all groceries of the culture: cold brew, matcha, a term sheet, GOOD PRESS (deflects one bad take), a rug (it's a trap), an **OMNICORP CAMPUS BIKE** — those corporate primary-color bikes lying everywhere around the bay; riding one is faster and a mob hit knocks you off the bike instead of hurting you — and **LOST EARBUDS** found on the sidewalk, which put you in flow state: coins ×2.
 
-> **Can I embed it in a GitHub README?** No — GitHub strips `<script>`/`<iframe>`/
-> `<canvas>` from all markdown, so no playable game embeds anywhere on GitHub,
-> profile READMEs included. A big play button over the card is the closest legal
-> thing. For a profile repo (`ayaangazali/ayaangazali`), drop this in:
-> ```markdown
-> ### 🦄 I made a game about being an SF founder
-> **[▶ PLAY FOUNDER MODE](https://sfspeedrun.com)** — stomp churn, dodge VCs, ring the IPO bell.
-> ```
+## Sound, with no sound files
 
-## How it's built (or: the absence of a stack)
+Audio is synthesized entirely in code through the WebAudio API: one `beep()` function driving oscillators — square-wave coin chirps, a triangle stomp thud, a sawtooth hurt buzz, a rising jump blip, a five-note victory fanfare, and its inversion, a four-note descending market-close bell when you die. Under it all runs a 16-step chiptune sequencer — triangle bass, square lead — clocked off the *simulated* game clock (never `setTimeout`), so pausing pauses the band mid-bar. The same loop transposes per zone: root in SoMa, up five in the Mission, up twelve and floating in THE CLOUD.
 
-| | |
-|---|---|
-| **The game** | `index.html` — ~4,000 lines of vanilla JS. Every sprite is a `fillRect` on a 480×270 canvas; text stays crisp via a devicePixelRatio overlay canvas. No framework, no bundler, no image files. |
-| **The engine** | Fixed-timestep 60 Hz accumulator + a simulated `playMs` clock — physics are identical on every machine, a speedrun contract. |
-| **The server** | Three tiny functions in `api/` — `leaderboard.mjs` (Supabase, plausibility-gated + profanity-filtered POST), `og.mjs` (per-run share card via satori), `r.mjs` (result URL whose unfurl *is* that run's card). |
-| **Determinism** | One date-seeded mulberry32 PRNG drives the day's market; per-run rolls decide mini-game layouts. |
-| **Tests** | Asserting gates (`test/`) + 11 `qa/` probes + a sense-act bot that plays the whole game under a death budget. All green-or-it-fails. |
+## The phone becomes a handheld
 
-## Automation
+On a phone in portrait, the page stops being a website: warm greige console body, dark charcoal screen bezel labeled **DOT MATRIX WITH VENTURE SOUND**, the **OMNICORP GAME BRO™** nameplate stamped in the game's own gold-on-dark chip style, a solid black cross d-pad, two magenta dome buttons set on the classic diagonal (B pitches your deck, A jumps — labels printed under them on the shell), slanted silver pills for SOUND and START, and a diagonal speaker grille. The game view renders zoomed with a **dynamic camera window** that slides to keep the founder a third in from the left edge, and full-screen scenes (chats, interviews) snap to full width so nothing gets amputated. Add it to your home screen and it installs as a real app — its own icon (the founder under an SF wordmark, generated from the game's own drawing code), fullscreen with no browser chrome, playable offline underground on Muni via a service worker. A blue GET THE APP box greets every title visit with browser-aware directions: Safari users get a card at the bottom with a pulsing arrow at the share button; Chrome users get it at the top, arrow pointing at the address bar.
 
-The repo runs its own QA in the cloud, 24/7, independent of any laptop:
+## The distribution machine
 
-- **research-sweep** (GitHub Action, every 4 h + on push) — security sweeps
-  (canon greps, secret scan, `npm audit`) + the full test battery, reports to
-  the `research` branch, auto-files an issue if a gate breaks.
-- **claude-research** / **claude** (dormant, opt-in) — LLM code review that
-  opens issues and PRs once an API key is set.
+Losing is the growth strategy. Every ending produces two share surfaces — the classic badge and the newspaper — with pre-written LinkedIn-speak copy on the clipboard and a per-run result URL: paste it anywhere and it unfurls as *your* run's card, rendered server-side ("JERRY raised $3.0M and died with a $1.5M valuation (down round). SF claims another founder."). A Supabase-backed **daily leaderboard** (plus an all-time board, currently crowned by a real $1.11B unicorn run) ranks won → valuation → time, guarded by server-side plausibility clamps so a curl artist can't post a forged $40B exit. The whole backend is three tiny serverless functions; the game itself never needs them to run.
 
-Clone-and-go on a new machine: `bash scripts/bootstrap.sh`. Full map:
-[`docs/AUTOMATION.md`](docs/AUTOMATION.md).
+## The paranoia (how it stays good)
 
-## For contributors & future sessions
+The repo is half game, half immune system. Three asserting Playwright tests (smoke, playthrough, death) gate every commit. Nine standing probes grep-gate the legal lines — parody celebrity names may exist as draw-only cameos but can never reach a share surface; real-startup billboard names are consent-tracked in a ledger. Two bot profiles play the entire game end-to-end nightly — a frame-tight "clean" speedrunner and a "casual" tourist that reads signs and falls in pits — with death budgets. A CI sweep re-runs everything every four hours, scans for leaked API keys by value-shape, and audits its own dependencies. And when it matters, fleets of AI agents playtest it: ten SF-archetype personas (a skeptical HN graybeard, a Gen-Z thumb-gamer, a VC associate rating the badge's flex value) whose 15-item consensus backlog shipped in one night, and an eight-agent integration sweep that logged 162 passes and caught five bugs — including one where a misplaced code comment silently ate an investor's name, so a *perfect* coffee chat paid $0 while a mediocre one paid $50. Which, honestly, the game itself would consider canon.
 
-```bash
-bash scripts/bootstrap.sh                                   # deps + Chromium + auth check
-node test/smoketest.js && node test/playtest.js && node test/deathtest.js   # the gate
-bash qa/ci-sweep.sh && cat /tmp/ci-report.md                # the exact CI battery, locally
-```
-
-Start here: **[`CLAUDE.md`](CLAUDE.md)** (the rules) → **[`docs/PROJECT-CONTEXT.md`](docs/PROJECT-CONTEXT.md)**
-(every decision + why) → **[`docs/WHATS-BUILT.md`](docs/WHATS-BUILT.md)** (the
-full breakdown). Change history lives in [`qa/CHANGELOG.md`](qa/CHANGELOG.md).
-
----
-
-<div align="center">
-
-**[▶ PLAY FOUNDER MODE](https://sfspeedrun.com)**
-
-*99.99% uptime\** · *\*during business hours*
-
-</div>
+One file. No engine. No assets. A city, three funding rounds, a bell — and the most rigorously over-tested joke on the internet.
