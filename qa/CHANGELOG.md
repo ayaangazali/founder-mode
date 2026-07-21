@@ -937,3 +937,22 @@ greige matched to the photo. Landscape keeps the dark deck with lightened labels
    kill; bikes don't fly. 10s, then 'bike reclaimed itself (they do that)'.
 4. **LOST EARBUDS**: flow state — coins ×2 for 10s (both collection paths), pristine case sprite with
    a 1Hz pairing blink. Two spawns each, SOMA/Mission/Cerebral, outside arenas.
+
+## 2026-07-21 — [INTEGRATION SWEEP + FIXES] 8-agent everything-test, 162 passes, 5 bugs fixed
+
+Owner-ordered comprehensive sweep: 8 parallel agents (full desktop run, full portrait run, all
+minigames, all powerups, combat+bosses, eggs, share/end, UI chrome) + triage judge. 162 passes,
+5 confirmed bugs, all fixed:
+1. **P1** THE CONTRARIAN's object literal was truncated by a mid-line comment from the table-move
+   edit (perfect 3/3 paid $0, header 'undefined') — comment moved to its own lines, payout restored,
+   verified $250 + name live.
+2. **P2** PITCHING/GOOD PRESS/BOARD SYNC/TEAM HUD lines drew at fixed x=12 → cropped in portrait;
+   now camCropX-anchored like their siblings. Buds gains a FLOW STATE HUD countdown + expiry popup.
+3. **P3** Popup occlude() erased boss-quip overlay text (empty white pills at fight start) —
+   lateDraws now flush AFTER the popup loop.
+4. **P3** drawPause canvas text duplicated the DOM card's text, peeking out both sides — scrim only.
+5. Owner ask shipped with it: **browser-aware install guidance** — Safari parks the card at the
+   bottom with a pulsing ⬇ at the share button; iOS Chrome/Android park it at the top with ⬆ at the
+   address bar/menu; verified both variants under real UAs.
+Coverage gaps the judge flagged (landscape-touch runs, real-API round-trip, other market seeds,
+intern-fair deep test) noted for the backlog. Full hard gate + mobile + paths green post-fix.
