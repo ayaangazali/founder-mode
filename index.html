@@ -135,20 +135,54 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   }
   #touch div:active { border-bottom-width:2px; transform:translateY(4px);
     box-shadow:inset 0 2px 6px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.3); }
-  #tL{left:calc(18px + env(safe-area-inset-left, 0px)); border-radius:14px 4px 4px 14px}
-  #tR{left:calc(104px + env(safe-area-inset-left, 0px)); border-radius:4px 14px 14px 4px}
-  #touch div#tJ{right:calc(18px + env(safe-area-inset-right, 0px)); width:86px; height:86px; line-height:78px; border-radius:50%;
-                background:radial-gradient(circle at 34% 28%, #c8517c 0%, #a83355 55%, #7e1f3e 100%);
-                color:#ffd6e0; border-color:#5e1b30; text-shadow:0 2px 0 rgba(0,0,0,.35);}
+  /* DMG cross d-pad: ONE solid black cross (two bars drawn by the container's
+     pseudo-elements), the L/R arms are transparent touch zones on top */
+  #touch div#dpad { position:absolute; width:156px; height:156px; pointer-events:none;
+          bottom:auto; background:none; border:0; box-shadow:none; border-radius:0; line-height:normal;
+          filter:drop-shadow(0 6px 8px rgba(0,0,0,.4)); }
+  #dpad::before, #dpad::after { content:''; position:absolute; border-radius:9px;
+          background:linear-gradient(180deg, #33343e 0%, #1e1f28 45%, #0f1016 100%);
+          box-shadow:inset 0 2px 0 rgba(255,255,255,.12), inset 0 -4px 5px rgba(0,0,0,.5); }
+  #dpad::before { left:52px; top:0; width:52px; height:156px; }
+  #dpad::after  { left:0; top:52px; width:156px; height:52px; }
+  #dpad div { position:absolute; bottom:auto; width:52px; height:52px; z-index:2;
+              background:none; border:0; box-shadow:none;
+              line-height:52px; font-size:18px; color:#4d5266; }
+  #dpad .dec { pointer-events:none; }
+  #dUp { left:52px; top:0; } #dDn { left:52px; top:104px; }
+  #dCtr{ left:52px; top:52px; }
+  #dCtr::after { content:''; position:absolute; inset:13px; border-radius:50%; z-index:3;
+                 background:radial-gradient(circle at 42% 36%, #2c2d37 0%, #13141b 75%); }
+  #tL { left:0; top:52px; pointer-events:auto; }
+  #tR { left:104px; top:52px; pointer-events:auto; }
+  #tL:active, #tR:active { color:#9aa0b8; transform:none; border:0; }
+  #touch div#tJ, #touch div#tB{right:calc(18px + env(safe-area-inset-right, 0px)); width:86px; height:86px; border-radius:50%;
+                background:radial-gradient(circle at 34% 28%, #d0347c 0%, #b0135e 55%, #7e0f44 100%);
+                color:transparent; border-color:#5e0a33; overflow:visible;}
+  #touch div#tJ::after, #touch div#tB::after { position:absolute; left:50%; bottom:-22px; transform:translateX(-50%);
+                content:'A'; color:#2d3a8c; font:bold italic 15px "Courier New",monospace; }
+  #touch div#tB::after { content:'B'; }
+  /* landscape (dark deck): the navy labels vanish on #101120 — lighten there */
+  @media (pointer: coarse) and (orientation: landscape) {
+    #touch div#tJ::after, #touch div#tB::after { color:#8d99ae; }
+    #dpad div { line-height:48px; }
+  }
+  #grille { position:fixed; display:none; z-index:4; pointer-events:none; transform:rotate(-22deg); }
+  #grille i { display:inline-block; width:11px; height:58px; border-radius:6px; margin-right:10px;
+              background:linear-gradient(90deg, #6f6a5e 0%, #3f3b32 45%, #8a8478 100%);
+              box-shadow:inset 0 3px 4px rgba(0,0,0,.55), 1px 1px 0 rgba(255,255,255,.5); }
   #touch div#tP, #touch div#tS{
     top:calc(10px + env(safe-area-inset-top, 0px)); bottom:auto;
     width:58px; height:26px; line-height:24px; font-size:10px; letter-spacing:1px;
     border-radius:13px; transform:rotate(0deg); color:#8d99ae; }
   #touch div#tP{ right:calc(12px + env(safe-area-inset-right, 0px)); }
   #touch div#tS{ right:calc(78px + env(safe-area-inset-right, 0px)); }
-  #shellBrand { position:fixed; display:none; z-index:4; left:0; right:0; text-align:center;
-                font:bold 11px "Courier New",monospace; color:#3f4258; letter-spacing:3px;
+  #shellBrand { position:fixed; display:none; z-index:4; left:24px; right:auto; text-align:left;
+                font:bold 11px "Courier New",monospace; color:#2d3a8c; letter-spacing:0;
                 pointer-events:none; }
+  #shellBrand b { font-size:11px; margin-right:6px; letter-spacing:1px; }
+  #shellBrand em { font-size:19px; font-style:italic; letter-spacing:1px; }
+  #shellBrand span { font-size:8px; vertical-align:super; }
   #shellBrand i { display:inline-block; width:6px; height:6px; border-radius:50%;
                   background:#7cffa5; margin-right:8px; vertical-align:1px; } /* power LED — steady, of course */
   @media (pointer: coarse) {
@@ -158,12 +192,17 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   /* vintage handheld body (owner ask: '3D, vintage, like the old Nintendo handhelds') —
      portrait only; the DMG greige, the charcoal screen surround, the slanted pills */
   @media (pointer: coarse) and (orientation: portrait) {
-    body { background:linear-gradient(180deg, #b9b3a6 0%, #aaa294 55%, #9c9484 100%); }
+    body { background:linear-gradient(180deg, #c9c4b8 0%, #b9b3a6 45%, #a89f8f 100%); } /* DMG greige, matched to the reference photo */
     canvas#game { outline:10px solid #3a3f4a; border-radius:6px;
                   box-shadow:0 0 0 22px #454b58, 0 0 0 24px #2e323c, 0 10px 24px rgba(0,0,0,.35); }
     #shellBrand { color:#6f6857; letter-spacing:3px; }
-    #touch div#tP, #touch div#tS { transform:rotate(-18deg); background:linear-gradient(180deg,#8f8878,#6f6857);
-                                   color:#f0ece2; border-color:#4a4437; border-bottom-width:4px; }
+    #touch div#tP, #touch div#tS { transform:rotate(-24deg); color:transparent; overflow:visible;
+                                   background:linear-gradient(180deg,#7c7669 0%,#9d968a 45%,#c9c4b8 100%);
+                                   border-color:#dfdbd0; border-width:2px; border-bottom-width:2px; border-radius:14px;
+                                   box-shadow:inset 0 4px 6px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.6); }
+    #touch div#tP::after, #touch div#tS::after { position:absolute; left:50%; bottom:-19px; transform:translateX(-50%);
+                                   content:'START'; color:#2d3a8c; font:bold 10px "Courier New",monospace; letter-spacing:1px; }
+    #touch div#tS::after { content:'SOUND'; }
   }
   #bezelLabel { position:fixed; display:none; z-index:4; left:0; right:0; text-align:center;
                 font:bold 8px "Courier New",monospace; color:#8a92a6; letter-spacing:2px; pointer-events:none; }
@@ -228,9 +267,14 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
 <body>
 <div id="wrap"><div id="stack"><canvas id="game" width="480" height="270"></canvas><canvas id="txt"></canvas></div></div>
 <div id="ui"><div class="card" id="uicard"></div></div>
-<div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">START</div><div id="tS">SOUND</div></div>
-<div id="shellBrand"><i></i>SF SPEEDRUN</div>
+<div id="touch">
+  <div id="dpad"><div class="dec" id="dUp"></div><div id="tL">◀</div><div class="dec" id="dCtr"></div><div id="tR">▶</div><div class="dec" id="dDn"></div></div>
+  <div id="tB">B</div><div id="tJ">A</div>
+  <div id="tP">START</div><div id="tS">SOUND</div>
+</div>
+<div id="shellBrand"><i></i><b>OMNICORP</b><em>GAME BRO</em><span>™</span></div>
 <div id="bezelLabel">DOT MATRIX WITH VENTURE SOUND</div>
+<div id="grille"><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <button id="pauseChip">⏸ PAUSE</button>
 <div id="pauseMenu"><div class="card">
   <div style="color:#ffd94a; font-size:16px">PAUSED</div>
@@ -341,34 +385,43 @@ function fit() {
   // deck). Landscape = GBA (d-pad mid-left of the screen, A mid-right — thumbs rest
   // where the hardware would put them, and nothing sits over the ground line).
   const midY = Math.max(0, (window.innerHeight - 70) * 0.62); // landscape thumb arc, below the billboard band
-  for (const id of ['tL','tR','tJ']){
-    const el = document.getElementById(id);
-    if (portrait){ // deck hugs the BOTTOM of the phone — thumbs live there, not mid-screen (owner screenshots)
-      el.style.top = 'auto'; el.style.bottom = 'calc(120px + env(safe-area-inset-bottom, 0px))';
-      if (id === 'tJ'){ el.style.width = el.style.height = '104px'; el.style.lineHeight = '96px'; }
-      else { el.style.width = el.style.height = '80px'; el.style.lineHeight = '72px'; }
-    } else {
-      el.style.bottom = 'auto'; el.style.top = (id === 'tJ' ? midY - 8 : midY) + 'px';
-      el.style.width = el.style.height = el.style.lineHeight = '';
-    }
+  // DMG deck geometry (reference photo): cross pad left, B/A diagonal right (A high, B low),
+  // pills center-bottom, grille bottom-right. Portrait anchors to the bottom (thumbs).
+  const dpad = document.getElementById('dpad'), tJ2 = document.getElementById('tJ'), tB2 = document.getElementById('tB');
+  if (portrait){
+    dpad.style.left = 'calc(20px + env(safe-area-inset-left, 0px))'; dpad.style.right = 'auto';
+    dpad.style.top = 'auto'; dpad.style.bottom = 'calc(130px + env(safe-area-inset-bottom, 0px))';
+    tJ2.style.top = 'auto'; tJ2.style.bottom = 'calc(196px + env(safe-area-inset-bottom, 0px))';
+    tJ2.style.right = 'calc(20px + env(safe-area-inset-right, 0px))';
+    tB2.style.top = 'auto'; tB2.style.bottom = 'calc(162px + env(safe-area-inset-bottom, 0px))';
+    tB2.style.right = 'calc(116px + env(safe-area-inset-right, 0px))';
+  } else {
+    dpad.style.left = 'calc(14px + env(safe-area-inset-left, 0px))'; dpad.style.right = 'auto';
+    dpad.style.bottom = 'auto'; dpad.style.top = (midY - 44) + 'px';
+    tJ2.style.bottom = 'auto'; tJ2.style.top = (midY - 30) + 'px';
+    tJ2.style.right = 'calc(16px + env(safe-area-inset-right, 0px))';
+    tB2.style.bottom = 'auto'; tB2.style.top = (midY + 34) + 'px';
+    tB2.style.right = 'calc(112px + env(safe-area-inset-right, 0px))';
   }
   const tP = document.getElementById('tP'), tS = document.getElementById('tS');
   if (portrait){
-    tP.style.top = 'auto'; tP.style.bottom = 'calc(64px + env(safe-area-inset-bottom, 0px))'; tP.style.right = 'auto'; tP.style.left = 'calc(50% + 8px)';
-    tS.style.top = 'auto'; tS.style.bottom = 'calc(64px + env(safe-area-inset-bottom, 0px))'; tS.style.right = 'calc(50% + 8px)';
+    tP.style.top = 'auto'; tP.style.bottom = 'calc(64px + env(safe-area-inset-bottom, 0px))'; tP.style.right = 'auto'; tP.style.left = 'calc(50% - 20px)';
+    tS.style.top = 'auto'; tS.style.bottom = 'calc(64px + env(safe-area-inset-bottom, 0px))'; tS.style.right = 'calc(50% + 20px)';
   } else {
     tP.style.top = ''; tP.style.bottom = ''; tP.style.right = ''; tP.style.left = '';
     tS.style.top = ''; tS.style.bottom = ''; tS.style.right = '';
   }
   const brand = document.getElementById('shellBrand');
   brand.style.display = (isTouch && portrait) ? 'block' : 'none';
-  const bz = document.getElementById('bezelLabel');
+  const bz = document.getElementById('bezelLabel'), grille = document.getElementById('grille');
   if (portrait){
-    const deckTop = window.innerHeight - 120 - 80; // matches the d-pad bottom anchor
     const sb = stack.getBoundingClientRect().bottom;
     bz.style.display = 'block'; bz.style.top = Math.round(sb + 30) + 'px';
-    brand.style.top = Math.round(sb + Math.max(44, (deckTop - sb) / 2)) + 'px';
-  } else bz.style.display = 'none';
+    brand.style.top = Math.round(sb + 52) + 'px'; // logo top-left under the bezel, like the shell print
+    grille.style.display = 'block';
+    grille.style.right = '10px'; grille.style.left = 'auto';
+    grille.style.top = 'auto'; grille.style.bottom = 'calc(28px + env(safe-area-inset-bottom, 0px))';
+  } else { bz.style.display = 'none'; grille.style.display = 'none'; }
   // install hint: iOS Safari, not yet installed, not dismissed, title only (stepGame hides it on start)
   const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs3') === '1'; } catch(e){}
@@ -558,6 +611,11 @@ if ('ontouchstart' in window) {
   document.getElementById('tS').addEventListener('touchstart', e => {
     e.preventDefault(); e.stopPropagation();
     initAudio(); setMuted(!muted);
+  }, {passive:false});
+  document.getElementById('tB').addEventListener('touchstart', e => {
+    e.preventDefault(); e.stopPropagation();
+    initAudio();
+    if (state === ST.PLAY) throwDeck(); // B = pitch, only fires while holding a PITCH DECK (same as X)
   }, {passive:false});
   cv.addEventListener('touchstart', e => {
     e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio();

@@ -910,3 +910,15 @@ consciously: install-hint legs replace rotate-prompt legs; deck asserted bottom-
    any damage; the tick itself now reads 'BURN RATE — no time for breaks'. Verified live: warning →
    tick → -1 RUNWAY.
 4. Mobile probe updated to walk the real install flow (chip → card with 3 steps → GOT IT persists).
+
+## 2026-07-21 — [OMNICORP GAME BRO™] photo-accurate DMG deck (owner reference photo)
+
+Matched to the owner's Game Boy photo via a Playwright screenshot loop: ONE solid black cross d-pad
+(container pseudo-element bars; L/R arms are transparent touch zones; a specificity bug briefly
+rendered the container as a 70px button tile — caught by inspection), two magenta dome buttons set
+diagonally with navy italic labels UNDER them like the shell print — and **B now pitches the deck**
+(touch finally has the real verb; functionally verified: deckT set → tap B → deck shot spawns),
+A jumps. SELECT/START-style slanted silver pill wells labeled SOUND/START beneath, the diagonal
+silver speaker-slot grille returns (rounded slots, not the gradient bars the owner rejected), and the
+logo line reads **OMNICORP GAME BRO™** (owner-picked from four options) in DMG navy italic. Body
+greige matched to the photo. Landscape keeps the dark deck with lightened labels.
