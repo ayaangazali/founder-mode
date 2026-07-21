@@ -475,7 +475,7 @@ const coinRows = [
 // enemies {x, t}  t: g=churn gremlin, m=standing meeting, s=scooter bro,
 //                 t=thought leader (sine flyer), c=compliance phantom (drifter)
 const enemyDefs = [
-  {x:650,t:'g'} /* first-30s pass: was 520 (ROADMAP §5) */,{x:680,t:'g'},{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
+  {x:650,t:'g'} /* first-30s pass: was 520 (ROADMAP §5) */,{x:800,t:'g'} /* was 680: the opening beat is ONE telegraphed gremlin, not a wall (persona backlog #3) */,{x:1000,t:'g'},{x:1260,t:'g'},{x:1620,t:'g'},
   {x:1980,t:'m'},{x:2230,t:'m'},{x:2620,t:'m'},{x:2860,t:'m'},
   {x:3200,t:'s'},{x:3480,t:'s'},{x:3760,t:'g'},{x:3850,t:'m'},
   // CEREBRAL VALLEY — first phantom starts at 4620 (under stack 2, its speced
@@ -595,7 +595,9 @@ function zoneName(x){
   if (x < 7160) return 'SAND HILL ROAD';
   return 'THE CLOUD';
 }
-const checkpoints = [20, 1930, 3970, 5750, 7240]; // one per zone start (5 zones)
+const checkpoints = [20, 950, 1930, 3970, 5250, 5750, 7240]; // one per zone start + two churn-loop breakers
+// (persona backlog #3): 950 = past the first pits so a new player's first death stops resetting to
+// x=20, 5250 = THE PLATFORM's doorstep so boss-1 retries cost ~700px like bosses 2-3, not 1600px.
 
 // ROBOTAXI — neutral rideable moving platform (CV seg 3). NOT an enemy: it cannot
 // hurt you; you can, canonically, trust it more than the scooter bro.
