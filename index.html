@@ -17,6 +17,17 @@
 <meta name="twitter:title" content="SF SPEEDRUN — how fast can your startup IPO?">
 <meta name="twitter:description" content="Stomp churn. Raise rounds. Defeat SYNERGY.AI. Ring the IPO bell.">
 <meta name="twitter:image" content="https://sfspeedrun.com/og.png">
+<!-- app-feel (owner ask 2026-07-21): installed from the share sheet, SF SPEEDRUN runs
+     fullscreen standalone — no browser chrome, real home-screen icon. The manifest,
+     service worker and icons are OPTIONAL files like og.png/api; the game itself is
+     still one file and runs from file:// without any of them. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SF SPEEDRUN">
+<meta name="theme-color" content="#101120">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
 <!-- Vercel Web Analytics, static-site flavor: no npm, no framework — the game
      stays one file. Injected only over http(s): a static tag 404s on file://
      and the console noise trips the playtest's zero-error gate. -->
@@ -30,6 +41,11 @@ if (/^https?:$/.test(location.protocol)){
 // PostHog, same one-file treatment: manual loader + tiny pre-load queue instead
 // of the official snippet. localhost excluded so the qa probes stay hermetic.
 // The key is the project's public ingest token (client-side by design).
+// service worker: offline play + installability. Same hermetic gate as analytics —
+// never registers from file:// or localhost, so every probe stays SW-free.
+if ('serviceWorker' in navigator && location.protocol === 'https:' && location.hostname !== 'localhost'){
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
 window.phQ = []; window.phReady = false;
 // DNT / Global Privacy Control opt-outs are honored before the loader ever
 // touches the network (persona backlog #13 — the HN commenter checks)
