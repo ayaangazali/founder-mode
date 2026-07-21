@@ -956,3 +956,25 @@ minigames, all powerups, combat+bosses, eggs, share/end, UI chrome) + triage jud
    address bar/menu; verified both variants under real UAs.
 Coverage gaps the judge flagged (landscape-touch runs, real-API round-trip, other market seeds,
 intern-fair deep test) noted for the backlog. Full hard gate + mobile + paths green post-fix.
+
+## 2026-07-21 — [LAUNCH-EVE PATCH → launch-v1] (Show HN 2026-07-22 ~7:30am PT)
+
+Surgical four-item patch on branch launch-eve, merged + deployed + prod-verified tonight. FREEZE:
+hotfixes only until Thursday.
+1. **Trade-dress soften**: the portrait shell's nameplate/bezel dropped the console maker's visual
+   lockup (navy italic wordmark, bezel print style) for the game's own identity — dark chip, gold
+   monospace caps, LED; slate-cyan bezel line; charcoal upright button labels. Words unchanged (the
+   parody). Before/after: qa/launch-eve/tradedress-*.png. A stale portrait media override that
+   re-greiged the chip was caught by the prod hand-check and removed.
+2. **Writeup published**: 'SF SPEEDRUN — the whole machine, explained' is the repo README (badge
+   header kept) and the static /about.html (game palette, zero build step), linked from the title
+   credit chip ('how it's built'). The HN technical-depth answer is live.
+3. **Launch battery vs PRODUCTION** (new GAME_URL env override in all 13 suites): 3 tests, 7 probes
+   + daily-seed + mobile + paths, clean bot (1:56, 2 recoveries) and casual bot (3:43, 5) — all
+   green against https://sfspeedrun.com. Hand-verified 14/14: share flow on 390x844 touch (SAVE
+   download + clipboard + per-run /api/r link), /api/r → /api/og card render, leaderboard accepted +
+   displayed a fresh 'LAUNCH CHECK' row (today's board; rolls over before launch), service worker
+   active + game boots OFFLINE, shell renders in house style. Evidence: qa/launch-eve/.
+   Paths-probe clipboard expectation widened (file:// bare-domain vs http per-run link — both
+   correct). celebs- and leaderboard-probes verified locally in the same-night ci-sweep (they need
+   local builds/stubs by design).
