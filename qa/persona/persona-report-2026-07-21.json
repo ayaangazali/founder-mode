@@ -1,0 +1,1009 @@
+{
+  "personas": [
+    {
+      "persona": "HN-GRAYBEARD — skeptical Hacker News commenter, 25 years in industry, views source before pressing a key",
+      "played": true,
+      "first_impression": "Viewed source first, obviously: 236KB of single HTML, ~80KB gzipped, exactly one request over file://, no framework, sprites are fillRect calls. Then I hit line 37 and found a PostHog loader in the head of a game whose whole pitch is 'one file, no dependencies.' The title screen itself is honest work — controls, cosmetic pickers labeled 'cosmetic. like most pivots.', and a footer reading 'a dumb side project. do not raise a round about it.' — which is more self-awareness than most YC landing pages manage.",
+      "confusions": [
+        "First boss hint says 'grab a DECK, then X to pitch' but the title screen taught me 'stomp enemies' — I jumped on the mecha's head repeatedly and lost all three hearts without moving its HP bar, and I never spotted where the DECK actually was in the arena.",
+        "I crossed a checkpoint with zero acknowledgment — no sound, no popup — so when I died I did not know why I respawned where I did or that anything had been banked.",
+        "Died with both hands on the keyboard and was shown four mouse buttons; the 'press R to run it back' line was below the fold at 960x540, so I only found R because I read the source."
+      ],
+      "delights": [
+        "The engineering claims are not lies: I measured exactly 180 sim frames in 3 wall seconds (60Hz fixed timestep as the source comment promises), zero console errors, zero page errors, one network request on file://.",
+        "Context-aware obituaries. Died to the boss and got 'DEVREL MECHA DEPRECATES LOCAL FOUNDER — he built on the platform. the platform built on him.' Died to a gremlin and got 'CHURN FINALLY GETS HIM — retention was a Q3 priority.' Satire in the mechanics AND the copy.",
+        "'Chad Capital, an early passer on the company, said: I passed on them twice. Pattern recognition.' I have met this man.",
+        "Source comments read like an engineer who expects to be audited: physics constants declared a 'speedrun contract', draw-only UI shake explicitly documented as never read by the sim, analytics loader gated off file:// so the QA probes stay hermetic.",
+        "The share domain in the badge footer (sfspeedrun.com) actually resolves and serves the game — I curled it. The details check out, which on today's internet is the surprise."
+      ],
+      "findings": [
+        {
+          "area": "share",
+          "severity": "high",
+          "issue": "A self-described one-file no-framework game loads a third-party PostHog blob from us-assets.i.posthog.com (line 37) with no doNotTrack/GPC check. This is the guaranteed top HN comment and it undercuts the whole 'honest craft' share story; half the audience's uBlock will block it anyway, making the data junk.",
+          "suggestion": "Minimum: add `&& navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl` to the gate on line 34. Better: delete the third-party script and POST a tiny counter event to your own existing /api (you already run three serverless functions; a 5-line count endpoint keeps the page first-party-only)."
+        },
+        {
+          "area": "ux",
+          "severity": "med",
+          "issue": "Boss 1 contradicts the taught verb set: title says 'stomp enemies', the boss requires DECK+X, the only hint lives in the bottom bar while your eyes are on the mecha, and stomping silently deals 0 damage — I burned 3 hearts learning this.",
+          "suggestion": "In the existing boss-bounce branch (~line 1601), when the player bounces without a DECK, add `addPop(b.x, b.y-40, 'PITCH IT, DON’T STOMP IT — GRAB THE DECK', '#ffd94a')` plus a dull `beep(140,.08,'triangle',.06)` so the failed stomp itself teaches the mechanic."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Checkpoint crossing (line 1394) is completely unannounced — no sound hook, no popup — so progress banking is invisible and respawn position feels arbitrary.",
+          "suggestion": "At the checkpoint assignment in line 1394's loop body add `addPop(p.x, p.y-16, 'BRIDGE ROUND SECURED', '#7cffa5'); beep(660,.07,'square',.06); setTimeout(()=>beep(990,.1,'square',.06),70);` — stays in-universe, zero assets."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "Death has no sting: OUT OF RUNWAY plays only the generic sHurt (line 1195) before state=ST.DEAD at line 1204 — the run's biggest moment sounds identical to a routine hit. (Audited the whole engine: 7 named SFX; landing, pause, and checkpoint are also silent.)",
+          "suggestion": "Before `state = ST.DEAD` add a descending arpeggio: `[392,311,233,196].forEach((f,i)=>setTimeout(()=>beep(f,.22,'triangle',.09),i*130));` — matches the existing sWin pattern in reverse."
+        },
+        {
+          "area": "onboarding",
+          "severity": "med",
+          "issue": "Naive hold-right-and-jump play lost a heart before x=700 and died twice inside SOMA within 75 seconds — the punishment starts before the satire has landed for a casual LinkedIn clicker.",
+          "suggestion": "Levers-only tune per your own contract: shift the first churn-gremlin spawn right of the first coin/billboard beat, or raise the fresh-run spawn hurtT invulnerability constant (currently 90 frames) to ~180. No new mechanics needed."
+        },
+        {
+          "area": "ux",
+          "severity": "low",
+          "issue": "'press R to run it back' renders below the fold on a 960x540 viewport; the death screen visibly offers only mouse buttons to a player whose hands are on the keyboard.",
+          "suggestion": "Append '· or press R' to the '= VALUATION' line in showEndUI so the keyboard affordance sits above the button row, and keep the duplicate at the bottom."
+        },
+        {
+          "area": "ui",
+          "severity": "low",
+          "issue": "On the title screen the hint-bar text 'M mute' collides with a yellow parallax window light at 960x540 — a skyline pixel overlaps the glyph.",
+          "suggestion": "Widen the hint bar's black backing rect ~14px past the measured text width, or draw the skyline window-light pass before the text band so glyphs never share pixels with buildings."
+        },
+        {
+          "area": "sound",
+          "severity": "low",
+          "issue": "No ambient loop at all — 9200px of level with only event beeps. Personally I respect the silence; normal people will call it dead air.",
+          "suggestion": "A two-oscillator 8-note bassline scheduled against AC.currentTime with lookahead (~15 lines of WebAudio, no setInterval, no asset files), gated by the existing M mute and the muted flag."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "One file, one request, a 60Hz fixed timestep that isn't lying — delete the PostHog line and I'll upvote it twice."
+    },
+    {
+      "persona": "NONTECH-MARKETER — non-technical growth marketer, Candy Crush-level gamer, never reads instructions",
+      "played": true,
+      "first_impression": "The title screen told me exactly one thing I needed — PRESS SPACE TO START — so I was in within seconds, which is honestly better onboarding than most SaaS products I market. Then I ran right for ninety seconds, fell into the same hole four times, and got teleported back to the very start every single time. I never left the first neighborhood, never saw a boss, and never found out what a 'DECK' is.",
+      "confusions": [
+        "I fell in a hole and reappeared at the very beginning of the game — I thought it had reset itself. Nothing on screen ever said 'checkpoint', so I had no idea where I'd respawn or that respawn points even existed.",
+        "The bottom hint said 'grab a DECK, then X to pitch' and vanished after a few seconds — I never saw a deck the entire session (turns out the first one is more than half the map away), so I spent the whole time worried I was missing a mechanic.",
+        "RAISED $0K and RUNWAY are both money words to me; I only figured out the green squares were my lives after one disappeared when a little guy bumped me.",
+        "The [C] [H] [V] [X] [P] boxes on the title screen — was I supposed to set those before starting? I couldn't tell if they were buttons or decoration, so I ignored them.",
+        "The game is completely silent between the little beeps — I actually checked whether my tab was muted before deciding it just has no music."
+      ],
+      "delights": [
+        "The death screen is a fake newspaper obituary about ME — 'CHURN FINALLY GETS HIM', pull-quote 'it was a market timing issue — you, on LinkedIn'. I laughed out loud both times I got a new headline ('FOUNDER PIVOTS DIRECTLY INTO THE GROUND'). This is the most shareable death screen I've ever seen.",
+        "The SHARE button copies a ready-made post plus link in one click — as a growth person: zero-friction UGC, exactly right.",
+        "The billboards are funnier than most brand social — VERCEL 'up before you finish the sen—', '$8 ARTISANAL TOAST'.",
+        "No signup, no loading screen, one button to play — the top of the funnel is immaculate.",
+        "The little zone mood captions under the zone name ('heads down building', 'IT'S SO OVER') kept the joke running even while I was dying."
+      ],
+      "findings": [
+        {
+          "area": "onboarding",
+          "severity": "high",
+          "issue": "Checkpoints are invisible and silent, and the SOMA checkpoint is x=20, so the first pit (x≈780) throws a new player back to the literal start of the game. In 90s of naive play I died 4 times and made zero net progress — that's the churn point for casual players.",
+          "suggestion": "Draw a small pennant flag (3 fillRects: pole, pennant, base) at each entry in the checkpoints[] array, and where checkpoint advances (~line 1394) fire sCoin() plus addPop('CHECKPOINT — SERIES A LOCKED'). Also add a mid-SOMA checkpoint (~x=900) to the array so the first pit doesn't reset new players to x=20."
+        },
+        {
+          "area": "game-feel",
+          "severity": "high",
+          "issue": "A pit fall costs a heart AND teleports you the full ~760px back — the double punishment reads as 'the game restarted' to a casual player and there is no world feedback explaining it.",
+          "suggestion": "Track a lastSafeX variable (set whenever player.onGround on a ground segment) and, in the pit-death block (~lines 1337-1347), respawn at lastSafeX-20 with the existing heart loss and hurtT invulnerability instead of jumping to the zone checkpoint. Two lines plus one variable, no new mechanics."
+        },
+        {
+          "area": "onboarding",
+          "severity": "med",
+          "issue": "The 6-second controls strip teaches 'grab a DECK, then X to pitch' but the first deck is at x=4268 — the hint expires roughly 3,500px before the mechanic exists, so it only confuses first-timers.",
+          "suggestion": "Remove the deck clause from the playMs<6000 strip and instead set a one-time flag when a powers item with t==='deck' first enters camera view (p.x within cam..cam+W); re-render the same bottom strip for ~5s saying 'that briefcase = your PITCH DECK — grab it, then X'."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "There is no music at all — only 8 one-shot oscillator beeps (lines 377-396). For a Candy Crush player, long silence between beeps reads as a broken tab, and it kills the vibe in shared clips.",
+          "suggestion": "Add an 8-note square/triangle bass loop synthesized with the existing AudioContext, scheduled against AC.currentTime with a lookahead timer, gated on state===ST.PLAY && !muted, volume ~0.03 so the existing SFX still cut through. Zero asset files."
+        },
+        {
+          "area": "sound",
+          "severity": "low",
+          "issue": "Dying to state=DEAD only plays the generic 0.3s sHurt — the obituary newspaper, the game's best moment, appears in silence. Also pressing M gives zero on-screen feedback that mute toggled.",
+          "suggestion": "Add sDead (descending arpeggio: [392,330,262,196].forEach beeps at ~120ms spacing) at the two state=ST.DEAD sites (lines 1204 and 1344), and draw a 6px 'MUTED' tag in the HUD corner while muted is true."
+        },
+        {
+          "area": "ui",
+          "severity": "low",
+          "issue": "RUNWAY's three green blocks are not readable as lives by a non-startup-fluent player — RAISED and RUNWAY both look like money counters, so the first hit feels random.",
+          "suggestion": "While playMs<6000 (same window as the controls strip), fillText a 6px grey '= lives' label right of the RUNWAY blocks; it expires with the rest of the onboarding chrome."
+        },
+        {
+          "area": "ux",
+          "severity": "low",
+          "issue": "The title picker chips ([C]/[H]/[V]/[X]/[P]) are clickable but nothing signals it — a casual mouse-first player assumes they're decorations and skips customization entirely.",
+          "suggestion": "Add one 6px caption under the chip stack in the existing '#5d647a' style: 'press the key or click a chip' — one fillText in drawTitle next to 'cosmetic. like most pivots.'"
+        }
+      ],
+      "would_share": true,
+      "one_liner": "I died four times in the first minute and still screenshotted my own obituary — fix the first hole and this thing prints LinkedIn posts."
+    },
+    {
+      "persona": "STAFF-ENG — staff engineer at a big SF tech co, ex-hobbyist gamedev; judges input latency, jump physics, frame pacing, and code craft; cynical about hype",
+      "played": true,
+      "first_impression": "Title screen tells me everything in one line — move, jump, stomp, mute — plus five customization pickers that are honest about being cosmetic (\"cosmetic. like most pivots.\"). I pressed Space, was playing instantly, no splash, no loading, no cookie banner. Then I opened DevTools out of habit and found zero console errors and a 236KB single file, which is more than I can say for my employer's marketing page.",
+      "confusions": [
+        "Died in SOMA, got the (very funny) obituary, then mashed Space to retry because Space is the only key the game ever taught me — nothing happened. No on-screen key hint anywhere; I had to read the source to learn retry is R (index.html line 301). My session literally stalled 40 seconds on this.",
+        "Pressed M to mute and had no way to tell it worked — there is no MUTED indicator, no confirmation blip, nothing in the HUD. Grep confirms `muted` is never read by any draw code."
+      ],
+      "delights": [
+        "Measured input latency: keydown to airborne in 0.4–16ms across 6 trials — exactly one fixed sim step, worst case. Plus a 6-frame jump buffer and rising-edge-only jump with a proper jump-cut. Whoever wrote this input pipeline has shipped a platformer before.",
+        "Frame pacing: 16.66ms mean, 0.9ms stddev, zero frames over 25ms, over a proper 60Hz accumulator loop with a 100ms clamp. State mutated only in update(), never draw() — and the comments enforce it like a code review.",
+        "The obituary death screen. 'CHURN FINALLY GETS HIM', 'In lieu of flowers, please like and repost', then RAISED × 0.5 DOWN ROUND (you died) = VALUATION. The satire is in the scoring math, not just the labels. I screenshotted it unprompted, which is the whole ballgame.",
+        "The source reads like a well-run repo compressed into one file: audit citations in comments, corner-forgiveness on head bonks explained inline, blur → clear inputs + auto-pause so alt-tab doesn't kill your founder. No framework, no build, no assets. Respect.",
+        "Zone art variety is real — SOMA night, Cerebral Valley, a sunset Sand Hill Road with a boss whose intro banner reads 'PRE-SEED ROUND: THE PLATFORM' and a mood ticker stuck on 'IT'S SO OVER'."
+      ],
+      "findings": [
+        {
+          "area": "ux",
+          "severity": "med",
+          "issue": "Death screen is a keyboard dead-end: Space (the start key) does nothing, retry is R, and no on-screen text or button label mentions any key. Mouse users find the PIVOT button; keyboard players sit there.",
+          "suggestion": "Two lines: add 'space' to the retry condition at line 301 (`(nk==='r'||nk==='space') && endGraceT<=0 && ...`), and in showEndUI() append a small caption under the buttons: 'R / SPACE to pivot'. Keep endGraceT so nobody skips the obituary by accident."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "There is no music engine at all — 8 one-shot oscillator beeps (jump/coin/stomp/hurt/pow/boss/win) and otherwise total silence. For a Mario-style game the dead air between SFX is the single biggest production-value gap; verified by reading lines 377–396, there is no loop scheduler anywhere.",
+          "suggestion": "Add a ~30-line WebAudio step sequencer on the existing AC: a 16-step pattern array per zone (triangle bass + square lead, note numbers → freq via 440*2^(n/12)), scheduled with ~120ms lookahead driven from update() on playMs, volume ~0.03, gated on `muted`, silenced during chat/interview/room minigames. Zero assets, per-zone tempo shift is free flavor."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Gravity is symmetric (GRAV 0.35 applied identically rising and falling, line 1297), so the descent floats — measured 36-frame airtime with a mirror-image arc. Mario-feel comes from falling ~1.5–2x faster than you rise; right now the jump-cut is doing all the snap work alone.",
+          "suggestion": "One-token-ish change at line 1297: `p.vy += p.vy > 0 ? GRAV * 1.4 : GRAV;` (and same for enemies if you want parity). This IS a speedrun-contract change per your own CLAUDE.md, so gate it behind a CHANGELOG version note and re-run the fullrun bots."
+        },
+        {
+          "area": "game-feel",
+          "severity": "low",
+          "issue": "No coyote time — grep for 'coyote' is empty. Jump buffer covers early presses but a late press one frame after walking off a ledge eats the input, and this level is pit-heavy by design.",
+          "suggestion": "Add `p.coyote = p.onGround ? 5 : Math.max(0, p.coyote - 1);` in the physics block and change the jump gate at line 1293 to `(p.onGround || p.coyote > 0)`, zeroing p.coyote on jump. Five frames is invisible to speedrunners and saves tourists."
+        },
+        {
+          "area": "sound",
+          "severity": "low",
+          "issue": "Terminal death (OUT OF RUNWAY) plays the same generic sHurt() beep as any minor hit, then the obituary — the game's best screen — appears in dead silence. The win path gets sWin(); the death path, the one most players will see and share, gets nothing.",
+          "suggestion": "In the `hearts <= 0` branch before `state = ST.DEAD` (lines ~1204/1344), add a three-note descending sting: `[330,247,165].forEach((f,i)=>setTimeout(()=>beep(f,.35,'sawtooth',.09,-40),i*180));` — sad trombone in 1 line, matches the existing beep vocabulary."
+        },
+        {
+          "area": "ui",
+          "severity": "low",
+          "issue": "M mute toggles a boolean nobody can see — no HUD indicator, no confirmation sound on unmute, so players can't tell whether mute took (I couldn't, and I had the source open).",
+          "suggestion": "In the HUD draw pass: `if (muted){ cx.font='bold 8px monospace'; cx.fillStyle='#8d99ae'; cx.fillText('[M] MUTED', W-52, 12); }` and play one `beep(880,.05)` on the unmute edge in the line-396 handler."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "A 236KB single file with tighter frame discipline than most shipped Electron apps — the jump falls a touch floaty and the retry key is a secret, but the obituary screen alone earns the repost."
+    },
+    {
+      "persona": "RETRO-GAMER — Mario purist / speedrunner who frame-counts jump arcs for fun",
+      "played": true,
+      "first_impression": "Title screen is arcade-correct: name, controls line, PRESS SPACE TO START, cosmetic pickers, one press and I'm playing — zero friction, no logo crawl. First screen does the 1-1 thing: coins tracing the jump arc over a crate, two gremlins, and a sign that says \"CHURN GREMLINS stomp on sight\" right as they reach you. Then I walked off my first ledge, pressed jump two frames late, and got a pit death instead of a jump — and I knew exactly what kind of game-feel argument we were about to have.",
+      "confusions": [
+        "Walked off a ledge and pressed jump ~2 frames late — the input was silently eaten and I ate a pit death. I genuinely thought my keyboard dropped the input; measured it: zero coyote frames.",
+        "Pit deaths in THE MISSION kept snapping me somewhere backwards with no warning — checkpoints are invisible and silent (line 1394 sets them with no flag, no popup, no beep), so I never knew where I'd respawn or that I'd banked one.",
+        "My money dropped 25% on a death retry (BRIDGE ROUND) — the popup fires at the respawn point mid-screen-shuffle and I only understood the haircut after reading my RAISED counter twice.",
+        "Died at boss 1 and respawned 1600px back in the Cerebral Valley pit gauntlet — took me a second to accept that was intended and not a bug, since bosses 2 and 3 respawn ~700px out."
+      ],
+      "delights": [
+        "There is a REAL 6-frame jump buffer and it works — frame trace shows press at f113, jbuf=6, jump fires on the landing frame at f118. Most indie web platformers don't even know this exists.",
+        "Variable jump height is correct: 59px full jump vs 19px tap, and stomp reward-bounces are exempt from the jump-cut. Someone read the manual.",
+        "The 'TIP: PRESS JUMP AGAIN TO STOMP' popup appears exactly when you bounce harmlessly on a boss — the game teaches its one nonstandard rule at the precise moment of confusion. That is Mario 1-1 design discipline.",
+        "Head-bonk on crate undersides with <7px corner forgiveness so a lip graze never spikes you into a pit — that is pixel-level care nobody will consciously notice, which is the point.",
+        "The death screen is a newspaper obituary and the cause writes the headline — my pit death got 'FOUNDER PIVOTS DIRECTLY INTO THE GROUND / the gap in the market was literal'. I laughed at my own death. That's the share loop.",
+        "Fixed-timestep 16.67ms sim, zero console errors, no frame hitches headless — the engine is honest."
+      ],
+      "findings": [
+        {
+          "area": "game-feel",
+          "severity": "high",
+          "issue": "Zero coyote time. Verified empirically: jump pressed 2 frames after walking off a ledge is eaten (jbuf held 6 frames but the player never lands), result = pit death + heart loss + checkpoint reset. With pits tuned near the max jump distance (the code even admits one pit was frame-perfect), edge jumps feel like input drops.",
+          "suggestion": "At ~line 1288: set p.coyote = 6 whenever p.onGround is true, decrement in air; change the jump gate at line 1293 to (p.jbuf > 0 && (p.onGround || p.coyote > 0)), then zero p.coyote on jump. Three lines. Add the CHANGELOG physics-contract note — this one is worth it."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Symmetric gravity makes the descent floaty: measured 18 rise frames / 18 fall frames on a full jump (GRAV 0.35 both ways). Every Mario since 1985 falls ~2-3x faster than it rises; a mirrored parabola reads as 'web game' to anyone with platformer hands.",
+          "suggestion": "In the physics block at line 1297: p.vy += (p.vy > 0 ? GRAV * 1.7 : GRAV), cap stays 8. Retune JUMPV to about -7.0 to preserve the 59px apex so existing pit gaps still clear. Physics-contract version note required."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "No music. At all. The entire soundscape is 8 one-shot oscillator beeps (lines 389-395) — jump, coin, stomp, hurt, pow, boss, win + a bonk. A retro platformer with dead air between beeps feels like a muted emulator; there is also no landing thud and no checkpoint sound.",
+          "suggestion": "A 2-bar bassline loop needs ~15 lines of WebAudio: in update(), when AC exists and playMs crosses each 250ms step, schedule one short triangle note from a per-zone 8-note pattern array (transpose per zoneName). Respects M mute via the existing muted flag, no assets, no wall-clock (key it to playMs)."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Boss 1 checkpoint is unfair relative to its siblings: died at x=5568, respawned at 3970 — a 1600px (~16s) re-walk through the Cerebral Valley pit gauntlet plus the -25% RAISED haircut per attempt. Bosses 2 and 3 respawn ~700px out. Repeat attempts punish you with traversal, not with the boss.",
+          "suggestion": "Add 5250 to the checkpoints array at line 596 (arena entrance, before the boss wall) — one array entry, same rule as a Mario castle midpoint. Difficulty-lever note in CHANGELOG."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "A damaging boss stomp and a harmless unarmed bounce play the identical sStomp sound (line 1601 fires it on every bounce); only a text popup distinguishes them. Audio should confirm damage — in a stomp fight your ears are the hit-confirm.",
+          "suggestion": "In the boss damage branch (where hp actually decrements, ~line 1603+): add beep(110, .2, 'square', .13, -70) layered after sStomp plus hitstopT = 2. Leave harmless bounces with plain sStomp so the difference is audible."
+        },
+        {
+          "area": "ux",
+          "severity": "med",
+          "issue": "Checkpoints are invisible and silent (line 1394 mutates the var, nothing draws or beeps). Players learn the respawn system only by dying, and the BRIDGE ROUND -25% penalty lands before they know checkpoints exist.",
+          "suggestion": "Draw a 6x24 fillRect flagpole with a small pennant at each checkpoints[] x (5 rects, drawn with the signs), and on first cross: beep(660,.1,'triangle',.08) + addPop(c, GROUND_Y-50, 'CHECKPOINT — bridge terms locked', '#7ce0ff', 120)."
+        },
+        {
+          "area": "game-feel",
+          "severity": "low",
+          "issue": "Horizontal movement has no acceleration curve at all: vx snaps to ±1.7 in one frame (line 1284) and *0.7 friction stops you in ~3 frames. No run ramp, no skid, no turnaround weight — the founder moves like a cursor, not a character.",
+          "suggestion": "Replace the vx assignment with an approach: p.vx += clamp(target - p.vx, -0.35, 0.35) (target = ±speed or 0), and spawn 2 gray dust parts on sign flip while onGround. Keeps top speed identical so pit math and the speedrun contract survive; note it anyway."
+        },
+        {
+          "area": "game-feel",
+          "severity": "low",
+          "issue": "Enemy stomp bounce is a fixed vy=-5 (line 1504) — holding jump does nothing. Mario's core stomp verb rewards a held jump with a higher bounce, which is what makes chain-stomping lines of enemies (and this game has lines of gremlins) feel like play instead of collision.",
+          "suggestion": "At line 1504: p.vy = JUMP() ? JUMPV : -4.5; bounceT stays 12 and the pogo re-arm rule is untouched — a held-jump chain still can't damage bosses without a fresh press."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "It ships a real 6-frame jump buffer and then zero frames of coyote time — half of game-feel 101, executed NES-tight, with the other half falling into a pit."
+    },
+    {
+      "persona": "GENZ-MOBILE — 22, iPhone on Muni, portrait grip, thumbs only, 15-second fuse",
+      "played": true,
+      "first_impression": "Loaded instantly off one file, zero signup, big TAP TO START — respect. Portrait keeps the game strip up top with a fat A button under it, so I was moving in like 4 seconds. Then a red gremlin deleted my whole runway before the bus hit the next stop, and the obituary newspaper that popped up was funnier than the death was annoying.",
+      "confusions": [
+        "The [C] [H] [V] [X] [P] letters on the title chips are keyboard keys — on a phone they mean nothing, I only found out they were tappable by poking one",
+        "Tapped the ⏸ chip on the title screen and nothing happened (it only works mid-run, but it's sitting right there)",
+        "Tapped SHARE in an environment with no share sheet (headless, same as an in-app browser) and literally nothing visibly happened — no toast, no copy message, I'd assume it's broken",
+        "Died at 12 seconds and genuinely didn't clock what hit me — the churn gremlin blends with the ground clutter at 390px wide",
+        "Missed the d-pad in the gap between ◀ and ▶ and my founder just stood there while I mashed"
+      ],
+      "delights": [
+        "The death screen is elite — HYPERGROWTH DAILY, 'FOUNDER RATIO'D TO DEATH IN CEREBRAL VALLEY / thread had 9 parts. victim read 4.' and '\"it was a market timing issue\" — you, on LinkedIn'. Instantly screenshot-worthy",
+        "'press & hold the badge to save it. yes, really.' — using native iOS long-press image save instead of some janky download button is actually smart",
+        "The d-pad secretly works right: sliding my thumb from ◀ to ▶ keeps tracking, and run+jump multi-touch registered every time",
+        "Billboards go hard: 'VERCEL — up before you finish the sen—' and '$8 ARTISANAL TOAST'",
+        "The mood ticker flipping WE'RE SO BACK → IT'S SO OVER when you get hit",
+        "The rotate prompt saying 'investors prefer landscape (tap to dismiss)' instead of blocking me — and it actually dismisses",
+        "Share text is pre-written and quotable and copies itself — 'Raised $18K and died in SOMA 💀' is a paste-ready caption"
+      ],
+      "findings": [
+        {
+          "area": "share",
+          "severity": "high",
+          "issue": "Tapping SHARE gives zero visible feedback when navigator.share is missing and the clipboard write silently rejects — exactly the situation inside LinkedIn/Instagram/TikTok in-app webviews, which is where this game's viral clicks will open. Verified: tapped bSh, cpMsg stayed empty forever (index.html ~line 3983).",
+          "suggestion": "In the bSh onclick, set cpMsg.textContent synchronously on every tap ('opening share sheet…' when navigator.share exists, otherwise immediately show 'no share sheet here — use ⬇ SAVE + COPY POST below'), instead of only setting it inside the clipboard promise success or the no-clipboard else-branch. One-line reorder, no new APIs."
+        },
+        {
+          "area": "mobile",
+          "severity": "med",
+          "issue": "Fat-thumb dead zone: a touch that STARTS in the 16px gutter between ◀ and ▶ (or just above the buttons) never reaches the d-pad handler because #touch is pointer-events:none — the 10px slop in recompute() only helps touches that began on a button. Verified via CDP: touchStart at gutter center → touch.L=false, touch.R=false, and the touch falls through to the canvas and fires throwDeck().",
+          "suggestion": "Make each button's DOM box bigger than its visual box: add 10px transparent padding to #tL/#tR/#tJ and draw the visible box with background-clip:content-box (border moves to an inset box-shadow). The gutter then belongs to a button and the existing recompute() logic just works."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "No way to mute on touch — the only mute is the M key (line 396), the pause menu has no sound row, and the touch hint text never mentions audio. Also there is zero background music anywhere, just 8 oscillator SFX; big moments like death (only sHurt), checkpoints, and every end-screen button are silent.",
+          "suggestion": "Add a '🔊 SOUND: ON' button to the #pauseMenu card that toggles the existing `muted` flag and persists to localStorage('fm_muted'); plus a 3-note descending sawtooth sting in showEndUI(false) (beep(392,.15),beep(311,.15),beep(196,.4) staggered) so dying lands with weight."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "The first 300px of SOMA strips your whole RUNWAY before the game teaches you anything: naive hold-right run was dead at x=333 in 12.4s; even a hopping run had lost 2 of 3 hearts by x=277 at 0:10. First-session phone players will see the death screen before their first stomp.",
+          "suggestion": "Give a fresh run ~2s of spawn i-frames (set player.hurtT = 120 in reset() when starting from x=0 only) or move the first churn gremlin ~150px right so the opening encounter is a single telegraphed enemy with room to jump."
+        },
+        {
+          "area": "ux",
+          "severity": "med",
+          "issue": "The ROTATE YOUR PHONE banner (bottom:8px, z-index 20) stays up over the death/win card in portrait and sits directly on top of the leaderboard name-input row (visible in genz-mobile-death-share-portrait.png) — on the live site that's the score-posting field it covers.",
+          "suggestion": "Hide it while an end card is up: in showEndUI() set document.getElementById('rot').style.display='none', and let the existing fit() call restore it when play resumes (fit already recomputes visibility from portrait && !rotDismissed)."
+        },
+        {
+          "area": "onboarding",
+          "severity": "low",
+          "issue": "Title customization chips are labeled with keyboard keys ('[C] TONE 2/6', '[X] COFOUNDER') that mean nothing on a phone, and nothing says the chips are tappable — I only discovered it by accident (tap does work and correctly doesn't start the game).",
+          "suggestion": "drawTitle() already branches on 'ontouchstart' for the start prompt — do the same for chips: drop the '[C]'-style prefix on touch and render a small 'tap to change' caption once under the chip column."
+        },
+        {
+          "area": "ui",
+          "severity": "low",
+          "issue": "The ⏸ chip is 40x40px (under Apple's 44pt tap minimum) and is visible-but-dead on the title screen — tapping it does nothing until state===PLAY.",
+          "suggestion": "Bump #tP to 48x48 (line-height 45) and toggle its display alongside the game state so it only shows during play — the touch UI already flips display per state elsewhere."
+        },
+        {
+          "area": "mobile",
+          "severity": "low",
+          "issue": "Portrait grip is 'reach up': canvas is top-aligned and the d-pad row sits directly under it at y~233 of a 664px screen, leaving the bottom half — where thumbs naturally rest on a phone held one-handed on a bus — as dead black space.",
+          "suggestion": "Ruling 2.1 keeps portrait non-blocking, so keep the canvas top-aligned but let the buttons keep their default bottom:calc(18px + safe-area) anchor in portrait (i.e. don't override their position in fit()) — thumbs land where they already are."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "The death screen goes harder than most games' win screens — I'd post the obituary before I finish the level, just make sure SHARE actually says something when the share sheet ghosts."
+    },
+    {
+      "persona": "VC-ASSOCIATE — VC associate, LinkedIn-native, plays for 3 minutes between meetings, judges everything by whether it would perform in the feed",
+      "played": true,
+      "first_impression": "Title screen reads in five seconds — name, tagline, PRESS SPACE, zero signup. I was in-game before my calendar reminder cleared. Then I died in twelve seconds and instead of a game-over screen it handed me a pixel newspaper called HYPERGROWTH DAILY announcing \"CHURN FINALLY GETS HIM\" with a quote from a VC who passed on me twice — honestly better content than my last three portfolio updates.",
+      "confusions": [
+        "I clicked the big SHARE button on the death screen and visibly nothing happened — no share sheet, no 'copied' message, nothing. I genuinely didn't know if my post was on the clipboard or not (headless/file context: navigator.share absent and the clipboard write rejected silently).",
+        "The title says 'cosmetic. like most pivots.' right next to the [P] pedigree chip — but pedigree is a x15/x50/x100 VALUATION multiplier, the single biggest score lever in the game. I didn't learn P wasn't cosmetic until the end-screen math.",
+        "Opening the live leaderboard panel, the default view said 'no exits yet — be the first' — my first read was 'nobody plays this game.' One toggle later the ALL-TIME board had 58 founders and a $1.11B unicorn. The FOMO was hiding behind a button.",
+        "First pit fall at ~12 seconds warped me back to the start of SOMA — I briefly thought the game had restarted; the '-1 RUNWAY (pivot failed)' popup flashed past while I was mid-panic."
+      ],
+      "delights": [
+        "Losing is the content strategy: the obituary front page as the DEFAULT loss share surface — 'CHURN FINALLY GETS HIM', 'Chad Capital, an early passer, said: I passed on them twice. Pattern recognition.', footer ticker 'VIBES DELISTED - NEXT: YOUR RUN?' — is funnier than any win screen I've seen.",
+        "The loss share copy is pre-written LinkedIn-speak: 'It was a market timing issue.' I would paste that verbatim.",
+        "The all-time leaderboard is genuinely flex-worthy: medals, aligned money columns, unicorn-vs-skull emoji per row, and top spot '$1.11B by AYAAN, 03:26' — a winning run fits exactly in the gap between meetings.",
+        "You're a horse (🐴) until $1B — the winEmoji gate is precisely the right in-joke for my feed.",
+        "The world is screenshot bait: VERCEL billboard reading 'up before you finish the sen—', SUPERSET '100 coding agents in parallel', '$8 ARTISANAL TOAST' signage in zone one.",
+        "The share pipeline actually works end-to-end: sfspeedrun.com is live, /api/r returns per-run og tags, and /api/og renders a real 1200x630 scorecard PNG with MY name on it.",
+        "Zero friction, zero errors: no signup, one keypress to play, and both browser sessions logged zero console/page errors."
+      ],
+      "findings": [
+        {
+          "area": "share",
+          "severity": "med",
+          "issue": "SHARE button can fail completely silently: clipboard.writeText's rejection path does nothing (index.html ~line 3990 — the reject handler is an empty function), and when navigator.share is also absent (desktop Firefox, some webviews — the exact LinkedIn in-app browsers this game targets) the user gets no feedback at all and walks away not knowing the post never copied.",
+          "suggestion": "In the bSh handler, give writeText a real rejection branch: on catch/reject set cpMsg.textContent = 'copy blocked — tap SAVE + COPY POST below' and additionally inject a readonly <textarea> pre-filled with s.text and call .select(), so the post is always one Cmd+C away. ~6 lines, no assets."
+        },
+        {
+          "area": "share",
+          "severity": "med",
+          "issue": "Title-screen FOMO banner is empty every fresh day: lbFetch (line ~623) only queries today's seed, so before the first exit of the day there is no 'today's top exit — beat it' line at all (verified live: topBanner null), even though the all-time board has 58 entries and a $1.11B top run.",
+          "suggestion": "In lbFetch, when j.top is empty, chain a fetch to '/api/leaderboard?all=1&limit=1' and stash it as lbTopAll; in drawTitle's stakes line fall back to \"all-time top exit: $1.11B by AYAAN — beat it\" when lbTop is empty. ~8 lines in the existing client."
+        },
+        {
+          "area": "share",
+          "severity": "med",
+          "issue": "The LinkedIn unfurl undersells the run: /api/r's og:description is the generic tagline for every run, so the feed card reads 'OUT OF RUNWAY — FOUNDER MODE' + boilerplate; the run's actual stats (raised, zone, valuation, down round) only exist inside the image, which some surfaces crop or lazy-load.",
+          "suggestion": "In api/r, build og:description from the query params it already receives: 'ASSOCIATE raised $10K, died with a $5K valuation (down round). Think you can survive SF?' — string template only, no new params, no assets."
+        },
+        {
+          "area": "ui",
+          "severity": "med",
+          "issue": "The leaderboard hook is below the fold: at a 960x540 window the end screen shows badge + buttons but the YOUR NAME field, POST VALUATION button, and the board list are cut off with no scroll affordance (the endImg width calc reserves ~250px of chrome but the val block + two button rows + toggle need ~400px). The owner already hit one fold bug here (the lbList scrollIntoView comment).",
+          "suggestion": "After uicard renders in showEndUI, add: if (uicard.scrollHeight > innerHeight) document.getElementById('lbName').scrollIntoView({block:'nearest', behavior:'smooth'}) after a 1.2s timeout, or bump the reserved-height constant in the endImg width calc from 250 to ~380."
+        },
+        {
+          "area": "ux",
+          "severity": "med",
+          "issue": "Leaderboard FOMO has an integrity leak: pedigree multiplies valuation up to x100 (ex-SYNERGY.AI) but board rows show only name/valuation/emoji/time, so a x100-pedigree $1B run and a no-pedigree $1B run are indistinguishable — the daily race quietly becomes a pedigree-picker race, and title-screen copy ('cosmetic. like most pivots.') sits next to the [P] chip implying it doesn't matter.",
+          "suggestion": "Include pedIdx in the leaderboard POST body, store it, and render a dim 'x100' suffix after the name in lbRowsHtml when ped > 0; on the title, move the 'cosmetic' disclaimer above the C/H/V chips only and let the [P] chip keep its 'x15' tag as the tell."
+        },
+        {
+          "area": "sound",
+          "severity": "low",
+          "issue": "The two biggest emotional beats are silent: run start (title -> play has no sound; the only title beep is the Konami egg at line 297) and the death/obituary reveal (the killing hit plays sHurt, then showEndUI(false) appears with no sting — read from the SFX engine at lines 377-396, sJump/sCoin/sStomp/sHurt/sPow/sBoss/sWin all exist but no death jingle and no start cue).",
+          "suggestion": "Two one-liners next to the existing SFX consts: const sStart = () => { [523,659].forEach((f,i)=>setTimeout(()=>beep(f,.09,'square',.06),i*80)); } called at the title->PLAY transition, and const sDownRound = () => { [392,330,262,196].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle',.07),i*140)); } called inside showEndUI(false)."
+        },
+        {
+          "area": "humor",
+          "severity": "low",
+          "issue": "The win badge headline says CERTIFIED UNICORN even at a $640K exit valuation while the share text for the same run correctly uses the horse emoji (winEmoji gates 🦄 at $1B) — my feed would notice the badge calling a sub-$1M exit a unicorn before it noticed the game.",
+          "suggestion": "Gate the makeBadge headline with the same bar as winEmoji: v >= 1000000 ? 'CERTIFIED UNICORN' : 'CERTIFIED HORSE (for now)' — one ternary at line ~3585, and it's a funnier flex ladder that makes the $1B badge worth grinding for."
+        },
+        {
+          "area": "a11y",
+          "severity": "low",
+          "issue": "Pressing M toggles mute with zero visual feedback (line 396 flips the flag; nothing on the HUD reflects it), so a player in an open-plan office can't confirm the game is actually muted without triggering a sound.",
+          "suggestion": "In the M handler, call the existing addPop(cam + 240, 30, muted ? 'MUTED' : 'SOUND ON', '#8d99ae') so the existing popup system confirms the toggle; also draw a small 'M' glyph in the HUD corner while muted."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "The only game where dying generates better LinkedIn content than winning — the obituary IS the pitch deck, and I'd repost mine before the next partner meeting."
+    },
+    {
+      "persona": "A11Y-DESIGNER — accessibility-minded product designer judging text contrast, colorblind-safe signals, motion/flash comfort, keyboard-only play, and whether health/money read without color",
+      "played": true,
+      "first_impression": "The title screen is honestly a good access pattern: every control and every customization picker has its key printed right on the chip ([C] TONE, [H] HAIR...), the CTA pulses but never blinks out, and the pixel type is crisp because text renders on a hi-res overlay instead of the 480x270 canvas. But within ten seconds I was squinting at the footer — 'a dumb side project. do not raise a round about it.' is #5d647a on #33323f, which I measured at 2.15:1. That's below the 3:1 floor for LARGE text, and this is 6px.",
+      "confusions": [
+        "Pressed M to mute and got zero feedback in any modality — no icon, no tick, nothing changed on screen. I genuinely could not tell whether I had just muted or unmuted the game.",
+        "Died three times in SOMA and kept respawning — I had no idea checkpoints existed until I read the code. Crossing one produces no flag, no popup, no sound; the respawn point advances silently.",
+        "Could not read the run timer during play: the fixed-position ⏸ PAUSE chip sits exactly on top of the canvas timer at the top-right (my 960x540 screenshots show '01:..' hidden behind the chip). I only learned the game was timed when the obituary said '00:08 career'.",
+        "During the boss fight a red '-1 RUNWAY' popup and a green 'THESIS DECLINED! +$10K' popup overlapped each other over the orange Cerebral Valley sunset — for two seconds I couldn't tell if I'd been hurt or paid."
+      ],
+      "delights": [
+        "Fully keyboard-playable end to end: arrows/WASD + Space, C/H/V/X/P pickers, Escape pause, R retry — and the pause/end-card controls are real <button> elements with tabIndex 0 and a visible default focus ring. I never needed a mouse once.",
+        "Health and money are distinguishable with zero color vision: RAISED is a labeled dollar counter top-left, RUNWAY is labeled discrete blocks — different shape, position, and wording. And the heart pips (#39c46d vs #333a44, ~9:1 luminance gap) and boss HP pips read by brightness, not hue. Deuteranopia-safe scoreboard, rare in indie canvas games.",
+        "The game auto-pauses on window blur and tab-hide — nobody's runway burns because they needed to step away. That's an attention-accessibility kindness most AAA games don't do.",
+        "First 6 seconds of every run print the full control strip at the bottom, and the copy correctly swaps for touch ('A jump', 'tap fires') vs keyboard ('SPACE jump', 'X to pitch').",
+        "The death obituary conveys everything in text — cause, stats, quote — so the failure state is fully legible without sound or color. It's also genuinely funny, which helps you forgive the tiny newsprint."
+      ],
+      "findings": [
+        {
+          "area": "a11y",
+          "severity": "med",
+          "issue": "Damage/reward popups are bare colored text with no backing scrim. Red '-1 RUNWAY' (#ff5a5a) over the orange Cerebral Valley sunset is near-invisible, worse for protanopia, and popups overlap each other at bosses (see a11y-designer-boss1.png). The HUD boxes already solve this with rgba(0,0,0,.45) fills; popups never got the memo.",
+          "suggestion": "In the popup draw loop, before fillText: measure w = cx.measureText(p.txt).width and px(p.x - 2, p.y - 8, w + 4, 10, 'rgba(0,0,0,.55)'). One line, matches the existing HUD scrim pattern, fixes every zone/sky combination at once."
+        },
+        {
+          "area": "ui",
+          "severity": "med",
+          "issue": "#pauseChip (position:fixed; top:12px; right:16px) sits directly on top of the canvas run-timer box (drawn at W-62..W-6, y 6..20) at common window sizes — the mm:ss readout is permanently occluded during play.",
+          "suggestion": "Move the canvas timer box left so it clears the chip: change the fillRect/fillText x from W-62/W-56 to W-130/W-124, or set #pauseChip top:calc(40px + env(safe-area-inset-top)) so it hangs below the timer row. Pure coordinate change, no layout system needed."
+        },
+        {
+          "area": "a11y",
+          "severity": "med",
+          "issue": "No prefers-reduced-motion support, and two effects strobe at ~15Hz hard on/off: the boss i-frame flicker (frame % 4 < 2 skips the whole sprite, line 2096) and the rocket flame color swap (frame % 4 < 2, lines 2515/2518). 15Hz full-visibility toggling on a sprite-sized area is inside the photosensitive-risk band, and the mini-game uiShake judders the exact text you're trying to read under a countdown.",
+          "suggestion": "At boot: const RMOTION = matchMedia('(prefers-reduced-motion: reduce)').matches. When true, force uiShakeX/Y = 0 and skip shakeT camera offset. For everyone, replace the boss flicker with cx.globalAlpha = (b.hitT > 0 && frame % 20 < 10) ? 0.5 : 1 — same 'invulnerable' signal at a safe 3Hz with no full disappearance."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Checkpoints (checkpoints[] = [20,1930,3970,5750,7240], crossed at line 1394) produce no visual, no popup, and no sound — the single most important safety-net state change in the game is imperceptible in every modality. I died 3 times believing each death was a full restart.",
+          "suggestion": "On first crossing (inside the existing loop when checkpoint < c fires): addPop(p.x, p.y - 14, 'CHECKPOINT: SERIES ' + 'ABCDE'[checkpoints.indexOf(c)], '#7cffa5', 150); sCoin(); and draw a 2px-wide pole with a small green flag rect at each checkpoint x. All fillRect + existing helpers."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "M mute toggles silently and invisibly (line 396 flips the bool, nothing else) — no icon, no confirmation tone, no persistence. Deaf players can't confirm it, hearing players can't tell mute from broken audio. Also silent-by-omission in the SFX map (8 oscillator sounds, ~17 call sites): checkpoint crossing, pause/unpause, and death has no distinct jingle (reuses sHurt; sWin exists but no sLose).",
+          "suggestion": "In the M handler: if unmuting, beep(880,.06); always set a HUD flag. In drawHUD, while muted draw a 7px 'MUTED [M]' label under the timer with the standard scrim. Add sLose = () => [392,330,262].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle',.08), i*140)) called in died()."
+        },
+        {
+          "area": "a11y",
+          "severity": "low",
+          "issue": "Title footer text (#5d647a 'a dumb side project...' on the #33323f ground strip) measures 2.15:1 — fails even the 3:1 large-text minimum, at 6-8px. 'cosmetic. like most pivots.' has the same gray at 6px. These are jokes, but jokes people with 20/70 vision also deserve to read.",
+          "suggestion": "Change both fillStyle from '#5d647a' to '#8d99ae' (measures ~6:1 against that ground strip — same muted register, actually legible) and bump the 6px lines to 7px. Two string edits."
+        },
+        {
+          "area": "a11y",
+          "severity": "low",
+          "issue": "The canvas has no role, no aria-label, and the page has zero live regions — a screen reader user lands on a functionally empty document with no idea a game exists or what the keys are.",
+          "suggestion": "cv.setAttribute('role','img'); cv.setAttribute('aria-label','FOUNDER MODE: keyboard platformer. Arrows move, Space jumps, Escape pauses.'); plus one visually-hidden div with aria-live='polite' updated from update() on zone change, runway change, death, and win (throttle to one message per 2s of playMs)."
+        },
+        {
+          "area": "a11y",
+          "severity": "low",
+          "issue": "Focus is not managed when overlays open: after Escape, document.activeElement is BODY (verified in-session) and the death card leaves focus on BODY too, so keyboard users must Tab blind through the document to reach 'BACK TO WORK' or 'PIVOT (RETRY)'.",
+          "suggestion": "When showing #pauseMenu or the end card, call the primary button's .focus() (e.g. document.querySelector('#pauseMenu button').focus()); on close, cv.focus() after giving the canvas tabindex='-1'. Keeps the already-good button semantics one keystroke away."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "The rare canvas game where keyboard-only actually works and health isn't hue-coded — now put a scrim behind the popups, uncover the clock, and tell me when I hit a checkpoint."
+    },
+    {
+      "persona": "FOUNDER — actual seed-stage SF founder, the designated butt of the joke",
+      "played": true,
+      "first_impression": "Title screen got a real nose-exhale: \"a dumb side project. do not raise a round about it.\" Sixty seconds later I'd died twice in SOMA with $17K raised and a newspaper obituary saying retention was \"a Q3 priority\" — which is a sentence from my actual board deck. This wasn't written by someone laughing at founders from outside; it was written by someone who has stood in the standup.",
+      "confusions": [
+        "First death at ~20s in: something clipped me three times while I held right and jumped — the '-1 RUNWAY' popup was gone before I could read what got me, and I genuinely didn't know if it was the gremlins or some burn-rate clock.",
+        "After PIVOT (RETRY) my RAISED had dropped from $17K to $12K; the 'BRIDGE ROUND: -25%' popup that explains the haircut fires at respawn while you're already moving, so I spent the next life thinking the game ate my money.",
+        "The bottom-bar tip said 'grab a DECK, then X to pitch' before I had ever seen a DECK — I looked for one for the rest of the naive run and never found it.",
+        "Checkpoints are completely silent — I didn't know progress was being banked until I died and woke up mid-map, which on a first run reads as a bug, not a mercy."
+      ],
+      "delights": [
+        "The obituary front page is the best artifact in the game: 'CHURN FINALLY GETS HIM — retention was a Q3 priority', 'In lieu of flowers, please like and repost', and Chad Capital's 'I passed on them twice. Pattern recognition.'",
+        "The death math: RAISED × 0.5 DOWN ROUND (you died) = VALUATION. Being marked down for dying is the truest financial modeling I've seen this year.",
+        "Coffee chat: 'who's your first user?' → 'my mom. she churned.' I have said this exact sentence to an investor.",
+        "The mom round flavoring the obituary — 'The sole investor — the founder's mom — said: I'm still proud of you' — hit harder than I want to admit.",
+        "The loss share copy writes my actual LinkedIn post for me: 'It was a market timing issue.' Deadpan, first-person, ready to paste.",
+        "The accelerator interview is fifteen seconds for seven questions and the hidden meta is 'the short answer always wins' — that is not satire, that is documentation.",
+        "Win badge flair 'SELF-MADE (unfundable)' plus ringing the bell under the Golden Gate by mashing R until the rope means it."
+      ],
+      "findings": [
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "The OUT OF RUNWAY obituary — the single most shared moment in the game — appears in total silence. sHurt fires on the hit, then the front page slides in with no sting; wins get sWin but losses get nothing.",
+          "suggestion": "In showEndUI(false), play a 3-note descending market-close sting with the existing beep(): beep(392,.28,'sawtooth',.07); setTimeout(()=>beep(330,.28,'sawtooth',.07),260); setTimeout(()=>beep(262,.7,'sawtooth',.07,-60),520). Already mute-guarded via beep()."
+        },
+        {
+          "area": "sound",
+          "severity": "low",
+          "issue": "The mom round — the biggest emotional beat in the run — reuses the generic sPow power-up arpeggio. A phone call with no ring.",
+          "suggestion": "Before the popups in momRound(), synthesize a ring: beep(1318,.08,'triangle',.09); setTimeout(()=>beep(1046,.08,'triangle',.09),100); then repeat the pair at 450ms. The 72-frame hitstop beat gives it exactly enough silence to land in."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Crossing a checkpoint (the loop at 'for (const c of checkpoints)') gives zero feedback — no popup, no sound. I banked progress five times without knowing checkpoints existed until death teleported me forward.",
+          "suggestion": "Inside the existing 'checkpoint < c' guard (it already fires once per checkpoint), add addPop(c, GROUND_Y-60, 'TERM SHEET SIGNED (checkpoint)', '#7cffa5', 120) and beep(660,.09,'triangle',.06). One line each, stays in-universe, and quietly imports the missing term-sheet trope."
+        },
+        {
+          "area": "onboarding",
+          "severity": "med",
+          "issue": "The satire payload that earns the share (coffee chats, the obituary voice, the mom round) sits behind two-plus deaths of raw platforming: playing naively I died twice in SOMA in 70 seconds with $17K raised and never met an investor. A LinkedIn tourist bounces before the game gets funny.",
+          "suggestion": "First-death-only tip line under the obituary buttons, once per session (let firstDeathTip=true): 'tip: gremlins die when you land on them. tables give checks. standing still burns runway.' Same deadpan register, one div in showEndUI, zero difficulty change."
+        },
+        {
+          "area": "humor",
+          "severity": "med",
+          "issue": "The retry button literally says PIVOT (RETRY) but nothing pivots — the company is the same company every life. As the target demographic: the pivot is the most load-bearing trope in the deck and here it's only a label, which violates the game's own rule that satire lives in mechanics.",
+          "suggestion": "const PIVOTS=['a CRM for dogs','same product, but agentic','B2B now','we do defense now','it’s a protocol, actually']; advance an index on each checkpoint respawn and draw 'THE COMPANY: '+PIVOTS[i] under the zone banner, and pipe the string into the obituary company line. Draw-only strings, no new mechanics."
+        },
+        {
+          "area": "game-feel",
+          "severity": "low",
+          "issue": "THE PLATFORM (PRE-SEED) died to blind mashing: 4 HP in ~3.5 seconds of chain-stomps while I traded hits, so I beat a boss whose gimmick I never saw. The pre-seed round should not close that fast for anyone.",
+          "suggestion": "Give the boss a short post-stomp invulnerability window (~30 frames, mirroring the existing p.pogo disarm pattern) so each hit requires a fresh approach. Single constant next to the boss code, with the physics-contract CHANGELOG note the levers rule requires."
+        },
+        {
+          "area": "a11y",
+          "severity": "low",
+          "issue": "Screen shake (shakeT) and the mini-game uiShakeX/Y judder have no reduced-motion path — the whole dialogue box vibrates as the clock runs out, which some players physically cannot read.",
+          "suggestion": "const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches; at boot, and zero the shake offsets where they're applied in draw (they're already documented as draw-only, so this touches no sim state)."
+        },
+        {
+          "area": "ui",
+          "severity": "low",
+          "issue": "At 960x540 the win screen's YOUR NAME leaderboard input sits half below the fold; the overlay is overflow-y:auto but macOS hides scrollbars until you scroll, so short-viewport winners may never find the board entry.",
+          "suggestion": "In showEndUI, when window.innerHeight < 620 render the name/leaderboard row above the button row instead of after it — it's template-string DOM, a conditional reorder of two blocks."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "FOUNDER MODE is the first game to price my death correctly — ×0.5, down round — and it wrote my LinkedIn post about it before I could."
+    },
+    {
+      "persona": "GAME-DESIGNER — professional game UX designer judging difficulty curve, teach-by-level-design, feedback loops, juice, and the death→retry loop",
+      "played": true,
+      "first_impression": "Title screen is textbook: one goal line ('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell'), controls on screen, pickers labeled with their keys — I knew the verb set before I pressed anything. First seconds continue the lesson: a 6-second controls strip, coins staged over the first platforms as breadcrumbs, and a mood ticker that reacts to my play. Then I fell in a pit around x~600 and got teleported back to the literal first pixel of the game, and did that eleven more times.",
+      "confusions": [
+        "Do checkpoints exist? Nothing in the world marks them, nothing announces crossing one, and every pit in SOMA threw me back to x=20 — I genuinely could not tell whether the game was saving progress until I read the code (checkpoints=[20,1930,3970,5750,7240], drawn nowhere, zero SFX/popup on crossing at line 1394).",
+        "The controls strip says 'grab a DECK, then X to pitch' in the first 6 seconds, but I never saw anything called a DECK in my first 80 seconds of play — I was given a verb I couldn't use and no way to know when it would become relevant.",
+        "At boss 1, sideways contact killed me in three touches and felt identical to bumping a churn gremlin — same tiny sHurt blip, same 2-frame nudge. Nothing differentiated 'you are in a boss fight and body contact is the threat' from ordinary traffic."
+      ],
+      "delights": [
+        "The death newspaper (HYPERGROWTH DAILY) is the best fail state I've reviewed this year: cause-specific headline ('CHURN FINALLY GETS HIM'), your sprite as the obituary photo, valuation math with a 'x 0.5 DOWN ROUND (you died)' line, and PIVOT (RETRY) as the biggest button. Losing produces an artifact.",
+        "The adaptive pogo tip ('TIP: PRESS JUMP AGAIN TO STOMP', fires once, only when the game detects an unarmed bounce) is exactly how invisible-rule teaching should work.",
+        "Boss telegraphing is clean: zone banner ('PRE-SEED ROUND: THE PLATFORM'), a quip bubble, sBoss sting, and HP as four red pips over the sprite — no HUD bar needed at this scale.",
+        "The mood ticker (heads down building → IT'S SO OVER → WE'RE SO BACK) is feedback-as-copywriting; it made a hit feel narrated, not just subtracted.",
+        "The mom-round beat uses hitstopT=72 — a real 1.2s held breath. Someone on this codebase understands dramatic hitstop; they just only used it once."
+      ],
+      "findings": [
+        {
+          "area": "game-feel",
+          "severity": "high",
+          "issue": "Zone 1 punishment loop breaks the Mario 1-1 contract: pits appear by x~600 but the only checkpoint is x=20, and a pit costs a heart AND a full teleport to start. My naive 80s pass (hold right, jump) fell into the same early pit ~12 times, died 4 times, and never passed x=814 of a 9200px world — the next checkpoint is 1930. First-session players will churn here, which is ironic.",
+          "suggestion": "Two one-line-ish changes: (1) add a mid-SOMA entry to the checkpoints array (~x=1000); (2) make pit falls before the second checkpoint respawn you ~150px before the pit (p.x = Math.max(checkpoint, pitLeftEdge-150)) instead of the zone start, keeping the heart cost. No new mechanics, pure levers."
+        },
+        {
+          "area": "ux",
+          "severity": "high",
+          "issue": "Checkpoints are completely invisible: never drawn in the world, no popup, no SFX when crossed (line 1394 silently bumps a variable). The player cannot price risk ('is it safe to try this jump?') and never gets the Mario-flag relief beat — the single cheapest reward moment in platformer design is missing.",
+          "suggestion": "At each checkpoints[] x, draw a 12x24 fillRect flagpole/standing-desk marker; on first crossing fire addPop(p.x, p.y-14, 'CHECKPOINT: BRIDGE SECURED', '#7cffa5') plus beep(660,.1,'triangle',.07) then beep(880,.15,'triangle',.07). ~10 lines, zero assets."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Juice inversion on bosses: damaging a boss (the biggest player-initiated moment in the game) has NO hitstop and NO screenshake — just 12 particles and a popup (line 1605) — while getting hurt gets hitstopT=3/shakeT=2. Landing a boss hit feels lighter than being clipped by a fodder enemy.",
+          "suggestion": "In the boss-damage branch (line 1605) add hitstopT=8; shakeT=4; and on b.hp<=0 add hitstopT=20. hitstop already freezes sim-not-draw so it respects ruling 2.2 (control stays with the player)."
+        },
+        {
+          "area": "game-feel",
+          "severity": "med",
+          "issue": "Hurt feedback is below perceptual threshold: hitstopT=3 (50ms) plus shakeT=2 of a fixed ±2px horizontal-only translate (line 2613) — 33ms of shake at 2x upscale reads as nothing. I sampled both vars one input-cycle after confirmed contact and they were already 0 every time.",
+          "suggestion": "Make shake decay-based and 2-axis: set shakeT=6 on hurt, and in draw use cx.translate(((frame%2)?1:-1)*shakeT, (frame%3-1)*Math.ceil(shakeT/3)) so amplitude falls off. Keep it draw-only; sim untouched. Bump hurt hitstopT from 3 to 6."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "Death is sonically identical to a normal hit — hearts 3→0 and the newspaper slam both play only sHurt (lines 1195/1341). The engine has 8 named sounds (jump/coin/stomp/hurt/pow/boss/win + bell) but the run-ending moment, the biggest emotional beat, has no dedicated cue; the gorgeous newspaper drops in silence.",
+          "suggestion": "Add sDead = () => { [330,262,196].forEach((f,i)=>setTimeout(()=>beep(f,.28,'sawtooth',.08,-40),i*160)); setTimeout(()=>beep(55,.4,'triangle',.12),520); } and call it in showEndUI(false). Pure WebAudio, matches the existing sWin arpeggio style."
+        },
+        {
+          "area": "sound",
+          "severity": "low",
+          "issue": "Landing from any jump is silent and dustless — the jump arc has a rising sJump on takeoff but zero closure on touchdown, so traversal (90% of playtime) feels half-finished. Checkpoint crossing and BRIDGE ROUND respawn are also silent.",
+          "suggestion": "On the onGround false→true transition with p.vy>3 before zeroing: beep(110,.05,'triangle',.035) plus 3 gray parts at the feet via addParts(p.x+5,p.y+14,'#8d99ae',3). One conditional in the collision resolve."
+        },
+        {
+          "area": "onboarding",
+          "severity": "low",
+          "issue": "The 6-second controls strip teaches 'grab a DECK, then X to pitch' before a DECK is ever visible — an unactionable instruction in the teaching window, spending scarce onboarding attention on a mid-game verb.",
+          "suggestion": "Split the strip: first 6s show only '←→ move · SPACE jump · stomp enemies'; then re-show a one-time strip 'you got a DECK — press X to pitch' the first frame player.deckT > 0. The re-show pattern already exists for the pogo tip."
+        },
+        {
+          "area": "game-feel",
+          "severity": "low",
+          "issue": "Coin pickup fires sCoin but spawns zero particles (lines 980, 1759) — collection lacks the sparkle that makes coin trails self-reinforcing bait in Mario-likes.",
+          "suggestion": "Add addParts(c.x+3, c.y+3, '#ffd94a', 4) beside each sCoin() coin-grab site; the particle system already exists and caps itself."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "The fail state is a masterclass and the teaching is Nintendo-literate, but invisible checkpoints plus a back-to-x=0 pit loop means the funnel churns exactly where the joke says it will — move one checkpoint and add 60ms of hitstop and this ships."
+    },
+    {
+      "persona": "NEWCOMER-INTL — engineer, moved to SF from abroad 3 months ago, judging whether the satire reads without a decade of Valley context",
+      "played": true,
+      "first_impression": "The title screen told me everything in three lines: move, jump, stomp churn, dodge VCs, ring the IPO bell — I pressed one button and I was playing, no signup, no tutorial wall. RAISED and RUNWAY clicked in five seconds because the HUD literally is money and hearts, and even three months in, runway is the first word SF teaches you. Then a churn gremlin killed me twice before my first coffee chat, which, honestly, is also very SF.",
+      "confusions": [
+        "The vibe chip under the zone name ('WE'RE SO BACK' / 'IT'S SO OVER') — for my whole first run I thought it was daily market conditions, not MY run's mood. Only the death card's 'VIBES DELISTED' retroactively explained it.",
+        "'[P] STANFURD DROPOUT ×10' — I read STANFURD as a typo for a full minute. I did not know the Cal/Berkeley rivalry spelling, and it ships on the badge and newspaper, where a typo makes the whole game look sloppy to outsiders.",
+        "'409A VALUATION: vibes' sign in THE CLOUD — I have never heard '409A' in 3 months here. The 'vibes' punchline lands, but I could not tell what was being satirized (it's a tax valuation, I learned afterwards, from the source code).",
+        "What ×10 pedigree actually DOES was a mystery until the end card showed the math — the title picker just says '×10' with no hint it multiplies your final score.",
+        "Two different coffees: a ☕ powerup exists AND coffee-chat tables exist. For a moment I stood at the table expecting a speed buff.",
+        "My very first Space press on the title did nothing (state stayed 0) — a quick tap can fall between sim frames; a second, longer press worked. Same held-key pattern on 'press C — coffee chat': my first taps whiffed."
+      ],
+      "delights": [
+        "The end-card math is the best onboarding device in the game: 'RAISED $10K × 0.5 DOWN ROUND (you died) × 10 PEDIGREE: STANFURD DROPOUT = VALUATION $50K'. It TEACHES the satire — where you dropped out of is worth 20x what you built. I understood SF better from this one screen than from three months of standups.",
+        "The HYPERGROWTH DAILY obituary: 'CHURN FINALLY GETS HIM', 'retention was a Q3 priority', and the pull-quote 'it was a market timing issue' — you, on LinkedIn. Legible to anyone on Earth with a LinkedIn feed.",
+        "Bosses are the funding ladder — PRE-SEED: THE PLATFORM, SEED: CHAD CAPITAL, SERIES A: SYNERGY.AI. Progression IS the fundraising process; zero context needed.",
+        "The coffee-chat mini-game explains itself completely: 'question 1 of 3 — press ← or → to answer', and then 'freezing is also an answer.' Perfect deadpan, perfect UX.",
+        "Real dev-tool billboards (VERCEL 'up before you finish the sen—', WARP 'finishes your bash for you', BROWSER USE) — I use these tools at work; they made the fake city feel like my actual commute.",
+        "Signs self-gloss the geography for immigrants like me: 'SAND HILL ROAD — pitch or perish' and 'CEREBRAL VALLEY — 11 founders/house, 1 GPU' taught me two neighborhoods I only half-knew.",
+        "'INTERN FAIR — equity: no · exposure: yes' — needs zero SF context, funny in any country."
+      ],
+      "findings": [
+        {
+          "area": "share",
+          "severity": "med",
+          "issue": "STANFURD reads as a typo to anyone without Cal-rivalry context, and it appears on the two most-shared surfaces (badge + newspaper masthead line 'PEDIGREE: STANFURD DROPOUT ×10'). A misspelled 'Stanford' makes the game look unpolished exactly where new people meet it.",
+          "suggestion": "One-word gloss where it's picked: in drawTitle's chipDefs render the pedigree chip as '[P] STANFURD (sic) DROPOUT ×10', or draw a 6px footnote under the chip row next to the existing 'cosmetic. like most pivots.' line: cx.fillText('*stanfurd is not a typo. ask berkeley.', 224, 246). Keeps the joke, signals intent."
+        },
+        {
+          "area": "sound",
+          "severity": "med",
+          "issue": "Final death (OUT OF RUNWAY, hearts<=0 at line 1200) plays only sHurt — the identical sawtooth as any ordinary hit. The run's most dramatic beat, the one that leads to the shareable obituary, has no distinct audio identity.",
+          "suggestion": "Add a 4-note descending sting next to the other SFX consts: const sDead = () => { [392,311,262,196].forEach((f,i)=>setTimeout(()=>beep(f,.26,'triangle',.09,-15),i*130)); }; and in die(), when hearts<=0 and momRound() fails, call sDead() before state = ST.DEAD."
+        },
+        {
+          "area": "onboarding",
+          "severity": "med",
+          "issue": "The mood chip ('WE'RE SO BACK'/'IT'S SO OVER'/'heads down building') under the zone name is unlabeled — a newcomer cannot tell if it is the daily market, the zone, or their own run. I misread it as market conditions for an entire run.",
+          "suggestion": "Prefix the chip text with 'VIBES: ' at its draw site (it already fits the canon vocabulary — the loss card says 'VIBES DELISTED'). One cx.fillText string change, and the death card line suddenly pays off a stat you watched all game."
+        },
+        {
+          "area": "share",
+          "severity": "med",
+          "issue": "'T2D3' badge flair is deep SaaS-growth jargon (triple-triple-double-double-double). It ships on the badge with zero gloss; even SF engineers under 2 years tenure won't parse it, and abroad it reads as a typo or a model number.",
+          "suggestion": "In badgeFlairs() change the push to a self-glossing form: f.push('T2D3 (sub-3:00 exit)') — keeps the flex for insiders, tells outsiders why they earned it."
+        },
+        {
+          "area": "sound",
+          "severity": "low",
+          "issue": "Coffee-chat and accelerator-interview answers are silent — interview right/wrong is a visual flash only (interview.flash at line 873, no beep call), and chat reaction quips have no tick. In a dialogue mini-game, audio confirmation is most of the game feel.",
+          "suggestion": "At the interview flash assignment add beep(good?988:196,.07,good?'square':'sawtooth',.06); and the same pair in chatUpdate where the reaction line is set. Two lines, uses the existing beep()."
+        },
+        {
+          "area": "ux",
+          "severity": "low",
+          "issue": "'409A VALUATION: vibes' and 'WARNING: VC AHEAD — know your CAC' are the only signs whose jargon gets no in-world gloss; newcomers skim past the two jokes instead of laughing (every other sign self-explains, e.g. 'pitch or perish').",
+          "suggestion": "Add a third line to the 409A sign in the signs array: {x:7940,l:['409A VALUATION:','vibes','(the IRS disagrees)']} — the deadpan survives and outsiders learn it's a tax thing. CAC could become 'know your CAC (cost per victim)'."
+        },
+        {
+          "area": "ui",
+          "severity": "low",
+          "issue": "World-text collisions: in THE CLOUD my 'MEETING CANCELED! +$10K' and '-1 RUNWAY' popups stacked directly over the '99.99% uptime*' sign making all three unreadable, and the arena label 'PRE-SEED ROUND: THE PLATFORM' rendered across the NOZOMIO billboard tagline (see newcomer-intl-synergy-boss.png from pass 2 / the-cloud.png).",
+          "suggestion": "Give addPop text the same treatment the control-hint bar already uses: measure with cx.measureText and fillRect an rgba(0,0,0,.55) backdrop behind each popup line before the text, so overlaps degrade to readable instead of soup."
+        },
+        {
+          "area": "game-feel",
+          "severity": "low",
+          "issue": "No ambient audio at all between SFX — the whole game is silence punctuated by beeps (8 oscillator SFX, zero loop). For a Mario-style game this reads as 'unfinished' to a first-time player, and mute (M) already exists as an opt-out.",
+          "suggestion": "A 2-bar chiptune bassline using the existing beep(): in update() when state===ST.PLAY, gate on the sim clock — if (frame % 32 === 0) beep([110,110,146.83,98][ (frame/32) % 4 ], .18, 'triangle', .02); — sim-clocked (no wall time), ~3 lines, honors muted for free."
+        }
+      ],
+      "would_share": true,
+      "one_liner": "I learned more SF vocabulary from this game's death screen than from three months of standups — the satire explains itself, except the two words it assumes you were born knowing."
+    }
+  ],
+  "plan": {
+    "consensus_themes": [
+      {
+        "theme": "Death/obituary has no audio identity",
+        "personas_count": 9,
+        "summary": "STAFF-ENG, VC-ASSOCIATE, NONTECH-MARKETER, GENZ-MOBILE, A11Y-DESIGNER, HN-GRAYBEARD, FOUNDER, NEWCOMER-INTL, GAME-DESIGNER all independently flagged that OUT OF RUNWAY plays only the generic sHurt beep (lines 1195/1341) and the obituary — the game's best, most-shared screen — slides in silent, while wins get sWin. Near-unanimous, cheap, and directly serves the share loop."
+      },
+      {
+        "theme": "Checkpoints are invisible and silent",
+        "personas_count": 6,
+        "summary": "NONTECH-MARKETER, RETRO-GAMER, A11Y-DESIGNER, HN-GRAYBEARD, FOUNDER, GAME-DESIGNER all discovered checkpoints only by dying (line 1394 silently bumps a variable; nothing is ever drawn at checkpoints[] positions). Players can't price risk, respawns read as bugs, and the BRIDGE ROUND -25% haircut lands before anyone knows banking exists (RETRO and FOUNDER both misread the haircut popup)."
+      },
+      {
+        "theme": "No music — dead air between beeps",
+        "personas_count": 6,
+        "summary": "STAFF-ENG, NONTECH-MARKETER, RETRO-GAMER, GENZ-MOBILE, HN-GRAYBEARD, NEWCOMER-INTL: the entire soundscape is 8 one-shot oscillator SFX. Casuals read silence as a broken tab; it kills shared clips. Everyone who proposed a fix proposed the same one: a tiny in-code WebAudio step-sequencer loop, no asset files."
+      },
+      {
+        "theme": "Early-SOMA churn loop: first pit resets to x=20",
+        "personas_count": 6,
+        "summary": "NONTECH-MARKETER (4 deaths, zero net progress in 90s), GAME-DESIGNER (12 falls, never passed x=814), GENZ-MOBILE (dead at x=333 in 12.4s), HN-GRAYBEARD, FOUNDER: the only SOMA checkpoint is x=20, so pit deaths at x~600-780 teleport new players to the literal start plus a heart loss. RETRO adds the sibling problem: boss 1 respawn is 1600px back vs ~700px for bosses 2-3. This is the funnel's churn point."
+      },
+      {
+        "theme": "Mute is a boolean nobody can see (and touch players can't reach)",
+        "personas_count": 5,
+        "summary": "STAFF-ENG, VC-ASSOCIATE, NONTECH-MARKETER, GENZ-MOBILE, A11Y-DESIGNER: M flips `muted` (line 396) with zero visual/audio confirmation in any modality, and mobile has no mute at all — no pause-menu row, no touch affordance."
+      },
+      {
+        "theme": "DECK verb taught before it exists; boss 1 contradicts the taught verb set",
+        "personas_count": 4,
+        "summary": "NONTECH-MARKETER, HN-GRAYBEARD, FOUNDER, GAME-DESIGNER: the 6-second strip says 'grab a DECK, then X to pitch' ~3,500px before the first deck; HN burned 3 hearts stomping a boss that silently takes 0 stomp damage. The game's own adaptive pogo-tip pattern is the proven fix, unused here."
+      },
+      {
+        "theme": "End-card fold and occlusion problems",
+        "personas_count": 4,
+        "summary": "VC-ASSOCIATE (leaderboard name field cut off at 960x540), FOUNDER (win-screen name input half below fold, hidden scrollbars), HN-GRAYBEARD ('press R' below fold), GENZ-MOBILE (rotate banner sits on top of the name-input row). The score-posting and retry affordances — the retention loop — are exactly what gets clipped."
+      },
+      {
+        "theme": "SHARE button can fail with zero feedback",
+        "personas_count": 2,
+        "summary": "VC-ASSOCIATE and GENZ-MOBILE both hit it and it's code-verified: line 3990's clipboard rejection handler is an empty function, so when navigator.share is absent and writeText rejects (LinkedIn/Instagram in-app webviews — the exact viral surface), the tap does visibly nothing. bDl already has a manual-textarea fallback pattern to reuse."
+      },
+      {
+        "theme": "Death screen is a keyboard dead-end",
+        "personas_count": 2,
+        "summary": "STAFF-ENG (40-second stall mashing Space) and HN-GRAYBEARD (found R only by reading source): the game teaches exactly one key, Space, and it does nothing on the death screen; no on-screen text names R."
+      },
+      {
+        "theme": "Popup text is unreadable over busy zones and overlaps itself",
+        "personas_count": 2,
+        "summary": "A11Y-DESIGNER (red -1 RUNWAY invisible over the Cerebral Valley sunset, worse for protanopia) and NEWCOMER-INTL (popups stacking over signs into soup): popups are bare colored text with no backing scrim, while the HUD already uses rgba(0,0,0,.45) fills."
+      },
+      {
+        "theme": "Missing coyote time (the other half of the input-forgiveness pair)",
+        "personas_count": 2,
+        "summary": "STAFF-ENG and RETRO-GAMER, the two most physics-literate personas, both measured it: a real 6-frame jump buffer ships, but a jump pressed 1-2 frames after leaving a ledge is silently eaten — a pit death that feels like a dropped input, in a pit-heavy level."
+      },
+      {
+        "theme": "Boss hits feel lighter than fodder bumps",
+        "personas_count": 2,
+        "summary": "GAME-DESIGNER (damaging a boss gets no hitstop/shake while getting hurt does) and RETRO-GAMER (damaging stomp and harmless bounce play the identical sStomp): the game's biggest player-initiated moment has inverted juice and no audio hit-confirm."
+      },
+      {
+        "theme": "Flicker and shake with no reduced-motion path",
+        "personas_count": 2,
+        "summary": "A11Y-DESIGNER (boss i-frame and rocket flame strobe at ~15Hz hard on/off — inside the photosensitive band) and FOUNDER (mini-game uiShake makes timed dialogue unreadable). This one doubles as an owner-preference item: 'steady visuals, no flicker' is already recorded policy."
+      },
+      {
+        "theme": "Pedigree multiplier undermines the 'cosmetic' label and the leaderboard",
+        "personas_count": 2,
+        "summary": "VC-ASSOCIATE (x100 pedigree runs indistinguishable on the board; 'cosmetic. like most pivots.' sits next to the biggest score lever in the game) and NEWCOMER-INTL (what x10 does was a mystery until the end card). Exposing it is both the fix and the joke."
+      },
+      {
+        "theme": "Symmetric gravity reads floaty to platformer hands",
+        "personas_count": 2,
+        "summary": "STAFF-ENG and RETRO-GAMER both frame-measured the mirror-image arc (18 rise / 18 fall, GRAV 0.35 both ways). Real finding — but the fix changes movement numbers on a level whose pits are tuned near max jump distance, so it lands in do_not_do as a trap, not the backlog."
+      }
+    ],
+    "backlog": [
+      {
+        "rank": 1,
+        "title": "Death sting: give OUT OF RUNWAY a dedicated audio identity",
+        "area": "sound",
+        "effort": "S",
+        "canon_risk": "Timer rule (playMs, never wall clock) — don't build the sting from setTimeout chains; give beep() an optional start-offset param that passes AC.currentTime+t to osc.start(), so the notes are scheduled on the audio clock, not JS timers. beep() already honors `muted`.",
+        "implementation_sketch": "Next to sWin at ~line 395 add `const sDead = () => [392,311,262,196].forEach((f,i)=>beep(f,.24,'triangle',.09,-20, i*0.14));` where the new 6th param is a start offset applied as osc.start(AC.currentTime+at). Call it at both `state = ST.DEAD` sites (lines 1204 and 1344, after the momRound() check fails) so the sting rides into showEndUI(false). Reverse-arpeggio of the existing sWin vocabulary — a market-close bell going down.",
+        "personas": [
+          "STAFF-ENG",
+          "VC-ASSOCIATE",
+          "NONTECH-MARKETER",
+          "GENZ-MOBILE",
+          "A11Y-DESIGNER",
+          "HN-GRAYBEARD",
+          "FOUNDER",
+          "NEWCOMER-INTL",
+          "GAME-DESIGNER"
+        ]
+      },
+      {
+        "rank": 2,
+        "title": "Make checkpoints visible in-world and announced on crossing",
+        "area": "game-feel",
+        "effort": "S",
+        "canon_risk": "Rule 2 (everything named in-universe): call it 'TERM SHEET SIGNED' or 'BRIDGE TERMS LOCKED', never 'checkpoint saved'. Draw-only marker + popup + beep is pure feedback, not a mechanic — levers rule untouched.",
+        "implementation_sketch": "In the sign/decor draw pass, for each x in checkpoints[] (line 596) draw a 5-fillRect flagpole+pennant (pole 2x24, pennant 8x5, base 10x3). In the crossing loop at line 1394, inside the existing `checkpoint < c` guard (already fires once per checkpoint), add `addPop(c, GROUND_Y-56, 'TERM SHEET SIGNED', '#7cffa5', 120)` plus a two-note rising beep (660 then 880, AC-offset like the death sting). Also lengthen the BRIDGE ROUND -25% popup at respawn to ~150 frames so the haircut is legible (RETRO and FOUNDER both misread it).",
+        "personas": [
+          "NONTECH-MARKETER",
+          "RETRO-GAMER",
+          "A11Y-DESIGNER",
+          "HN-GRAYBEARD",
+          "FOUNDER",
+          "GAME-DESIGNER"
+        ]
+      },
+      {
+        "rank": 3,
+        "title": "Fix the early-SOMA churn loop with checkpoint-array and spawn-position levers only",
+        "area": "onboarding",
+        "effort": "S",
+        "canon_risk": "Levers rule (difficulty via existing levers, never new mechanics): the checkpoints[] array and enemy spawn x-coordinates ARE the levers. Needs a CHANGELOG note, and per CLAUDE.md run fullrun bots against a same-day pre-change worktree before blaming/crediting the diff.",
+        "implementation_sketch": "Two array edits: add ~950 to checkpoints[] at line 596 so the first pit (x~600-780) no longer resets new players to x=20, and add 5250 (boss-1 arena entrance) so boss-1 retries stop costing a 1600px re-walk (parity with bosses 2-3 at ~700px). Shift the first churn-gremlin spawn ~120px right so the opening beat is one telegraphed enemy with jump room. Do NOT add spawn i-frames or a lastSafeX system (see do_not_do).",
+        "personas": [
+          "NONTECH-MARKETER",
+          "GAME-DESIGNER",
+          "GENZ-MOBILE",
+          "HN-GRAYBEARD",
+          "FOUNDER",
+          "RETRO-GAMER"
+        ]
+      },
+      {
+        "rank": 4,
+        "title": "SHARE button: feedback on every tap, never a silent failure",
+        "area": "share",
+        "effort": "S",
+        "canon_risk": "none",
+        "implementation_sketch": "In the bSh handler (line 3983): set cpMsg.textContent synchronously on every click ('opening share sheet…' when navigator.share exists, else 'copying…'), and replace the empty rejection handler at line 3990 `() => {}` with a call to the manual() readonly-textarea fallback that ALREADY exists in the bDl handler at line 4012 — hoist manual() so both buttons share it. Covers the LinkedIn/Instagram in-app webview case (no share sheet + clipboard rejects) that is exactly this game's viral surface. ~8 lines, zero new APIs.",
+        "personas": [
+          "VC-ASSOCIATE",
+          "GENZ-MOBILE"
+        ]
+      },
+      {
+        "rank": 5,
+        "title": "Mute visibility + a touch-reachable sound toggle",
+        "area": "ui",
+        "effort": "S",
+        "canon_risk": "Owner pref: steady visuals — the MUTED label must be a constant-alpha HUD tag, never blinking. State rule: draw code may READ `muted`, just never write it; the toggle stays in the keydown handler and the pause-menu button handler.",
+        "implementation_sketch": "In the HUD draw pass, while muted draw '[M] MUTED' at 7px over the standard rgba(0,0,0,.45) scrim, positioned under the timer row. In the line-396 M handler, on the unmute edge play beep(880,.06) as confirmation (mute edge stays silent by definition — the label carries it). Add a 'SOUND: ON/OFF' <button> row to #pauseMenu that flips the same flag, and persist to localStorage('fm_muted') read at boot so mobile players keep their choice.",
+        "personas": [
+          "STAFF-ENG",
+          "VC-ASSOCIATE",
+          "NONTECH-MARKETER",
+          "GENZ-MOBILE",
+          "A11Y-DESIGNER"
+        ]
+      },
+      {
+        "rank": 6,
+        "title": "Teach DECK when it exists; make the failed boss stomp teach the pitch verb",
+        "area": "onboarding",
+        "effort": "S",
+        "canon_risk": "Rule 5 (deadpan register): hint copy stays corporate-absurd — 'PITCH IT, DON'T STOMP IT'.",
+        "implementation_sketch": "Split the 6s controls strip: drop the deck clause (first strip = move/jump/stomp only), then reuse the adaptive pogo-tip pattern twice. (a) One-time re-show of the bottom strip for ~5s when a deck item first enters camera range (item.x within cam..cam+W): 'that briefcase = your PITCH DECK — grab it, then X'. (b) In the boss bounce branch (~line 1601), when the player bounces unarmed, addPop(b.x, b.y-40, 'PITCH IT, DON’T STOMP IT — GRAB THE DECK', '#ffd94a') plus a dull beep(140,.08,'triangle',.06) so zero-damage stomps audibly whiff. One-shot flags for both, same as the pogo tip.",
+        "personas": [
+          "NONTECH-MARKETER",
+          "HN-GRAYBEARD",
+          "FOUNDER",
+          "GAME-DESIGNER"
+        ]
+      },
+      {
+        "rank": 7,
+        "title": "Per-zone chiptune loop (in-code WebAudio sequencer)",
+        "area": "sound",
+        "effort": "M",
+        "canon_risk": "Two rules to thread: (1) no asset FILES — pure oscillator synthesis is fine; (2) timers read playMs — the sequencer's step index must derive from playMs, and notes must be scheduled on AC.currentTime with a small lookahead, never setInterval/setTimeout. Also honor `muted` and silence during chat/interview/room minigames.",
+        "implementation_sketch": "~30 lines: per-zone 16-step pattern arrays (note numbers, freq = 440*2^(n/12)), triangle bass + optional square lead at gain ~0.03 so SFX cut through. In update(), when state===ST.PLAY && !muted && AC: compute step = Math.floor(playMs/125)%16; when step advances past lastStep, create osc+gain, osc.start(AC.currentTime+0.02), osc.stop(+0.14). Zone transposition keyed off the existing zone index. Because it's driven from update() on playMs, pause/hitstop/blur silence it for free.",
+        "personas": [
+          "STAFF-ENG",
+          "NONTECH-MARKETER",
+          "RETRO-GAMER",
+          "GENZ-MOBILE",
+          "HN-GRAYBEARD",
+          "NEWCOMER-INTL"
+        ]
+      },
+      {
+        "rank": 8,
+        "title": "Space retries on the death screen + on-screen key caption",
+        "area": "ux",
+        "effort": "S",
+        "canon_risk": "none — keep endGraceT so nobody skips the obituary mid-mash.",
+        "implementation_sketch": "At line 301 extend the retry condition to `(nk==='r'||nk==='space') && endGraceT<=0`. In showEndUI(), append a 1-line caption under the button row in the existing muted style: 'R / SPACE to pivot'. Fixes the one taught key doing nothing at the moment of highest retry intent (STAFF-ENG stalled 40s; HN found R by reading source).",
+        "personas": [
+          "STAFF-ENG",
+          "HN-GRAYBEARD"
+        ]
+      },
+      {
+        "rank": 9,
+        "title": "Scrim backdrops behind world popups",
+        "area": "a11y",
+        "effort": "S",
+        "canon_risk": "Owner pref: readable text — this IS the pref. Draw-only change, no sim state.",
+        "implementation_sketch": "In the popup draw loop, before each fillText: `const w = cx.measureText(p.txt).width; ` then fillRect(p.x-2, p.y-8, w+4, 10) in rgba(0,0,0,.55) — the exact scrim pattern the HUD boxes already use. Fixes red '-1 RUNWAY' over the Cerebral Valley sunset (protanopia case), popup-on-popup boss overlaps, and popup-on-sign soup in THE CLOUD, for every zone/sky combination at once.",
+        "personas": [
+          "A11Y-DESIGNER",
+          "NEWCOMER-INTL"
+        ]
+      },
+      {
+        "rank": 10,
+        "title": "5 frames of coyote time",
+        "area": "game-feel",
+        "effort": "S",
+        "canon_risk": "Physics/speedrun contract — this is the sanctioned kind of touch: purely additive input forgiveness, zero existing movement constants changed (GRAV, JUMPV, speeds untouched). Still contract-adjacent, so it gets a CHANGELOG version note and a fullrun-bot pass, per the same rule that covered the existing 6-frame jump buffer.",
+        "implementation_sketch": "In the physics block ~line 1288: `p.coyote = p.onGround ? 5 : Math.max(0, p.coyote-1);` and widen the jump gate at ~1293 to `(p.jbuf>0 && (p.onGround || p.coyote>0))`, zeroing p.coyote on jump so it can't double-fire. Completes the forgiveness pair the game half-shipped (buffer without coyote), verified eaten-input pit deaths by both physics-literate personas.",
+        "personas": [
+          "STAFF-ENG",
+          "RETRO-GAMER"
+        ]
+      },
+      {
+        "rank": 11,
+        "title": "Juice + motion-comfort pass: boss-hit weight, audible damage confirm, reduced-motion gate, kill the 15Hz flicker",
+        "area": "game-feel",
+        "effort": "M",
+        "canon_risk": "Three rules: (1) hitstopT/shakeT are set in update() only — line 4053's own comment enforces it ('sim owns all state'); (2) ruling 2.2 already blesses hitstop-as-juice; (3) owner steady-visuals pref makes replacing the frame%4 hard strobe a directive, not a nice-to-have.",
+        "implementation_sketch": "(a) In the boss-damage branch (~1605): hitstopT=8; shakeT=4; and hitstopT=20 on b.hp<=0 — the pattern already exists at line 1198. (b) Layer beep(110,.2,'square',.13,-70) on damaging stomps only, so armed hits and harmless bounces are audibly different. (c) At boot: `const RMOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;` and when true skip the draw-only translate at 2613 and zero uiShakeX/Y at their draw sites (documented draw-only, so no sim impact). (d) For everyone, replace the boss i-frame frame%4<2 sprite-skip (line 2096) and rocket-flame strobe with steady cx.globalAlpha=0.5 while hitT>0 — same signal, no photosensitive-band strobe, no flicker.",
+        "personas": [
+          "GAME-DESIGNER",
+          "RETRO-GAMER",
+          "A11Y-DESIGNER",
+          "FOUNDER"
+        ]
+      },
+      {
+        "rank": 12,
+        "title": "End-card fold and occlusion pass (name field, rotate banner, timer vs pause chip)",
+        "area": "ui",
+        "effort": "M",
+        "canon_risk": "none — all DOM/coordinate work outside the sim.",
+        "implementation_sketch": "Four small fixes in one pass: (1) in showEndUI() hide #rot (GENZ verified it covers the leaderboard name-input row in portrait) and let the existing fit() restore it on resume; (2) when innerHeight<620, reorder the template-string DOM so the name/POST VALUATION row renders above the button rows (FOUNDER's macOS hidden-scrollbar case); (3) append '· or press R' to the '= VALUATION' line so the keyboard affordance sits above the fold (HN); (4) move the canvas timer box from W-62 to ~W-130 so the fixed #pauseChip stops occluding the mm:ss readout (A11Y, screenshot-verified).",
+        "personas": [
+          "VC-ASSOCIATE",
+          "FOUNDER",
+          "HN-GRAYBEARD",
+          "GENZ-MOBILE",
+          "A11Y-DESIGNER"
+        ]
+      },
+      {
+        "rank": 13,
+        "title": "PostHog privacy gate (or first-party counter) before the HN share",
+        "area": "share",
+        "effort": "S",
+        "canon_risk": "One-file rule is about the GAME's required files — analytics is already an optional third-party tag gated off file:// for probe hermeticity, so gating it further is strictly canon-positive. The full first-party swap adds an api/ endpoint, which is the sanctioned place for server bits.",
+        "implementation_sketch": "Minimum (2 tokens): extend the gate above line 37 with `&& navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl`. Better, when there's an hour: delete the us-assets.i.posthog.com loader and POST a 5-line count event to a new api/ping.js alongside the existing three functions, keeping the page first-party-only — which is also the pre-repo-public hygiene the CLAUDE.md TODO list already gestures at. Single persona, but it's the persona who writes the top HN comment, and the finding is verified at line 37.",
+        "personas": [
+          "HN-GRAYBEARD"
+        ]
+      },
+      {
+        "rank": 14,
+        "title": "Share-surface truth pack: unicorn gate, pedigree on the board, STANFURD footnote, per-run og:description",
+        "area": "share",
+        "effort": "M",
+        "canon_risk": "Rule 1 (satire in mechanics): showing 'x100' next to a pedigree-inflated board entry IS the joke — where you dropped out of beats what you built, now legible on the leaderboard. Rule 3: STANFURD stays an archetype-safe rivalry gag; the footnote just signals intent. Celebs/billboard grep-gates unaffected (no names touch share text).",
+        "implementation_sketch": "(a) Gate the badge headline on winEmoji's existing $1B bar: `v>=1e6 ? 'CERTIFIED UNICORN' : 'CERTIFIED HORSE (for now)'` (~line 3585) — a funnier flex ladder that makes $1B worth grinding. (b) Add pedIdx to the leaderboard POST body, store the column, render a dim 'x100' suffix in lbRowsHtml; scope the 'cosmetic. like most pivots.' disclaimer to the C/H/V chips only. (c) One 6px footnote in drawTitle: '*stanfurd is not a typo. ask berkeley.' (d) In api/r, template og:description from the query params it already receives ('ASSOCIATE raised $10K, died with a $5K valuation (down round).') instead of the generic tagline. (e) Self-gloss the T2D3 flair: 'T2D3 (sub-3:00 exit)'.",
+        "personas": [
+          "VC-ASSOCIATE",
+          "NEWCOMER-INTL"
+        ]
+      },
+      {
+        "rank": 15,
+        "title": "PIVOT roulette: make the retry button's joke mechanically true",
+        "area": "humor",
+        "effort": "S",
+        "canon_risk": "Rule 1 is the REASON to do this — the FOUNDER persona correctly cited the game's own canon against 'PIVOT (RETRY)' being label-only. Rule 3: pivot names stay invented archetypes ('a CRM for dogs', 'same product, but agentic', 'we do defense now') — no real companies. Draw-only strings; sim untouched.",
+        "implementation_sketch": "A const PIVOTS=[...] array and a counter incremented in the retry path (update-side state, read by draw). Draw 'THE COMPANY: '+PIVOTS[i%len] under the zone banner after each respawn, and pipe the current string into the obituary's company line so death N's newspaper mourns pivot N. Single-persona, but it came from the designated butt of the joke and it upgrades the funniest button in the game from label to mechanic — humor is the product.",
+        "personas": [
+          "FOUNDER"
+        ]
+      }
+    ],
+    "do_not_do": [
+      {
+        "idea": "Asymmetric fall gravity (p.vy += vy>0 ? GRAV*1.4-1.7 : GRAV) — STAFF-ENG and RETRO-GAMER both want it",
+        "why": "It changes existing movement numbers, which is exactly what the speedrun contract forbids as a casual fix: fall speed determines horizontal pit clearance, the code itself admits one pit was frame-perfect, and RETRO's own suggestion concedes JUMPV would need retuning to preserve the apex. That's a full physics release — retune JUMPV, revalidate every pit, rerun both fullrun bots against a same-day baseline worktree, versioned CHANGELOG note — not a playtest patch. The finding is real; ship coyote time (additive, rank 10) now and schedule gravity as its own deliberate version if ever."
+      },
+      {
+        "idea": "Horizontal acceleration/skid curve replacing the instant vx=±1.7 (RETRO-GAMER)",
+        "why": "Same contract problem in disguise: an approach-lerp changes effective acceleration and turnaround distances even if top speed is 'identical', which shifts pit-edge and enemy-dodge timing that speedruns and the bots depend on. The cursor-snappy movement is also part of the shipped feel identity at this point. Cosmetic turn-dust particles are fine; the physics change is not."
+      },
+      {
+        "idea": "Held-jump variable stomp bounce (p.vy = JUMP() ? JUMPV : -4.5 at line 1504) (RETRO-GAMER)",
+        "why": "Changes a movement constant (bounce height -5 → -6.6 when held) — contract-touching — and interacts with the carefully-shipped pogo re-arm rule that keeps held-jump chains from cheesing bosses. High rebalance surface for a feel nicety two personas didn't even agree on."
+      },
+      {
+        "idea": "lastSafeX respawn system for pit deaths (NONTECH-MARKETER, GAME-DESIGNER)",
+        "why": "It's a new difficulty mechanic, and canon says difficulty is tuned via existing levers, never new mechanics. It also creates fresh edge cases (last safe ground = a crumbling ledge one tile before the pit → respawn-loop death). Adding checkpoints[] entries (backlog rank 3) delivers the same mercy through the sanctioned lever with zero new code paths."
+      },
+      {
+        "idea": "Boss post-stomp invulnerability window (FOUNDER) and 2s fresh-spawn i-frames (GENZ-MOBILE, HN-GRAYBEARD variant)",
+        "why": "Both are new mechanics wearing a tuning costume. If THE PLATFORM dies too fast to blind mashing, raise its HP pip count — the existing lever. If SOMA's opening strips runway too fast, move the first gremlin spawn — the existing lever (backlog rank 3). Spawn i-frames additionally hand speedrunners 2s of god-mode off the line and teach new players nothing about the stomp verb."
+      },
+      {
+        "idea": "setInterval/setTimeout-driven music sequencer (several personas sketched setTimeout-chained loops)",
+        "why": "Wall-clock timing is canon-banned for a reason the music loop would violate continuously: it would keep playing through pause, blur-autopause, and hitstop, and drift against the fixed-timestep sim. The loop must derive its step index from playMs in update() and schedule notes on AC.currentTime with lookahead (backlog rank 7 does exactly this). One-shot stings at state transitions should likewise use AC-time offsets rather than setTimeout chains."
+      }
+    ]
+  }
+}

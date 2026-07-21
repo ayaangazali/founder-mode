@@ -1,3 +1,25 @@
+# MORNING REPORT — overnight run part 2, 2026-07-21 (00:30–01:50 PDT): the persona sweep
+
+**Mission:** 10 subagents played the game as 10 SF archetypes (staff eng, VC associate, non-technical marketer, retro-gamer, Gen-Z mobile, a11y designer, HN graybeard, seed founder, SF newcomer, game-UX designer); a synthesis judge deduped 10 structured reports into a 15-item canon-vetted backlog; all 15 were implemented or consciously partialed, one commit each, three tests green per commit. Full raw report + ranked plan: `qa/persona/persona-report-2026-07-21.json`. Itemized detail: `qa/CHANGELOG.md` → `[PERSONA SWEEP]`.
+
+## What the game gained tonight
+- **Sound identity**: a death sting (the obituary no longer arrives in silence — 9/10 personas flagged it), per-zone chiptune music (pure WebAudio sequencer on the sim clock, zero files, zero setTimeout), audible boss-damage confirm, audible whiffs, unmute blip.
+- **First-run experience**: checkpoints are visible (term-sheet pennants) and announced; the first-pit death no longer resets to x=20; boss-1 retries cost ~700px like the other bosses; DECK is taught when the first deck scrolls into view, not 2000px early; Space retries the death screen (with a visible caption).
+- **Mario feel**: 5 frames of coyote time (contract-safe, additive-only — asymmetric gravity/accel curves/bounce changes all REJECTED per the do_not_do list), boss hitstop+shake, strobes retired for steady signals, prefers-reduced-motion honored draw-side.
+- **Share loop**: SHARE can no longer fail silently (webview fallback), /api/r unfurls describe the actual run, the unicorn gate holds on every headline (sub-$1B = CERTIFIED HORSE), PIVOT retries rename the company and the obituary mourns the current pivot.
+- **Trust/privacy**: analytics honors DNT + GPC; mute is visible, touch-reachable, persistent.
+
+## Gate (all green, seed #202)
+ci-sweep hard gates ✅ (canon grep, secret scan, clamps, 3 tests, 9 probes) · overnight-paths ✅ · overnight-mobile ✅ (caught one real regression mid-sweep — end-card reorder shoved buttons off landscape phones — fixed and re-run) · clean bot PASS 2:34, 4 recoveries (budget 6) · casual bot PASS 3:08, **2 recoveries (was 9 pre-change on yesterday's seed — the churn-loop checkpoints are doing their job)**.
+
+## Owner decisions parked
+- Pedigree column on the leaderboard (needs a live Supabase migration).
+- Replacing PostHog with a first-party counter (it's your wired analytics stack).
+- Everything from part 1's list below (key rotation, PARTNERS outreach, launch day, og.png, bak purge).
+
+---
+---
+
 # MORNING REPORT — overnight run, 2026-07-20 (23:04–23:35 PDT)
 
 **Mission (ARGUMENTS):** decide the game engine → optimize for it → make sure the app runs smoothly → test thoroughly → verify production. **All five done. Zero changes to `index.html` — the honest finding is that the game needed evidence, not surgery.**

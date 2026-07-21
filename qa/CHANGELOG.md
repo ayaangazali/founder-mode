@@ -776,3 +776,50 @@ at `b392b0e`, prod byte-identical to main.
    `/api/leaderboard` daily + `?all=1` healthy (all-time board live, AYAAN $1.107B 🦄 on top);
    `/api/r` result page 200 with correct og tags; `/api/og` renders a 43KB PNG card; `og.png` 200.
    No deploys, no writes, no accounts touched.
+
+## 2026-07-21 — [PERSONA SWEEP] 10-archetype playtest → 15-item UX/feel/sound pack
+
+Ten persona agents (staff engineer, VC associate, non-technical marketer, retro-gamer/speedrunner,
+Gen-Z mobile, a11y designer, HN graybeard, seed-stage founder, SF newcomer, game-UX designer) each
+played the live build headless and filed structured findings; a synthesis judge deduped them into a
+canon-vetted backlog (full report: `qa/persona/persona-report-2026-07-21.json`). All 15 items landed
+or were consciously partialed, one commit each, three tests green per commit.
+
+1. **Death sting** — `sDead()`, a four-note descending triangle arpeggio at both `state=ST.DEAD`
+   sites; `beep()` gained an AC-clock start offset (`at` param) so multi-note phrases never touch
+   setTimeout. (9/10 personas flagged the silent obituary.)
+2. **Checkpoint visibility** — term-sheet pennant flags in-world (gray→green, steady), TERM SHEET
+   SIGNED popup + rising two-note confirm on crossing, BRIDGE ROUND popup 60→150 frames.
+3. **Early-SOMA churn loop** — checkpoints[] += 950 (past the first pits) and 5250 (boss-1 doorstep);
+   opening gremlin pair 650/680 split to 650/800. Array levers only; no i-frames (do_not_do).
+4. **SHARE never fails silently** — synchronous status on every tap; rejected clipboard with no share
+   sheet falls back to the visible readonly textarea (hoisted `manualCopy`, shared with SAVE).
+5. **Mute you can see** — [M] MUTED HUD tag (steady), unmute confirm blip, pause-menu SOUND ON/OFF
+   button (first touch-reachable control), persisted via `fm_muted`.
+6. **DECK taught when it exists** — first-6s strip is move/jump/stomp only; a one-shot 5s strip
+   returns when a deck first scrolls into camera; zero-damage pogo bounces whiff audibly.
+7. **MUSIC** — 16-step chiptune sequencer (triangle bass + square lead) driven by `playMs`, notes
+   scheduled on `AC.currentTime`; per-zone transposition; pause/blur/minigames silence it for free.
+   No asset files, no setTimeout.
+8. **Space retries end screens** — joins R behind the same endGraceT mash guard; 'R / SPACE to
+   pivot' caption under the buttons.
+9. **Popup de-overlap** — addPop nudges newcomers up a text row instead of stacking scrims into
+   soup (scrims already existed; the overlap was the real a11y bug).
+10. **Coyote time, 5 frames** — SPEEDRUN-CONTRACT NOTE: additive input forgiveness only (late-press
+    ledge grace, zeroed on jump). No constant changed: GRAV 0.35, JUMPV -6.6, speeds untouched.
+    Asymmetric gravity, accel curves, and held-jump bounce were REJECTED as contract violations.
+11. **Juice + motion comfort** — boss hits: hitstop 8 + shake 4 + 110Hz damage thunk, kills hold 20;
+    boss i-frame 15Hz flash-skip → steady 0.55-alpha ghost; title rocket flame 15Hz → 0.75Hz;
+    `RMOTION` (prefers-reduced-motion) gates camera shake + clock judder at draw sites only.
+12. **End-card fold pass** — rotate banner hidden behind the end card (fit() re-decides on resume);
+    short-DESKTOP viewports put the name/POST row above the buttons (scoped after the mobile probe
+    caught landscape-phone regression); stale below-fold R caption removed; HUD timer W-62→W-130
+    out from under the pause chip.
+13. **Analytics privacy gate** — PostHog loader now honors DNT + Global Privacy Control. Replacing
+    it with a first-party counter = owner call, not taken overnight.
+14. **Share-surface truth** — unicorn gate on every headline (badge/og card//api/r title: sub-$1B
+    wins are CERTIFIED HORSE), T2D3 self-glosses '(sub-3:00 exit)' (paths-probe expectation updated
+    per item-33 rule), STANFURD title footnote, /api/r og:description now describes THE run.
+    SKIPPED 14b (pedigree column on the leaderboard): live Supabase migration = owner action.
+15. **PIVOT roulette** — retries rename the company (8 invented names, popup + obituary ticker
+    'PIVOT #N: …'); the label is now a mechanic, per the founder persona.
