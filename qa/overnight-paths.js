@@ -131,7 +131,7 @@ async function start(page){
   {
     const { ctx, page, errors } = await fresh(browser);
     const white = () => page.evaluate(() => {
-      const d = cx.getImageData(0, 155, 480, 22).data; // bubble band above the title founder
+      const d = cx.getImageData(0, 142, 480, 20).data; // bubble band above the title founder (y146-156 since the title redesign moved it clear of the 14px CTA)
       let n = 0;
       for (let i = 0; i < d.length; i += 4) if (d[i] > 240 && d[i+1] > 240 && d[i+2] > 240) n++;
       return n;

@@ -117,6 +117,19 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
                       background:#ffd94a; color:#1a1a2e; border:2px solid #1a1a2e; box-shadow:0 3px 0 #8a6d00; }
   #pauseMenu button.alt2 { background:#2a2338; color:#ff8c8c; border-color:#ff8c8c; box-shadow:0 3px 0 #5e1b1b; }
   #pauseMenu button:active { transform:translateY(2px); box-shadow:none; }
+  /* CUSTOMIZE FOUNDER panel (title-critique spec): DOM overlay per the pauseMenu
+     precedent — canvas rows can't reach 44px tap targets at portrait scale. Sits
+     right-of-center so the live founder preview at canvas x=56 stays visible. */
+  #custPanel { position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:flex-end; background:rgba(0,0,0,.55); }
+  #custPanel .card { background:#141433; border:3px solid #7ce0ff; box-shadow:0 6px 0 #1b5e75; padding:14px 18px; margin-right:6vw; max-width:88vw; }
+  #custPanel .crow { display:flex; align-items:center; gap:6px; margin-top:8px; }
+  #custPanel .lbl { width:80px; text-align:right; font:bold 10px "Courier New",monospace; color:#8d99ae; }
+  #custPanel .arw { width:44px; height:44px; font:bold 18px "Courier New",monospace; background:#1f2233; color:#7ce0ff; border:2px solid #7ce0ff; cursor:pointer; }
+  #custPanel .arw:active { transform:translateY(2px); }
+  #custPanel .val { width:164px; text-align:center; font:bold 12px "Courier New",monospace; color:#fff; }
+  #custPanel .foot { margin-top:8px; font:bold 9px "Courier New",monospace; color:#5d647a; text-align:center; }
+  #custDone { display:block; width:100%; margin-top:12px; min-height:44px; font:bold 14px "Courier New",monospace; background:#7ce0ff; color:#0d0d1f; border:0; box-shadow:0 3px 0 #1b5e75; cursor:pointer; }
+  #custDone:active { transform:translateY(2px); box-shadow:none; }
   #lbPanel { position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center;
              background:rgba(8,8,20,.8); }
   #lbPanelCard { background:#141433; border:3px solid #ffd94a; box-shadow:0 6px 0 #8a6d00; padding:14px 18px;
@@ -142,6 +155,18 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   <button id="pmResume">▶ BACK TO WORK</button>
   <button id="pmSound">🔊 SOUND: ON</button>
   <button id="pmQuit" class="alt2">🏳 SHUT IT DOWN (title screen)</button>
+</div></div>
+<div id="custPanel"><div class="card">
+  <div style="color:#ffd94a; font:bold 15px 'Courier New',monospace">YOUR FOUNDER</div>
+  <div style="color:#8d99ae; font:bold 10px 'Courier New',monospace; margin-top:2px">cosmetic. like most pivots.</div>
+  <div class="crow"><span class="lbl">TONE</span><button class="arw" data-k="s" data-d="-1">‹</button><span class="val" id="cvS"></span><button class="arw" data-k="s" data-d="1">›</button></div>
+  <div class="crow"><span class="lbl">HAIR</span><button class="arw" data-k="h" data-d="-1">‹</button><span class="val" id="cvH"></span><button class="arw" data-k="h" data-d="1">›</button></div>
+  <div class="crow"><span class="lbl">HOODIE</span><button class="arw" data-k="v" data-d="-1">‹</button><span class="val" id="cvV"></span><button class="arw" data-k="v" data-d="1">›</button></div>
+  <div class="crow"><span class="lbl">COFOUNDER</span><button class="arw" data-k="x" data-d="-1">‹</button><span class="val" id="cvX"></span><button class="arw" data-k="x" data-d="1">›</button></div>
+  <div class="crow"><span class="lbl">PEDIGREE</span><button class="arw" data-k="p" data-d="-1">‹</button><span class="val" id="cvP"></span><button class="arw" data-k="p" data-d="1">›</button></div>
+  <div class="foot">*stanfurd is not a typo. ask berkeley.</div>
+  <button id="custDone">✓ DONE</button>
+  <div class="foot" id="custHint">ESC — back · SPACE — ship it</div>
 </div></div>
 <div id="rot">ROTATE YOUR PHONE — investors prefer landscape<span>(tap to dismiss)</span></div>
 <div id="credit">made by <a href="https://www.linkedin.com/in/ayaangazali" target="_blank" rel="noopener noreferrer">ayaan gazali</a></div>
@@ -277,11 +302,14 @@ window.addEventListener('keydown', e => {
     const eggCand = (k.length === 1 && k >= 'a' && k <= 'z') ? (typed + k).slice(-5) : null;
     const eggPrefix = w => { for (let n = 2; n <= w.length; n++) if (eggCand.endsWith(w.slice(0, n))) return true; return false; };
     const midEggWord = eggCand !== null && typed.length > 0 && (eggPrefix('corgi') || eggPrefix('slop'));
-    if (k === 'c' && !midEggWord){ preEggSkin = look.s; cycleLook('s'); }
-    else if (k === 'h' && !midEggWord) cycleLook('h');
-    else if (k === 'v' && !midEggWord) cycleLook('v');
-    else if (k === 'x' && !midEggWord) cycleLook('x');
-    else if (k === 'p' && !midEggWord) cycleLook('p');
+    // picker keys still apply their cycle exactly as before AND open the CUSTOMIZE
+    // panel (title redesign — probes press these blind and must keep passing)
+    if (k === 'c' && !midEggWord){ preEggSkin = look.s; cycleLook('s'); custOpen(); }
+    else if (k === 'h' && !midEggWord){ cycleLook('h'); custOpen(); }
+    else if (k === 'v' && !midEggWord){ cycleLook('v'); custOpen(); }
+    else if (k === 'x' && !midEggWord){ cycleLook('x'); custOpen(); }
+    else if (k === 'p' && !midEggWord){ cycleLook('p'); custOpen(); }
+    if (nk === 'escape' && customizeOpen) customizeOpen = false;
     if (eggCand !== null){
       typed = eggCand;
       if (typed.endsWith('corgi')){
@@ -291,6 +319,7 @@ window.addEventListener('keydown', e => {
           window.FOUNDER_LOOK = resolveLook();
           try { localStorage.setItem('fm_look', JSON.stringify(look)); } catch(e){}
         }
+        customizeOpen = false; // a completed egg word closes what its C opened
       }
       if (typed.endsWith('slop')){ pendingSlop = true; sPow(); }
     }
@@ -355,35 +384,52 @@ if ('ontouchstart' in window) {
     e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio();
     if (state === ST.TITLE){
       const k = pickerHit(e.touches[0].clientX, e.touches[0].clientY);
-      if (k){ cycleLook(k); return; }             // tap chip = cycle, not start
+      if (k){ custOpen(); return; }               // tap chip/sprite = open CUSTOMIZE, not start
     }
     if (state !== ST.PLAY){ touch.J = true; setTimeout(() => touch.J = false, 120); }
     else throwDeck(); // in play, a canvas tap pitches — if you're holding a deck
   }, {passive:false});
 }
 
-// founder-picker tap/click zones (title screen) — generous padding for thumbs
-const PICKER_ZONES = [
-  { x:112, y:192, w:104, h:12, k:'s' },
-  { x:112, y:206, w:104, h:12, k:'h' },
-  { x:112, y:220, w:104, h:12, k:'v' },
-  { x:112, y:234, w:104, h:12, k:'x' },
-  { x:224, y:234, w:118, h:12, k:'p' },
-];
+// title redesign: the five picker chips moved into the CUSTOMIZE panel; the title
+// keeps ONE tap zone covering the entry chip + the founder sprite. Its generous
+// padding collides with nothing because it is the only zone left.
+const CUSTOMIZE_ZONE = { x:40, y:196, w:240, h:52 };
 function pickerHit(clientX, clientY){
   const r = cv.getBoundingClientRect();
   const mx = (clientX - r.left) * W / r.width;
   const my = (clientY - r.top)  * H / r.height;
-  for (const z of PICKER_ZONES)
-    if (mx > z.x - 8 && mx < z.x + z.w + 8 && my > z.y - 5 && my < z.y + z.h + 5)
-      return z.k;
-  return null;
+  const z = CUSTOMIZE_ZONE;
+  return (mx > z.x && mx < z.x + z.w && my > z.y && my < z.y + z.h) ? 'open' : null;
 }
+// customizeOpen is a flag, not a state: ST.TITLE stays live underneath, so the
+// typing eggs, idle pitch, and konami listener all keep working untouched.
+let customizeOpen = false;
+function custRefresh(){
+  document.getElementById('cvS').textContent = (look.s + 1) + '/6';
+  document.getElementById('cvH').textContent = HAIRS[look.h];
+  document.getElementById('cvV').textContent = HOODIES[look.v].name;
+  document.getElementById('cvX').textContent = COFOUNDERS[cofIdx].label;
+  document.getElementById('cvP').textContent = PEDIGREES[pedIdx].label + (pedIdx ? ' ×' + PEDIGREES[pedIdx].mult : '');
+}
+function custOpen(){ customizeOpen = true; custRefresh(); }
+document.querySelectorAll('#custPanel .arw').forEach(b => {
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); initAudio();                       // pointerdown: no focus, so SPACE can't re-click the button
+    cycleLook(b.dataset.k, parseInt(b.dataset.d, 10));
+    custRefresh();
+  });
+});
+document.getElementById('custDone').addEventListener('pointerdown', e => { e.preventDefault(); customizeOpen = false; });
+document.getElementById('custPanel').addEventListener('pointerdown', e => {
+  if (e.target.id === 'custPanel') customizeOpen = false;  // tap outside closes — and does NOT start the game
+});
+if ('ontouchstart' in window) document.getElementById('custHint').style.display = 'none'; // ESC/SPACE hints are keyboard-only
 cv.addEventListener('mousedown', e => {
   idleT = 0;
   if (state !== ST.TITLE) return;
   const k = pickerHit(e.clientX, e.clientY);
-  if (k) cycleLook(k);
+  if (k) custOpen();
 });
 
 // ------------------------- AUDIO -------------------------
@@ -2042,21 +2088,21 @@ function resolveLook(){
 }
 window.FOUNDER_LOOK = resolveLook();
 
-function cycleLook(k){                       // k: 's' | 'h' | 'v' | 'x' (cofounder)
+function cycleLook(k, dir = 1){              // k: 's' | 'h' | 'v' | 'x' (cofounder); dir: ±1 (panel ‹ › arrows)
   if (k === 'x'){
-    cofIdx = (cofIdx + 1) % COFOUNDERS.length;
+    cofIdx = (cofIdx + dir + COFOUNDERS.length) % COFOUNDERS.length;
     try { localStorage.setItem('fm_cof', cofIdx); } catch(e){}
     beep(880, .05, 'square', .05);
     return;
   }
   if (k === 'p'){
-    pedIdx = (pedIdx + 1) % PEDIGREES.length;
+    pedIdx = (pedIdx + dir + PEDIGREES.length) % PEDIGREES.length;
     try { localStorage.setItem('fm_ped', pedIdx); } catch(e){}
     beep(920, .05, 'square', .05);
     return;
   }
   const n = k==='h' ? HAIRS.length : 6;
-  look[k] = (look[k] + 1) % n;
+  look[k] = (look[k] + dir + n) % n;
   window.FOUNDER_LOOK = resolveLook();
   try { localStorage.setItem('fm_look', JSON.stringify(look)); } catch(e){}
   beep(880, .05, 'square', .05);             // picker tick
@@ -3575,59 +3621,44 @@ function drawTitle(){
     cx.font = 'bold 6px monospace';
     const tw = cx.measureText(q).width;
     const bx = clamp(74 - tw / 2 - 3, 2, W - tw - 8); // centered over the founder's head
-    px(bx, 160, tw + 6, 10, '#fff'); occlude(bx, 160, tw + 6, 10);
-    px(72, 170, 4, 3, '#fff');                        // tail, points at the founder below
+    // bubble band sits at y146-156 since the redesign — the promoted 14px CTA owns y160
+    px(bx, 146, tw + 6, 10, '#fff'); occlude(bx, 146, tw + 6, 10);
+    px(72, 156, 4, 3, '#fff');                        // tail, points at the founder below
     cx.fillStyle = '#111';
-    cx.fillText(q, Math.round(bx + 3), Math.round(167.5));
+    cx.fillText(q, Math.round(bx + 3), Math.round(153.5));
   }
-  // title
+  // title (redesign per qa/persona/title-redesign-spec-2026-07-21.json: 6 text
+  // elements above the fold, was 11; three hues; fixation order title → CTA → sprite)
   cx.textAlign = 'center';
   cx.fillStyle = '#000'; cx.font = 'bold 30px monospace';
   cx.fillText('FOUNDER MODE', W/2 + 2, 92 + 2);
   cx.fillStyle = '#ffd94a'; cx.fillText('FOUNDER MODE', W/2, 92);
-  cx.fillStyle = '#7ce0ff'; cx.font = 'bold 9px monospace';
-  cx.fillText('the SF startup platformer', W/2, 108);
-  // today's top exit / your best — one line of stakes above the pitch
-  cx.font = 'bold 7px monospace';
+  // the pitch line IS the tagline now ('the SF startup platformer' cut — dev jargon)
+  cx.fillStyle = '#fff'; cx.font = 'bold 9px monospace';
+  cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 110);
+  // stakes line — gray, not green: the CTA owns green now. Absent = empty slot, fine.
+  cx.font = 'bold 8px monospace'; cx.fillStyle = '#cfd6e4';
   if (lbTop && lbTop.length){
-    cx.fillStyle = '#7cffa5';
-    cx.fillText("today's top exit: " + fmtMoney(lbTop[0].val) + ' by ' + lbTop[0].name + ' — beat it', W/2, 120);
+    cx.fillText("today's top exit: " + fmtMoney(lbTop[0].val) + ' by ' + lbTop[0].name + ' — beat it', W/2, 124);
   } else { const b = lbBest(); if (b){
-    cx.fillStyle = '#7cffa5';
-    cx.fillText('your best exit: ' + fmtMoney(b.val) + (b.won ? ' ' + winEmoji(b.val) : ' (down round)'), W/2, 120);
+    cx.fillText('your best exit: ' + fmtMoney(b.val) + (b.won ? ' ' + winEmoji(b.val) : ' (down round)'), W/2, 124);
   } }
-  cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
-  cx.fillText('stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', W/2, 132);
   // (owner call: market-conditions ticker + seed number dropped from the title —
   //  the daily seed system itself is untouched; MARKET.s still feeds the obituary)
-  // CTA: alpha pulse, never fully gone (a blink leaves screenshots CTA-less 1/3 of the time)
-  cx.globalAlpha = 0.65 + 0.35 * Math.sin(frame * 0.1);
-  cx.fillStyle = '#7cffa5'; cx.font = 'bold 12px monospace';
-  cx.fillText(('ontouchstart' in window) ? 'TAP TO START' : 'PRESS SPACE TO START', W/2, 168);
+  // ~34px of deliberate air here — the redesign is the negative space.
+  // CTA: promoted to 14px, floor raised so screenshots never catch it dim
+  cx.globalAlpha = 0.8 + 0.2 * Math.sin(frame * 0.1);
+  cx.fillStyle = '#7cffa5'; cx.font = 'bold 14px monospace';
+  cx.fillText(('ontouchstart' in window) ? 'TAP TO START' : 'PRESS SPACE TO START', W/2, 164);
   cx.globalAlpha = 1;
-  const ctrl = ('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies'
-                                          : '←→ / AD move · SPACE jump · stomp enemies · M mute';
-  cx.font = 'bold 8px monospace';
-  const ctw = cx.measureText(ctrl).width;
-  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(Math.round(W/2 - ctw/2 - 4), 175, Math.round(ctw + 8), 12);
-  cx.fillStyle = '#8d99ae'; cx.fillText(ctrl, W/2, 184);
-  cx.font = 'bold 6px monospace'; cx.fillStyle = '#5a6478';
-  cx.fillText('*stanfurd is not a typo. ask berkeley.', W/2, H - 4); // (persona backlog #14: the newcomer filed it as a spelling bug)
-  // ---- founder picker (C/H/V keys · tap/click the chips) ----
+  const ctrl = ('ontouchstart' in window) ? '◀ ▶ move · A jump' : '←→ move · SPACE jump';
+  cx.font = 'bold 7px monospace'; cx.fillStyle = '#8d99ae';
+  cx.fillText(ctrl, W/2, 178); // one muted line needs no black plate
+  // ---- ONE customize entry (chip · sprite tap · C/H/V/X/P keys) ----
   cx.textAlign = 'left'; cx.font = 'bold 7px monospace';
-  const chipDefs = [
-    { y:192, c:'#ffd94a', txt:'[C] TONE '   + (look.s+1) + '/6' },
-    { y:206, c:'#7ce0ff', txt:'[H] HAIR: '  + HAIRS[look.h] },
-    { y:220, c:'#c58bff', txt:'[V] HOODIE: '+ HOODIES[look.v].name },
-    { y:234, c:'#7cffa5', txt:'[X] COFOUNDER: ' + COFOUNDERS[cofIdx].label },
-    { y:234, x:224, w:118, c:'#ff8c37', txt:'[P] ' + PEDIGREES[pedIdx].label + (pedIdx ? ' ×' + PEDIGREES[pedIdx].mult : '') },
-  ];
-  for (const ch of chipDefs){
-    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(ch.x || 112, ch.y, ch.w || 104, 12);
-    cx.fillStyle = ch.c; cx.fillText(ch.txt, (ch.x || 112) + 4, ch.y + 9);
-  }
-  cx.fillStyle = '#5d647a'; cx.font = 'bold 6px monospace';
-  cx.fillText('cosmetic. like most pivots.', 224, 229);
+  const custTxt = ('ontouchstart' in window) ? 'CUSTOMIZE FOUNDER ▸' : '[C] CUSTOMIZE FOUNDER';
+  cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(112, 209, 120, 12);
+  cx.fillStyle = '#7ce0ff'; cx.fillText(custTxt, 116, 218);
   cx.textAlign = 'center';
   cx.font = 'bold 8px monospace';
   cx.fillStyle = '#5d647a';
@@ -3667,7 +3698,7 @@ function resumePlay(fromCheckpoint){
 // a full fresh run is staged so the next SPACE press starts clean
 function goHome(){
   ui.style.display = 'none';
-  paused = false; clearAllInput();
+  paused = false; clearAllInput(); customizeOpen = false;
   // the title runs d-pad-free since the redesign; the start branch hands it back,
   // so the old goHome soft-lock (hidden d-pad, undrivable run) cannot recur
   if ('ontouchstart' in window) document.getElementById('touch').style.display = 'none';
@@ -4181,6 +4212,7 @@ let last = 0, acc = 0;
 function stepGame(){
   if (state === ST.TITLE && (JUMP()) && frame > 30){
     track('start');
+    customizeOpen = false; // SPACE inside the panel ships it — the CTA's one promise never goes dead
     document.getElementById('credit').style.display = 'none';
     document.getElementById('lbChip').style.display = 'none';
     document.getElementById('lbPanel').style.display = 'none';
@@ -4205,12 +4237,14 @@ function drawPause(){
   cx.fillText(('ontouchstart' in window) ? 'tap anywhere to resume' : 'ESC resumes · buttons above', W/2, 150);
   cx.textAlign = 'left';
 }
-let _pmShown = null, _pcShown = null; // cached DOM visibility (no per-frame style churn)
+let _pmShown = null, _pcShown = null, _cuShown = null; // cached DOM visibility (no per-frame style churn)
 function pauseUiSync(){
   const menu = paused && state === ST.PLAY, chip = !paused && state === ST.PLAY;
   if (menu !== _pmShown){ document.getElementById('pauseMenu').style.display = menu ? 'flex' : 'none'; _pmShown = menu; }
   const chipShow = chip && !('ontouchstart' in window); // touch already has the ⏸ button
   if (chipShow !== _pcShown){ document.getElementById('pauseChip').style.display = chipShow ? 'block' : 'none'; _pcShown = chipShow; }
+  const cust = customizeOpen && state === ST.TITLE;      // the CUSTOMIZE panel only exists over the title
+  if (cust !== _cuShown){ document.getElementById('custPanel').style.display = cust ? 'flex' : 'none'; _cuShown = cust; }
 }
 function loop(now){
   acc += Math.min(now - (last || now), 100); last = now;
