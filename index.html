@@ -1086,7 +1086,7 @@ function makeEnemy(d){
 function reset(fromCheckpoint){
   const startX = fromCheckpoint ? checkpoint : 20;
   player = { x:startX, y:GROUND_Y-40, w:12, h:16, vx:0, vy:0, onGround:false, face:1,
-             coffeeT:0, ycT:0, hurtT:0, bounceT:0, jbuf:0, pogo:false, runFrame:0,
+             coffeeT:0, ycT:0, hurtT:0, bounceT:0, jbuf:0, coyote:0, pogo:false, runFrame:0,
              matchaT:0, slowT:0,    // v1.0 powerups: zen jump / enterprise process
              shield:0, deckT:0 };   // GOOD PRESS charge / PITCH DECK attack window
   cam = Math.max(0, startX - 100);
@@ -1339,7 +1339,12 @@ function update(){
   if (jNow && !prevJump){ p.jbuf = 6; p.pogo = false; } // a fresh press re-arms the stomp
   else if (p.jbuf > 0) p.jbuf--;
   prevJump = jNow;
-  if (p.jbuf > 0 && p.onGround){ p.vy = p.matchaT > 0 ? JUMPV * 1.15 : JUMPV; p.onGround = false; p.jbuf = 0; sJump(); } // matcha: zen +15% jump
+  // coyote time (persona backlog #10, physics-contract note in CHANGELOG): 5 frames of
+  // grace after walking off an edge — the missing half of the forgiveness pair (the
+  // 6-frame buffer covers early presses; this covers late ones). Purely additive:
+  // no existing jump changes height, speed, or timing.
+  p.coyote = p.onGround ? 5 : Math.max(0, p.coyote - 1);
+  if (p.jbuf > 0 && (p.onGround || p.coyote > 0)){ p.vy = p.matchaT > 0 ? JUMPV * 1.15 : JUMPV; p.onGround = false; p.coyote = 0; p.jbuf = 0; sJump(); } // matcha: zen +15% jump
   // variable jump height (stomp reward-bounces exempt from the jump-cut)
   if (!jNow && p.vy < -2.5 && !(p.bounceT > 0)) p.vy = -2.5;
 
