@@ -1,0 +1,316 @@
+{
+  "critics": [
+    {
+      "lens": "deadpan copy editor — corporate-absurd register; every string must face the player, not the dev",
+      "diagnosis": "The title screen is a poster doing a settings menu's job: ~13 text blocks on a 270px canvas, three of them self-description (\"the SF startup platformer\" tagline, a redundant controls line, a stanfurd footnote glossing a picker that shouldn't be here). The best copy on the screen — the stomp-churn pitch line — is buried in fourth position under jargon, and the five customization chips plus their two microcopy lines occupy the whole lower third. Note: \"founder mode kit\" never renders on canvas (it's the repo/tab name); the actionable string is the \"platformer\" tagline and the matching <title>/og:title at index.html:6-7.",
+      "keep": [
+        "FOUNDER MODE logo (yellow 30px + shadow, ~y=92) — untouched",
+        "PRESS SPACE TO START / TAP TO START (pulsing, alpha floor 0.65 — verbatim; the <2s discoverability rule forbids cute in-universe rewrites here)",
+        "stakes line: today's top exit / your best exit (~y=120) — the one line that makes a LinkedIn viewer click",
+        "pitch line 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' — PROMOTED to the tagline slot (see copy_changes); all four beats earn their place, each names a real mechanic",
+        "footer 'a dumb side project. do not raise a round about it.' (~y=258) — screenshot-quotable, the tone-setter; becomes the ONLY footer line",
+        "live walking founder preview at x=56 (it is the payoff of customization and the corgi egg's stage)",
+        "#lbChip LEADERBOARD chip (DOM, top-left)",
+        "#credit 'made by ayaan gazali' (DOM, top-right) — copy unchanged, but restyle quieter: drop the 3px yellow box for a thin muted border; it currently out-shouts the logo",
+        "conditional egg feedback strings 'slop mode queued' (12,250) and '▸ ACCELERATOR ALUM' (12,242) — tiny, corner, earned",
+        "reverse-pitch idle egg (60s speech bubble) — unchanged",
+        "mobile rotate banner 'ROTATE YOUR PHONE — investors prefer landscape' — the register done right"
+      ],
+      "cut": [
+        "canvas tagline 'the SF startup platformer' (~y=108) — 'platformer' is dev-facing genre jargon (player-reported); the slot is refilled by the promoted pitch line",
+        "the old pitch-line row at y=132 (it moves up to y=108-110; do not render twice)",
+        "'stomp enemies' from the controls string — duplicates 'stomp churn' and the first goomba teaches it anyway",
+        "'M mute' from any title surface — settings trivia, not poster copy (keep the keybind, lose the billboard)"
+      ],
+      "move": [
+        "all five picker chips [C] TONE / [H] HAIR / [V] HOODIE / [X] COFOUNDER / [P] PEDIGREE (y=192-234) → a customize overlay state drawn by the same title code path (one file, fillRect panel; no new tab/DOM). Keys: C/H/V/X/P still listen on the title — any of them now opens the overlay AND applies its cycle, so muscle memory and the qa probes survive; inside the overlay the same keys cycle as today; SPACE/ESC closes; SPACE on the bare title still starts the game instantly. Typing eggs SLOP/CORGI/konami are global keydown (index.html:273-299) and keep listening in both states — no change",
+        "microcopy 'cosmetic. like most pivots.' → into the overlay, under the chip stack, verbatim",
+        "footnote '*stanfurd is not a typo. ask berkeley.' → into the overlay, directly under the [P] PEDIGREE chip it glosses; it is noise on a title with no pedigree label visible",
+        "controls line → in-game: fade a one-time hint strip over the first 3 seconds of a fresh run ('←→ / AD move · SPACE jump' desktop, '◀ ▶ move · A jump' touch); the CTA already teaches SPACE so the title loses nothing"
+      ],
+      "copy_changes": [
+        {
+          "from": "the SF startup platformer",
+          "to": "stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell  (the pitch line IS the tagline now — cyan, bold 8px, y≈110; delete its old y=132 render)"
+        },
+        {
+          "from": "<title>FOUNDER MODE — the SF startup platformer</title> (and og:title, index.html:6-7)",
+          "to": "<title>FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.</title> (og:title identical — this is what LinkedIn unfurls; 'platformer' reads as gamer jargon to that feed)"
+        },
+        {
+          "from": "←→ / AD move · SPACE jump · stomp enemies · M mute",
+          "to": "←→ / AD move · SPACE jump   (rendered as a one-time in-game hint strip, not on the title; touch variant '◀ ▶ move · A jump')"
+        },
+        {
+          "from": "[C] TONE 2/6  /  [H] HAIR: HOOD UP  /  [V] HOODIE: FOG  /  [X] COFOUNDER: NONE  /  [P] NO PEDIGREE  (five chips, y=192-234)",
+          "to": "[C] PERSONAL BRAND ▸   (one chip, ~112,200, next to the walking preview — 'personal brand' is the corporate-absurd truth about cosmetic customization; fallback if too cute: '[C] CUSTOMIZE FOUNDER')"
+        }
+      ],
+      "layout_proposal": "480x270, top to bottom. DOM chrome: #lbChip top-left, #credit top-right restyled quiet (thin border, no glow). Canvas: y≈88 FOUNDER MODE (unchanged art); y≈110 promoted pitch tagline 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' in the current cyan; y≈126 stakes line (today's top exit / your best exit, green); y≈160 PRESS SPACE TO START, 12px pulsing (moves up from 168 — nothing below competes now); left side: walking founder preview at x=56 on the ground strip (unchanged), with single chip '[C] PERSONAL BRAND ▸' at ~(112,200); corgi/slop/alum egg strings keep their bottom-left corner (12,242/12,250); y≈258 sole footer 'a dumb side project. do not raise a round about it.'. That is six text elements plus two DOM chips — down from ~13. The customize overlay (opened by C/H/V/X/P or tapping the chip) draws a centered fillRect panel ~(90,50)-(390,230): preview on the left, the five full chips stacked at 24px spacing on the right, 'cosmetic. like most pivots.' and '*stanfurd is not a typo. ask berkeley.' beneath the [P] row, 'SPACE — ship it' to close. Mobile portrait collapses to logo/tagline/stakes/CTA and finally breathes."
+    },
+    {
+      "lens": "Dieter Rams — \"Weniger, aber besser.\" A title screen is a door, not a lobby full of signage. Every element must earn its place by doing something the game itself cannot do in its first five seconds.",
+      "diagnosis": "The screen tries to be poster, manual, character menu, and comedy club simultaneously: nine stacked text layers plus five picker chips in 270 vertical pixels, so the CTA competes with two jokes, two instruction lines, and a feature list for the same eye. Almost everything here duplicates what the game demonstrates within seconds of pressing SPACE — genre, controls, tone — which by Rams' honesty principle makes it noise, not information. The one element with actual personality, the live founder sprite who pitches YOU after 60 idle seconds, is buried behind chip UI; it should be the only voice on the screen.",
+      "keep": [
+        "FOUNDER MODE wordmark — yellow 30px + black shadow, centered, y=92. It is the door's nameplate; unchanged.",
+        "PRESS SPACE TO START / TAP TO START — green 12px, y=168, alpha pulse 0.65-1.0 (canon: never fully gone). Becomes the second-loudest element instead of the fifth.",
+        "The founder live preview sprite walking in place at x=56 on the ground strip — THE single personality carrier, together with its 60s-idle reverse-pitch bubble ('the ask: one (1) press of SPACE.'). Satire in mechanics, discovered not shouted. This is the whole game's thesis rendered in fillRect.",
+        "today's top exit: $X by NAME — beat it / your best exit line — the only line that is live, daily, and competitive; static marketing copy cannot compete with it.",
+        "a dumb side project. do not raise a round about it. — y=258. The ONE retained joke; it is the tone in a single sentence.",
+        "#lbChip (🏆 LEADERBOARD, top-left DOM) — a door to a real room; the only chrome that survives at full weight.",
+        "All typing eggs and their earned feedback unchanged: SLOP/CORGI/konami listeners, 'slop mode queued' (12,250), corgi at the desk, '▸ ACCELERATOR ALUM' (12,242). Eggs are invisible until earned — Rams-compatible by nature (unobtrusive, honest).",
+        "C/H/V/X/P key listeners STAY HOT on the title as hidden shortcuts — the live sprite re-renders every frame and IS the feedback, so cycling still works with zero chip UI. Speedrunners lose nothing.",
+        "Skyline, stars, ground strip — the quiet stage. Unchanged."
+      ],
+      "cut": [
+        "'the SF startup platformer' — cyan subtitle, y=108. Owner flagged 'platformer' verbatim. A Mario-like reveals its genre in the first jump; a door does not describe the room. (Also strip 'platformer' from the <title> tag — see copy_changes.)",
+        "'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' — white 8px, y=132. Back-of-box feature copy that spoils three beats including the final boss and the ending. Delete outright; the game says this better by being played.",
+        "'cosmetic. like most pivots.' — grey 6px at (224,229). A caption for a menu that is leaving the screen; it travels to the customize sub-screen or dies. On the title: cut.",
+        "'*stanfurd is not a typo. ask berkeley.' — grey 6px, y=266. A footnote defending a joke the player has not seen yet. Cut from the title; the joke lives in-game where the billboard is. Two stacked jokes means neither lands — one survives (see keep).",
+        "The yellow bordered box treatment on #credit — the loudest element on screen after the wordmark (border + underline + top-right position). The signature does not go on the front of the product in gold. Text survives demoted (see move); the box dies.",
+        "Note: the daily-seed market ticker is ALREADY gone from the title (owner call recorded at index.html:3595) — nothing to cut, and nothing should bring it back."
+      ],
+      "move": [
+        "All five picker chips — '[C] TONE 2/6' (112,192), '[H] HAIR:' (112,206), '[V] HOODIE:' (112,220), '[X] COFOUNDER:' (112,234), '[P] PEDIGREE' (224,234) — to a customize sub-screen (owner's own call: 'skin customization can be a new tab'), opened by ONE affordance: a single grey chip '[C] CUSTOMIZE' next to the sprite, or tapping the founder. The sub-screen shows the same live preview plus all five rows; ESC/tap-out returns. Keys still work directly on the title as shortcuts (see keep) so nothing is lost, only hidden.",
+        "Controls line '←→ / AD move · SPACE jump · stomp enemies · M mute' (dark strip, y=175-187) — off the title, into the world: a one-time ghost hint at spawn, playMs-gated, fading over ~3s (steady fade, no flicker). Touch users already see the ◀ ▶ A buttons; arrow keys need no manual. 'M mute' moves to the pause menu where settings belong.",
+        "#credit 'made by ayaan gazali' — demote from boxed top-right chrome to borderless 6px-register grey (#5a6478) bottom-right corner, link intact. Attribution has LinkedIn value; it earns a corner, not a marquee. It also then shares a visual register with the footer joke instead of fighting the wordmark."
+      ],
+      "copy_changes": [
+        {
+          "from": "FOUNDER MODE — the SF startup platformer (the <title>/og:title tag — this is where 'platformer' greets every LinkedIn unfurl)",
+          "to": "FOUNDER MODE"
+        },
+        {
+          "from": "[C] TONE 2/6 / [H] HAIR: HOOD UP / [V] HOODIE: FOG / [X] COFOUNDER: NONE / [P] NO PEDIGREE (five chips)",
+          "to": "[C] CUSTOMIZE (one chip, next to the sprite; opens the sub-screen)"
+        },
+        {
+          "from": "cosmetic. like most pivots. (title-screen caption)",
+          "to": "(moves verbatim to the customize sub-screen header — it is good copy in the right room)"
+        }
+      ],
+      "layout_proposal": "480x270, top to bottom. y=0-85: open sky, stars, skyline — untouched, now doing its job as negative space. Top-left DOM: 🏆 LEADERBOARD chip (only surviving chrome). y=92: FOUNDER MODE wordmark, unchanged. y=118: ONE line beneath the title — 'today's top exit: $4.2B by NAME — beat it' (falls back to 'your best exit: …', or nothing on first visit; absence is fine, silence is a feature). y=119-160: empty. y=168: PRESS SPACE TO START, pulsing, isolated by ~45px of air above and below — the eye lands on it in under one second, comfortably inside the 2s canon budget. Ground zone (~y=195-222): founder sprite walking in place at x=56 (unchanged position); at x≈80, one grey 7px chip '[C] CUSTOMIZE'. The 60s reverse-pitch bubble now renders into open space at y=160-170 instead of colliding with chips. y=258: 'a dumb side project. do not raise a round about it.' — the single joke, centered. Bottom-right DOM: 'made by ayaan gazali', 6px register, borderless, grey. Element count drops from ~14 text surfaces to 6. Mobile portrait/landscape fix themselves: fewer lines means the crushed top-third stack in the portrait baseline disappears without any responsive work. Eggs, key listeners, alpha-pulse CTA, and the fixed-timestep contract are all untouched — this is pure deletion, the cheapest and most Rams-correct change available."
+    },
+    {
+      "lens": "visual-hierarchy: focal order, spacing, alignment, competing weights",
+      "diagnosis": "Eleven text elements in seven hues pack the lower two-thirds of the 480x270 canvas with no grouping: the CTA — the one thing a LinkedIn click must find in under 2s — is a 12px line fused into a y=156-246 slab of similar-weight text (controls strip starts 7px below it, chips 5px below that), shares its green with the stakes line and the [X] COFOUNDER chip, and its alpha pulse dims it to 0.65 while every neighbor sits at 1.0. The two loudest non-title weights are decorative: the 17px yellow-boxed #credit DOM chip in first-scan top-right territory (on mobile portrait it is literally larger than the FOUNDER MODE wordmark) and the five-hue [C]/[H]/[V]/[X]/[P] chip rainbow whose five equal-chroma rows give the lower-left quadrant more total visual mass than the CTA. Actual fixation order is Title -> credit box -> chip stack; it should be Title -> PRESS SPACE -> founder sprite.",
+      "keep": [
+        "FOUNDER MODE wordmark — 30px yellow #ffd94a centered at y=92, unchanged; it wins first fixation correctly and must stay the sole heavyweight",
+        "PRESS SPACE TO START / TAP TO START — kept but promoted (see layout); pulse kept (steady-visual sanctioned, never fully gone) with floor raised 0.65->0.8",
+        "Pitch line 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' verbatim — best deadpan line on the screen; it moves up into the dead tagline's slot",
+        "Walking founder live preview at x=56 on the ground strip (it IS the customization preview and the 3rd fixation target), plus the corgi egg sprite when earned",
+        "Footer joke 'a dumb side project. do not raise a round about it.' at y=258 — but as the ONLY footer line",
+        "Night-skyline background + ground strip (but keep lit-window squares 8px clear of centered text bands)",
+        "Idle reverse-pitch speech bubble egg — fires only after 60s idle, never touches first-2s hierarchy",
+        "Title typing eggs SLOP/CORGI/konami and the window keydown listener at index.html:258 — untouched, still title-scoped",
+        "#lbChip '🏆 LEADERBOARD' top-left at its current 13px/2px-border spec — it is the correct chrome weight the credit box should be copying"
+      ],
+      "cut": [
+        "'the SF startup platformer' tagline (9px cyan, y=108) — this is the owner's 'platformer' string; the screen itself demonstrates the genre and the tab/og title already says it. ('founder mode kit' renders nowhere on canvas — nothing else to cut for that complaint.)",
+        "'*stanfurd is not a typo. ask berkeley.' (6px, y=266) — a footnote to an in-game billboard the title never shows; context-free here and it doubles the footer joke count",
+        "'· stomp enemies · M mute' from the controls line — stomping is already taught by the pitch line, and mute is a pause-menu button",
+        "Green #7cffa5 on everything except the CTA — the stakes line and the [X] chip lose it so the CTA owns its hue (color cut, not element cut)",
+        "The 5-hue chip rainbow as a title-screen element — replaced by one entry chip (chips themselves move, see move list)",
+        "The black controls strip fillRect at y=175 — one muted 7px line needs no plate once the slab around it is gone"
+      ],
+      "move": [
+        "[C]/[H]/[V]/[X]/[P] picker chips + the 'cosmetic. like most pivots.' caption -> new CUSTOMIZE sub-state (the owner's 'new tab'): all five chips at readable size, the same live founder preview centered, ESC/BACK returns to title. Title keeps ONE quiet entry chip '[C] CUSTOMIZE FOUNDER'. Keys C/H/V/X/P still listen on the title and open the sub-state with that cycle applied (muscle memory + probes survive), gated by the EXISTING midEggWord guard at index.html:275 so typing CORGI/SLOP never opens it — the code already solves exactly this collision",
+        "'today's top exit: $X by NAME — beat it' (y=120, live-only) -> the leaderboard panel header, or at most one 7px gray line at y=246 when data exists — never a second green line between title and CTA",
+        "#credit 'made by ayaan gazali' -> demote from 17px/3px-border/drop-shadow to the #lbChip spec (13px, 2px border) and move to bottom-right; on mobile portrait shrink to 11px unboxed or hide — it is currently the single largest element on the phone screen",
+        "'▸ ACCELERATOR ALUM' (12,242) and 'slop mode queued' (12,250) -> one shared bottom-left status anchor, stacked 6px lines, one hue (or move ALUM flair into the customize screen)",
+        "'M mute' -> pause menu only (already a button there)"
+      ],
+      "copy_changes": [
+        {
+          "from": "←→ / AD move · SPACE jump · stomp enemies · M mute",
+          "to": "←→ move · SPACE jump"
+        },
+        {
+          "from": "◀ ▶ move · A jump · stomp enemies",
+          "to": "◀ ▶ move · A jump"
+        },
+        {
+          "from": "[C] TONE 2/6 / [H] HAIR: … / [V] HOODIE: … / [X] COFOUNDER: … / [P] … (five separate chips)",
+          "to": "[C] CUSTOMIZE FOUNDER (single chip; on touch devices render 'CUSTOMIZE FOUNDER ▸' — bracket hints are keyboard-only — and make the sprite itself tappable)"
+        },
+        {
+          "from": "today's top exit: $X by NAME — beat it (in CTA-green #7cffa5)",
+          "to": "same text in #cfd6e4 gray — copy stays, color demoted so green belongs to the CTA alone"
+        }
+      ],
+      "layout_proposal": "480x270, top to bottom. CORNERS (y0-30): #lbChip top-left unchanged; #credit bottom-right at lbChip spec (13px, 2px border), hidden/11px on portrait — top-right goes empty so nothing contests the wordmark. y84-96: FOUNDER MODE, 30px yellow, centered, unchanged. y110: the pitch line 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' 8px white, centered — takes the deleted tagline's slot as the single sub-line. y112-148: deliberate air; skyline breathes, no lit-window fillRects within 8px of the text band. y152-164: PRESS SPACE TO START / TAP TO START promoted to 14px #7cffa5, centered, pulse floor 0.8 — the only green pixel on screen, isolated by ~40px above and ~12px below. y176: controls hint '←→ move · SPACE jump' 7px #8d99ae, no plate. STAGE y185-232: founder walks at x=56 (unchanged), corgi beside him when earned; one chip '[C] CUSTOMIZE FOUNDER' on a single dark strip at (112, 214), 7px cyan — pressing C/H/V/X/P (midEggWord-guarded per index.html:275), clicking the chip, or tapping the sprite opens the CUSTOMIZE sub-state where all five chips live large with the same centered preview; SLOP/CORGI/konami typing stays on the title listener verbatim; 'slop mode queued'/'ALUM' flags share one 6px anchor at (12,250). y246: stakes line 7px #cfd6e4, only when data exists. y258: 'a dumb side project. do not raise a round about it.' 7px #5d647a — sole footer. Net: 6 text elements above the fold (was 11), 3 text hues yellow/green/gray (was 7), forced fixation order Title -> CTA -> sprite/chip; CTA discoverable well under 2s on all three form factors. (Corrections to brief: the market ticker is already absent from the title per the owner call at index.html:3595; the string 'founder mode kit' never renders on canvas — nearest kin are the tab title and the credit box.)"
+    },
+    {
+      "lens": "first-time-player advocate",
+      "diagnosis": "The title screen tries to be four screens at once — settings menu (5 picker chips), tutorial (a 4-item controls line), leaderboard banner, and joke page — before a stranger has pressed anything; 13+ competing text elements on 480x270 means the CTA at y=168 has chips crowding it from directly below and three text lines from above. A first-timer needs exactly three things: the name, one hook line, and PRESS SPACE TO START. The customization decision is one no newcomer can care about yet, and it already persists in localStorage (fm_look), so the fix is deleting/deferring ~8 elements and letting whitespace make the CTA the only mid-screen event.",
+      "keep": [
+        "'FOUNDER MODE' wordmark (bold 30px, #ffd94a + black drop, centered ~y=92) — may grow to 34px once the subtitle below it dies",
+        "'PRESS SPACE TO START' / 'TAP TO START' pulsing CTA (12px #7cffa5, alpha 0.65-1.0, never fully gone — existing anti-flicker call stands)",
+        "the pitch line 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' — promote it to the subtitle slot; it says 'platformer' without saying platformer and is the LinkedIn-screenshot hook",
+        "one stakes line: 'today's top exit: $X by NAME — beat it' (fallback 'your best exit: ...') — the compete loop that makes shares convert",
+        "live walking founder preview at x=56 on the ground — it is charming, it IS the character, and it visually advertises the CUSTOMIZE entry chip beside it",
+        "footer 'a dumb side project. do not raise a round about it.' (y=258) — one deadpan footer, exactly one",
+        "DOM chrome: #credit 'made by ayaan gazali' top-right and #lbChip 'LEADERBOARD' top-left (fixed, edge-anchored, off the play area)",
+        "all conditional egg feedback: corgi-at-desk sprite, 'slop mode queued' (12,250), '▸ ACCELERATOR ALUM' (12,242), and the 60s-idle reverse-pitch bubble — zero cost to first play, they only appear when earned"
+      ],
+      "cut": [
+        "'the SF startup platformer' subtitle (y=108) — owner verbatim: 'platformer — not needed'; the pitch line carries genre better and in-register",
+        "'stomp enemies' from the controls line — the first churn enemy at x~300 in-world teaches stomping by existing; a title screen cannot teach it anyway",
+        "'M mute' from the controls line — a mute hint belongs on the pause overlay, not between a stranger and the start button",
+        "the five PICKER_ZONES tap rects on the title root (replaced by one CUSTOMIZE zone)",
+        "the egg-disambiguation code that only exists because pickers share the title keyboard: eggPrefix/midEggWord/preEggSkin (index.html lines 268-292) — with C/H/V/X/P no longer cycling on the root, typing SLOP/CORGI gets the whole keyboard and the lone-C skin-revert hack deletes outright"
+      ],
+      "move": [
+        "all 5 chips — '[C] TONE 2/6', '[H] HAIR: ...', '[V] HOODIE: ...', '[X] COFOUNDER: ...', '[P] PEDIGREE ...' — to a CUSTOMIZE subscreen (a title substate flag, same drawTitle family, still one file, still fillRect): dim rgba(0,0,0,.55) backdrop, panel x=120-360 y=56-218, founder preview at x~150 inside it, chips at x=210 with 20px row pitch (vs today's suffocating 14px), same strings/colors/mult display, C/H/V/X/P keys cycle inside exactly as today, tap zones retargeted; ESC or tap-outside closes; SPACE inside the panel starts the run so the CTA contract ('SPACE always starts') survives — panel footer reads 'ESC — back · SPACE — ship it'",
+        "'cosmetic. like most pivots.' — into the panel (y~170) where the chips it glosses now live",
+        "'*stanfurd is not a typo. ask berkeley.' — in-game, rendered near the STANFURD billboard where the joke has setup; on the title it is a payoff without a setup (persona backlog #14: a newcomer filed it as a spelling bug)",
+        "typing eggs SLOP/CORGI: listen on the title ROOT only (buffer suspended inside the panel, where letters are pickers); feedback ('slop mode queued', corgi-at-desk) stays on the root; konami sequence is tracked state-agnostically (line 295) and is unaffected everywhere",
+        "reverse-pitch idle egg: unchanged — idleT already accrues title-only (line 1302); panel input zeroes it like any key"
+      ],
+      "copy_changes": [
+        {
+          "from": "←→ / AD move · SPACE jump · stomp enemies · M mute",
+          "to": "←→ move · SPACE jump"
+        },
+        {
+          "from": "◀ ▶ move · A jump · stomp enemies",
+          "to": "◀ ▶ move · A jump"
+        },
+        {
+          "from": "[C] TONE 2/6  /  [H] HAIR: HOOD UP  /  [V] HOODIE: FOG  /  [X] COFOUNDER: NONE  /  [P] NO PEDIGREE  (five root chips)",
+          "to": "[E] CUSTOMIZE FOUNDER  (one root chip; E appears in neither 'corgi' nor 'slop', so it needs zero egg-guard logic — the five originals keep their exact strings inside the panel)"
+        },
+        {
+          "from": "the SF startup platformer",
+          "to": "(deleted — 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' moves up into the subtitle slot)"
+        }
+      ],
+      "layout_proposal": "480x270 canvas, top to bottom. DOM chrome unchanged and edge-anchored: #lbChip top-left, #credit top-right (fixed HTML, above the canvas). y=84-100: FOUNDER MODE wordmark, bold 30-34px monospace, #ffd94a with black drop, centered at W/2. y=116: pitch line 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell', bold 8px white, centered (promoted from y=132 into the dead subtitle slot). y=130: stakes line 'today's top exit: $Xm by NAME — beat it' bold 7px #7cffa5, centered. y=131-159: NOTHING — this ~28px of air is the redesign; the eye falls straight from the title block to the CTA. y=160-170: 'PRESS SPACE TO START' / 'TAP TO START', bold 12px #7cffa5, existing 0.65-1.0 alpha pulse (steady, never blank). y=176-188: one control-hint bar, '←→ move · SPACE jump' (touch: '◀ ▶ move · A jump'), bold 8px #8d99ae on rgba(0,0,0,.45), centered. Ground band: founder preview walking in place at x=56 (GROUND_Y-48) exactly as today, corgi egg at x=104 when earned; beside the preview at x=112, y=GROUND_Y-26 (~209), one 12px-tall chip '[E] CUSTOMIZE FOUNDER' (bold 7px, rgba(0,0,0,.45) bar ~120w) — its single tap zone replaces the five PICKER_ZONES; pressing E (or tapping it, or clicking the founder sprite) opens the CUSTOMIZE subscreen described in `move`. y=242/250 bottom-left: conditional 'ACCELERATOR ALUM' / 'slop mode queued' unchanged. y=258: footer 'a dumb side project. do not raise a round about it.', the only footer line. Net count: 7 canvas text elements pre-play (was 13+), one interactive chip (was 5), CTA discoverable in under 2 seconds because it is the only pulsing element and the only thing in the vertical center. Mobile portrait benefits most: the compressed top-third loses six rows of chip/footnote text, and the single CUSTOMIZE zone is thumb-sized instead of five 12px slivers."
+    },
+    {
+      "lens": "Mobile-first critic — 390x664 portrait and 667x375 landscape: tap targets, text scale, overlap, touch customization flow",
+      "diagnosis": "The title tries to be a menu, a manual, and a character creator at once: 13 text elements at 6-9px canvas fonts render at 4.9-7.3 CSS px in portrait (scale 0.8125) — physically unreadable — while the five picker chips are ~18 CSS px tall with hit zones that overlap each other vertically (pickerHit pads y-5..y+17 on a 14px row pitch) and a missed chip tap falls through to 'start game' (index.html:354). In landscape the DOM touch buttons #tL/#tR (z-index 5, pointer-events:auto) physically cover the founder preview and the left edge of the [H]/[V]/[X] chips, silently eating their taps. There is no thumb-usable hierarchy: the loudest element in portrait is the 17px boxed 'made by ayaan gazali' banner, not the wordmark or the CTA.",
+      "keep": [
+        "'FOUNDER MODE' wordmark (centered, y92) — bump 30px to 34px once the tagline below it is cut",
+        "'TAP TO START' / 'PRESS SPACE TO START' pulsing CTA (y168) — the alpha floor of 0.65 is correct, never blink to zero; on touch the whole canvas already acts as the start button, keep that",
+        "'today's top exit: $X by NAME — beat it' stakes line (y120) — best single line on the screen, bump 7px to 8px",
+        "Live founder preview walking at x56 on the ground strip (GROUND_Y 232) — it is the customization preview and the charm; unchanged",
+        "One short controls hint line (y184, dark backing bar)",
+        "Footer 'a dumb side project. do not raise a round about it.' (y258) — the tone anchor, the LinkedIn screenshot line",
+        "Typing eggs SLOP/CORGI/konami: keyboard listeners stay bound on the title exactly as today (lines 268-299), zero UI; their feedback stays — corgi sprite at x104, 'slop mode queued' (12,250), '▸ ACCELERATOR ALUM' (12,242)",
+        "Reverse-pitch idle bubble (idleT>3600) — desktop-only delight, harmless on mobile where idle rarely reaches 60s",
+        "DOM chrome: 🏆 LEADERBOARD chip top-left, ⏸ pause top-right (touch), rotate banner 'ROTATE YOUR PHONE — investors prefer landscape' — in-fiction, dismissible, bottom-anchored, no overlap; keep",
+        "'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' — keep as the ONE descriptor line but move up to ~y124 and bump 8px to 9px (it is 6.5 CSS px in portrait today)"
+      ],
+      "cut": [
+        "'the SF startup platformer' tagline (9px, y108) — this is the owner's 'platformer' complaint; the wordmark plus the four-verb pitch line already say everything it says",
+        "'M mute' and 'stomp enemies' from the desktop controls hint (57 chars at 8px cannot fit legibly; mute lives in the pause menu, stomping is taught by the first enemy pop in-game)",
+        "The heavy #credit treatment on touch: 17px bold + 3px gold border + box shadow — demote to a single ~11px unboxed line; the box currently out-shouts the game title in portrait (copy itself stays)",
+        "Daily-seed market ticker: already removed by owner call (comment at index.html:3595) — record it as cut, do not re-add"
+      ],
+      "move": [
+        "All five picker chips [C] TONE / [H] HAIR / [V] HOODIE / [X] COFOUNDER / [P] PEDIGREE (x112/x224, y192-246) → a CUSTOMIZE subscreen, opened by one big drawn button on the title. Build the subscreen as a DOM overlay in the same file (exact precedent: #pauseMenu and #lbPanel are already DOM) so rows can be real 48px touch targets with ‹ › arrow buttons ≥44x44 per row — canvas-drawn rows can never reach 44 CSS px in portrait at 0.81 scale without eating the whole screen. State stays ST.TITLE with a customizeOpen flag: C/H/V/X/P keys keep cycling on the title for desktop (invisible power path), and the SLOP/CORGI/konami typed-buffer eggs keep listening unchanged since they need no UI; SPACE-start is suppressed only while the panel is open, ESC or DONE closes it. Canvas keeps rendering behind the panel so the live founder preview still shows every change.",
+        "'cosmetic. like most pivots.' (6px at 224,229 — 4.9 CSS px in portrait, invisible) → subscreen subtitle",
+        "'*stanfurd is not a typo. ask berkeley.' (6px, y266) → subscreen footnote directly under the PEDIGREE row, which is the joke it annotates",
+        "#touch ◀ ▶ move buttons: hide on ST.TITLE, show on game start — they do nothing on the title yet in landscape they sit on the founder preview and (today) eat chip taps; the A button can hide too since any canvas tap starts"
+      ],
+      "copy_changes": [
+        {
+          "from": "←→ / AD move · SPACE jump · stomp enemies · M mute",
+          "to": "←→ move · SPACE jump"
+        },
+        {
+          "from": "◀ ▶ move · A jump · stomp enemies",
+          "to": "◀ ▶ move · A jump"
+        },
+        {
+          "from": "[C] TONE 2/6 / [H] HAIR: HOOD UP / [V] HOODIE: FOG / [X] COFOUNDER: NONE / [P] NO PEDIGREE (five stacked 104px chips)",
+          "to": "✎ CUSTOMIZE FOUNDER (one centered button; desktop may suffix '· C/H/V/X/P' at 6px)"
+        },
+        {
+          "from": "stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell (8px, y132)",
+          "to": "same text, 9px, moved to y124 — copy unchanged, size/position only"
+        }
+      ],
+      "layout_proposal": "On the 480x270 canvas, top to bottom. DOM chrome above it: 🏆 LEADERBOARD top-left, ⏸ top-right (touch), credit demoted to one small unboxed line bottom-right of the viewport on touch (desktop may keep the boxed banner), rotate banner bottom-center dismissible. Canvas: y60-100 'FOUNDER MODE' at 34px (tagline deleted frees the air). y116 stakes line \"today's top exit: … — beat it\" 8px green. y124 the four-verb pitch line 9px white — the only descriptor. y152-172 the CTA drawn as an actual button: ~200x24 filled rect centered, 'TAP TO START' 14px, pulse floor 0.65; any canvas tap outside the customize zone starts, so PRESS-SPACE/TAP discoverability stays under 2 seconds — it is now the only green pulsing element in the center third. y184 controls hint 8px on its dark bar. y200-226 '✎ CUSTOMIZE FOUNDER' centered: visual ~150x16, padded hit zone 240x54 canvas px = 195x44 CSS px in portrait — legal 44px because it is the lone tap zone with no neighbors to collide with (the current failure was five 14px-pitch zones whose padding overlapped). Ground strip y232: founder preview walks at x56 unchanged, corgi egg at x104, egg status lines at (12,242)/(12,250). y258 single footer 'a dumb side project. do not raise a round about it.' Subscreen (DOM overlay, pauseMenu-styled, one file): header 'YOUR FOUNDER — cosmetic. like most pivots.', five 48px rows (TONE / HAIR / HOODIE / COFOUNDER / PEDIGREE) each with ‹ value › arrows at 44x44, stanfurd footnote under PEDIGREE, DONE button; canvas renders behind so the walking preview reflects every change live; C/H/V/X/P and the typing eggs keep their existing title listeners because state remains ST.TITLE with a customizeOpen flag."
+    }
+  ],
+  "spec": {
+    "final_layout": "480x270 canvas, top to bottom. DOM chrome: #lbChip '🏆 LEADERBOARD' top-left UNCHANGED (13px, 2px border — it is the reference chrome weight); #credit 'made by ayaan gazali' demoted to the lbChip spec (13px, 2px muted border, no gold box/shadow/underline glow) and MOVED to bottom-right of the viewport; on portrait it drops to 11px borderless. Top-right goes empty on desktop so nothing contests the wordmark (touch keeps only the ⏸ button there). #touch ◀ ▶ A buttons are HIDDEN on the title, shown at game start.\n\ny0-84: open sky, stars, skyline — untouched negative space; keep lit-window fillRects 8px clear of the centered text bands.\ny92: FOUNDER MODE wordmark — bold 30px monospace #ffd94a + black drop, centered. Unchanged (rejected the 34px bump; deletion of neighbors gives it the air it needed).\ny110: pitch line 'stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell' — bold 9px #fff, centered. PROMOTED into the dead tagline's slot (its old y=132 render is deleted; it renders exactly once). This is now the only descriptor line.\ny124: stakes line \"today's top exit: $X by NAME — beat it\" (fallback \"your best exit: $X …\"), bold 8px, RECOLORED from #7cffa5 to #cfd6e4 gray — copy stays, green is surrendered to the CTA. Rendered only when data exists; when absent the slot is empty and that is fine.\ny125-158: NOTHING. This ~34px band of air is the redesign — the eye falls from the title block straight to the CTA.\ny160: PRESS SPACE TO START / TAP TO START — promoted 12px→bold 14px #7cffa5, centered, alpha pulse floor raised 0.65→0.8 (pulse kept, never fully gone). The ONLY green and the ONLY pulsing element on screen, isolated by ~35px above and ~12px below.\ny176: controls hint '←→ move · SPACE jump' (touch: '◀ ▶ move · A jump') — bold 7px #8d99ae, centered, NO black plate (the fillRect strip at y=175 is deleted; one muted line needs no backing once the slab around it is gone).\nGround strip (GROUND_Y=232) unchanged: founder live preview walking in place at x=56 (it IS the customization preview and the third fixation target), corgi egg sprite at x=104 when earned.\n(112, 209): ONE chip '[C] CUSTOMIZE FOUNDER' (touch renders 'CUSTOMIZE FOUNDER ▸' — bracket hints are keyboard-only), bold 7px #7ce0ff on a single rgba(0,0,0,.45) bar ~120x12. Its padded tap zone (~x40-280, y196-248, covering chip + sprite ≈ 195x44 CSS px in portrait) replaces all five PICKER_ZONES; it is the lone tap zone so its padding collides with nothing.\n(12,242)/(12,250): conditional '▸ ACCELERATOR ALUM' / 'slop mode queued' — unchanged, earned-only, corner.\nIdle reverse-pitch bubble: unchanged code and position (y160-170, left, over the founder's head); estimated 16px clear of the 14px CTA — verify with measureText at build time.\ny258: 'a dumb side project. do not raise a round about it.' — bold 8px #5d647a, centered, the SOLE footer line (stanfurd footnote leaves the title).\n\nNet: 6 canvas text elements above the fold (was 11-13), one interactive chip (was 5), fixation order forced to Title → CTA → sprite/chip. CTA discoverable well under 2s on all form factors.",
+    "customize_subscreen": "ENTRY (three affordances): (1) pressing any of C/H/V/X/P on the title root — the key STILL applies its cycle exactly as today (midEggWord-guarded, index.html:276-280) AND sets a customizeOpen flag; (2) clicking/tapping the '[C] CUSTOMIZE FOUNDER' chip; (3) tapping/clicking the founder sprite itself. State remains ST.TITLE throughout — customizeOpen is a flag, not a new state enum value, so every title-scoped listener (typing eggs, idleT, konami) keeps working untouched.\n\nCONTENTS: a DOM overlay panel in the same file, styled after the existing #pauseMenu/#lbPanel precedent, over a rgba(0,0,0,.55) backdrop that leaves the canvas's left ~28% clear — the walking founder preview at x=56 stays visible and live-reflects every change (the canvas keeps rendering behind the DOM). Panel: header 'YOUR FOUNDER — cosmetic. like most pivots.'; five 48px rows — TONE n/6, HAIR, HOODIE, COFOUNDER, PEDIGREE (with ×mult shown) — each with ‹ › arrow buttons at ≥44x44 CSS px flanking the current value (existing strings verbatim); the stanfurd footnote '*stanfurd is not a typo. ask berkeley.' in small muted type directly under the PEDIGREE row it glosses; footer: a 44px DONE button, plus desktop-only hint text 'ESC — back · SPACE — ship it'.\n\nKEYBOARD while open: C/H/V/X/P cycle exactly as today (same window keydown handler — no new listener); ESC closes back to the title root; SPACE closes the panel AND starts the run (the 'SPACE always starts' contract survives — this beat critique 4's suppress-SPACE proposal, see notes). Typed-egg buffer (SLOP/CORGI) and konami keep listening unchanged in both states.\n\nTOUCH while open: › and ‹ buttons cycle (› = cycleLook, ‹ = reverse); DONE closes; a tap on the canvas OUTSIDE the panel closes it (does NOT start the game — one-tap safety, and it fixes the current missed-chip-tap-starts-game fall-through at index.html:354). Next tap anywhere starts as normal.\n\nEXIT: ESC / DONE / tap-outside → root title; SPACE → straight into the run. Closing writes nothing new — fm_look localStorage persistence already happens per-cycle today.",
+    "copy_final": [
+      {
+        "element": "<title> / og:title / twitter:title (index.html:6-7,17)",
+        "text": "FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell."
+      },
+      {
+        "element": "wordmark (y92)",
+        "text": "FOUNDER MODE"
+      },
+      {
+        "element": "pitch/tagline line (y110, promoted from y132)",
+        "text": "stomp churn · dodge VCs · defeat SYNERGY.AI · ring the IPO bell"
+      },
+      {
+        "element": "stakes line (y124, gray #cfd6e4, only when data exists)",
+        "text": "today's top exit: $X by NAME — beat it   (fallback: your best exit: $X …)"
+      },
+      {
+        "element": "CTA (y160, 14px green, pulse floor 0.8)",
+        "text": "PRESS SPACE TO START   (touch: TAP TO START)"
+      },
+      {
+        "element": "controls hint (y176, no plate)",
+        "text": "←→ move · SPACE jump   (touch: ◀ ▶ move · A jump)"
+      },
+      {
+        "element": "customize entry chip (112,209)",
+        "text": "[C] CUSTOMIZE FOUNDER   (touch: CUSTOMIZE FOUNDER ▸)"
+      },
+      {
+        "element": "subscreen header",
+        "text": "YOUR FOUNDER — cosmetic. like most pivots."
+      },
+      {
+        "element": "subscreen rows (verbatim from today's chips)",
+        "text": "TONE n/6 · HAIR: <val> · HOODIE: <val> · COFOUNDER: <val> · PEDIGREE: <val> ×<mult>"
+      },
+      {
+        "element": "subscreen footnote (under PEDIGREE row)",
+        "text": "*stanfurd is not a typo. ask berkeley."
+      },
+      {
+        "element": "subscreen footer",
+        "text": "DONE   ·   desktop hint: ESC — back · SPACE — ship it"
+      },
+      {
+        "element": "footer joke (y258, sole footer)",
+        "text": "a dumb side project. do not raise a round about it."
+      },
+      {
+        "element": "credit chip (bottom-right, lbChip spec)",
+        "text": "made by ayaan gazali"
+      },
+      {
+        "element": "egg feedback (unchanged, earned-only)",
+        "text": "slop mode queued  /  ▸ ACCELERATOR ALUM"
+      }
+    ],
+    "cut_list": [
+      "'the SF startup platformer' canvas tagline (index.html:3583) — unanimous across all 5 critics; owner's 'platformer' complaint; slot refilled by the promoted pitch line",
+      "'platformer' from <title>, og:title, twitter:title (index.html:6-7,17) — this is what LinkedIn unfurls",
+      "the pitch line's OLD render at y=132 (index.html:3594) — it moves to y110, never renders twice",
+      "'stomp enemies' and 'M mute' from both controls strings (index.html:3602-3603) — the first goomba teaches stomping; mute already lives in the pause menu (keybind itself untouched)",
+      "the black controls-strip plate fillRect (index.html:3606)",
+      "'*stanfurd is not a typo. ask berkeley.' from the title (index.html:3609) — moves into the subscreen under the PEDIGREE row it glosses",
+      "'cosmetic. like most pivots.' from the title (index.html:3624) — moves verbatim into the subscreen header",
+      "all five picker chips + chipDefs render block (index.html:3610-3622) — moved to the subscreen",
+      "the five PICKER_ZONES (index.html:360-366) — replaced by one CUSTOMIZE zone",
+      "green #7cffa5 on the stakes line (index.html:3587,3590) — recolored #cfd6e4 so the CTA owns green (color cut, copy stays)",
+      "#credit's 17px/3px-gold-border/shadow treatment (index.html:93-98) — demoted to lbChip spec, moved bottom-right; the touch right:72px hack at line 343 dies with it",
+      "#touch ◀ ▶ A buttons on the title (shown at init, index.html:330) — hidden until ST.PLAY; in landscape they cover the founder preview and eat taps",
+      "daily-seed market ticker — already cut by owner call (comment at index.html:3595); recorded here so nobody re-adds it"
+    ],
+    "implementation_notes": "CONFLICT RULINGS (strongest argument, stated):\n1. Entry key [C] vs [E]: critique 3's [E] proposal (delete the egg-guard code, free the keyboard) is REJECTED because it breaks a live probe — qa/overnight-paths.js:162-171 presses c/c/h/v/v on the title root and asserts look === {\"s\":3,\"h\":1,\"v\":2} AND state === 0. The winning design (critiques 1/2/5): C/H/V/X/P stay hot on the root, each press applies its cycle exactly as today AND sets customizeOpen=true. The probe passes with ZERO test edits (first C opens the panel; subsequent keys cycle inside via the same handler; state stays ST.TITLE=0; reload closes the flag). Consequence: eggPrefix/midEggWord/preEggSkin (index.html:273-292) are KEPT verbatim — critique 3's cut of that block is rejected for the same reason.\n2. Egg typing: the window keydown listener (index.html:258) is untouched. Typing SLOP never opens the panel (S isn't a picker key). Typing CORGI: the ambiguous lone leading C opens the panel — mirror the existing preEggSkin revert (index.html:285-289) by also setting customizeOpen=false in the corgi-completion branch, so a completed egg word closes what its C opened. Mid-word letters already can't cycle (midEggWord guard) and therefore can't open. Konami is state-agnostic (line 295) — unaffected.\n3. Canvas panel vs DOM overlay: DOM WINS (critique 4) over critique 2's 'no DOM' — at portrait scale 0.8125 canvas rows physically cannot reach 44 CSS px tap targets, and #pauseMenu/#lbPanel are existing in-file DOM precedent; canon forbids frameworks/assets/second files, not DOM in the one file. Position the panel to leave the canvas left edge clear so the x=56 preview stays visible.\n4. SPACE inside the panel STARTS the run (critiques 2/3) — critique 4's suppress-SPACE is rejected; the CTA teaches exactly one promise and it must never go dead. ESC/DONE/tap-outside close without starting; tap-outside-closes also fixes the missed-tap-starts-game fall-through at index.html:354.\n5. Stakes line: position from the majority (top block, y124), color from critique 1 (gray #cfd6e4, green becomes CTA-exclusive). Critique 1's y=246 burial is rejected — 3 critics independently called it the line that converts LinkedIn viewers.\n6. Pitch line kept and promoted (4 v 1) — Rams' spoiler argument loses; in a comedy game the pitch IS the hook.\n7. Chip label 'CUSTOMIZE FOUNDER' over 'PERSONAL BRAND' — 3/5 convergence; a door label must be legible to strangers; critique 2 itself offered this fallback.\n8. Controls hint stays on the title as one muted line (1/3/4 keep, 2/5 move in-game) — moving it in-game means NEW playMs-gated hint code; keeping one 7px line is the smaller diff and deletion bias applies to code too.\n\nMECHANICS/GOTCHAS:\n- pickerHit (index.html:367) is repurposed for the single CUSTOMIZE zone; mousedown handler at 376-381 likewise. cycleLook only increments — the panel's ‹ button needs either a dir param or len-1 forward cycles.\n- customizeOpen must be flipped only in input handlers/update(), never in draw() (state-mutation canon). drawTitle keeps rendering the chip; the DOM panel toggles via style.display like #pauseMenu.\n- CTA pulse floor 0.65→0.8 and 12px→14px at index.html:3598-3600: pulse survives (steady-visual canon: never fully gone), and screenshots can no longer catch the CTA at its dim floor next to full-alpha neighbors.\n- Verify the reverse-pitch bubble (index.html:3559-3576, y160-170 left) against the widened 14px CTA at y160 with measureText — estimated 16px clear; if any pitch string grows, drop the bubble band to y150.\n- lbChip and credit are DOM (index.html:99-102, 93-98, 143-144); credit's display toggling at 3534/4177 carries over; delete the right:72px touch offset at line 343 once credit is bottom-right.\n- Hide #touch on title: it is set display:block at init (line 330); gate to state===ST.PLAY. In landscape #tL/#tR currently sit over the founder preview and swallow taps (their handler preventDefaults, so covered taps never reach the canvas start).\n- Daily-seed ticker stays dead (owner call recorded at index.html:3595). GAME_URL is now sfspeedrun.com (line 3638) — og copy change touches lines 6-7/17 only, not the URL.\n- qa/screenshot-title-custom.png is a stale reference after this change — regenerate; any probe screenshotting the title (overnight-paths reverse-pitch block uses white-pixel DELTAS, robust) should be re-run post-change. Full gate: smoketest/playtest/deathtest + all qa/*-probe.js + fullrun both profiles; compare bot failures against a same-day pre-change worktree before blaming the diff.\n- CHANGELOG entry required (copy + layout changes); no physics constants touched, so no version note needed."
+  }
+}

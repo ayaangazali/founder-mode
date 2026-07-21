@@ -823,3 +823,29 @@ or were consciously partialed, one commit each, three tests green per commit.
     SKIPPED 14b (pedigree column on the leaderboard): live Supabase migration = owner action.
 15. **PIVOT roulette** — retries rename the company (8 invented names, popup + obituary ticker
     'PIVOT #N: …'); the label is now a mechanic, per the founder persona.
+
+## 2026-07-21 — [TITLE REDESIGN] 5-critic panel → decluttered start screen + CUSTOMIZE panel
+
+Owner complaint: title too crowded, dev-jargon copy, customization should be a tab. Five design-critic
+agents (hierarchy, copy, first-play, mobile, Rams) analyzed screenshots + drawTitle source; a judge
+merged them into one spec (`qa/persona/title-redesign-spec-2026-07-21.json`). Shipped in two commits,
+Playwright-screenshot verified on desktop + both mobile orientations.
+
+1. **Copy**: tab/og/twitter titles drop 'the SF startup platformer' for
+   'FOUNDER MODE — stomp churn. dodge VCs. ring the IPO bell.' On-canvas tagline cut (the pitch line
+   IS the tagline now); controls line trimmed to '←→ move · SPACE jump'.
+2. **Layout**: 11 text elements → 6, 7 hues → 3. CTA promoted 12px→14px, pulse floor 0.65→0.8, sole
+   green + sole pulse on screen with ~35px of air above. Stakes line recolored gray. Controls plate
+   deleted. Footer = one joke line. Credit chip demoted from 17px gold box (it out-shouted the
+   wordmark on portrait) to leaderboard-chip weight, bottom-right, 11px unboxed on portrait.
+3. **CUSTOMIZE FOUNDER panel** (DOM overlay, pauseMenu precedent — canvas rows can't hit 44px tap
+   targets at portrait scale): five picker rows with ‹ › arrows, stanfurd footnote under the PEDIGREE
+   row it glosses, 'cosmetic. like most pivots.' as the header sub. Live founder preview stays visible
+   left of the panel. Entry: [C] CUSTOMIZE FOUNDER chip · sprite tap · any picker key (C/H/V/X/P still
+   apply their cycle first — probes pass untouched). Exit: ESC / DONE / tap-outside (never starts);
+   SPACE ships it. Egg guards intact; completed CORGI closes what its C opened.
+4. **Touch**: d-pad hidden on the title (landscape L/R pads covered the founder preview and swallowed
+   its taps); game start/resume restore it, so the goHome soft-lock cannot recur.
+5. **Probe updates (item-33 rule, consciously)**: overnight-mobile asserts d-pad hidden-on-title +
+   shown-in-play (drivability guard retained); overnight-paths reverse-pitch sample band follows the
+   bubble to y146-156 (moved clear of the taller CTA).

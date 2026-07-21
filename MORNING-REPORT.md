@@ -1,3 +1,14 @@
+# MORNING REPORT — overnight run part 3, 2026-07-21 (01:45–02:20 PDT): the title redesign
+
+**Mission (owner, live):** the start screen is too crowded, copy reads dev-facing, customization should be a tab. Five design critics (visual hierarchy, deadpan copy, first-time player, mobile, Rams-minimalist) analyzed the shipped title from screenshots + source; a judge merged them into one spec (`qa/persona/title-redesign-spec-2026-07-21.json`); shipped in two commits with Playwright screenshot verification at every step (`qa/persona/title-v2-*.png` vs `title-baseline-*.png`).
+
+**What changed:** 11 title text elements → 6, seven hues → three, fixation order forced to wordmark → CTA → founder. 'the SF startup platformer' cut everywhere including the LinkedIn unfurl title (now the pitch itself). The five-chip picker rainbow became one [C] CUSTOMIZE FOUNDER entry opening a DOM overlay panel — 44px arrows, live preview still visible, ESC/DONE/tap-outside close, SPACE still ships it. D-pad no longer covers the title in landscape. Picker keys and both typing eggs work exactly as before — the paths probe's picker leg passed with zero edits; two probe expectations were updated consciously (mobile d-pad-on-title inverted with the drivability guard retained; reverse-pitch sample band follows the bubble). Detail: `qa/CHANGELOG.md` → `[TITLE REDESIGN]`.
+
+**Gate:** all hard gates green post-change (ci-sweep + paths + mobile + minigames + casual bot). Nothing deployed — local only; play at http://localhost:8080.
+
+---
+---
+
 # MORNING REPORT — overnight run part 2, 2026-07-21 (00:30–01:50 PDT): the persona sweep
 
 **Mission:** 10 subagents played the game as 10 SF archetypes (staff eng, VC associate, non-technical marketer, retro-gamer, Gen-Z mobile, a11y designer, HN graybeard, seed founder, SF newcomer, game-UX designer); a synthesis judge deduped 10 structured reports into a 15-item canon-vetted backlog; all 15 were implemented or consciously partialed, one commit each, three tests green per commit. Full raw report + ranked plan: `qa/persona/persona-report-2026-07-21.json`. Itemized detail: `qa/CHANGELOG.md` → `[PERSONA SWEEP]`.
