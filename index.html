@@ -438,6 +438,9 @@ const aabb = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h
 // overlay, so the whole dialogue judders as the clock runs out. Set per frame
 // inside drawChat/drawInterview and always reset to 0 — the sim never reads it.
 let uiShakeX = 0, uiShakeY = 0;
+// a11y (persona backlog #11): honor the OS reduced-motion setting at DRAW sites only —
+// the sim never reads it, so physics/timing stay identical for every player.
+const RMOTION = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function px(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(Math.round(x+uiShakeX),Math.round(y+uiShakeY),w,h); }
 
 // ------------------------- LEVEL DATA -------------------------
@@ -1663,9 +1666,14 @@ function update(){
         // since the last bounce) — a zero-input drop bounces forever but only ever hits once
         if (!(b.hitT > 0) && !p.pogo){
           b.hp--; b.hitT = 30; moodUp();
+          // landing a real hit on a boss now weighs more than bumping fodder
+          // (persona backlog #11): brief hitstop + shake + a low damage-confirm
+          // thunk, so armed hits and harmless bounces are different by ear too
+          hitstopT = 8; shakeT = 4; beep(110, .2, 'square', .13, -70);
           addParts(b.x+b.w/2, b.y, '#fff', 12);
           addPop(b.x-40, b.y-12, b.hp>0 ? 'CONVICTION: '+b.hp : 'DOWN ROUND!!', '#ffd94a');
           if (b.hp <= 0){
+            hitstopT = 20; // the kill gets the long beat
             b.dead = true;
             shots.length = 0; // no posthumous term sheets
             const bonus = b.id==='ai' ? 500 : b.id==='platform' ? 350 : 250;
@@ -2158,7 +2166,8 @@ function drawEnemy(e){
 
 function drawBoss(b){
   const x = b.x - cam, y = b.y;
-  if (!(b.hitT > 0 && frame % 4 < 2)){ // flash while in i-frames
+  if (b.hitT > 0) cx.globalAlpha = 0.55; // steady half-ghost while i-framed — same signal as the old 15Hz flash-skip, minus the strobe (persona backlog #11 + steady-visuals rule)
+  { // (brace kept from the retired flash-skip so the sprite body diff stays zero)
   if (b.id === 'platform'){
     // THE PLATFORM — OMNICORP CLOUD DevRel mecha (sprites.js §5, s=1)
     const blink = (frame % 90) > 84;
@@ -2205,6 +2214,7 @@ function drawBoss(b){
     px(x+2, y+36, 10, 8, '#181a29'); px(x+20, y+36, 10, 8, '#181a29'); // treads
   }
   }
+  cx.globalAlpha = 1; // i-frame ghost never leaks past the sprite body
   // hp pips
   for (let i=0;i<b.maxhp;i++) px(x + i*7, y - 12, 5, 4, i < b.hp ? '#ff5a5a' : '#3a3a3a');
   // quip bubble — anchored to the boss, only while the boss is actually on screen.
@@ -2305,7 +2315,7 @@ function drawChat(){
   occlude(0, 0, W, H);                                     // clean slate on the text layer
   // urgency shake — the meeting is ending and the room knows it (draw-only)
   const urgent = chat.phase === 'q' && chat.t < 120;
-  uiShakeX = urgent ? ((frame * 13) % 3) - 1 : 0;
+  uiShakeX = (urgent && !RMOTION) ? ((frame * 13) % 3) - 1 : 0; // reduced-motion: the clock still reddens, the judder sits out
   uiShakeY = urgent ? ((frame * 7) % 3) - 1 : 0;
   px(-2, -2, W + 4, H + 4, '#171221');                     // café interior (oversized so the shake never shows seams)
   px(0, 210, W, 60, '#2a2338');                            // floor
@@ -2359,7 +2369,7 @@ function drawInterview(){
   occlude(0, 0, W, H);
   // urgency shake — the partners are already thinking about the next meeting
   const urgent = interview.phase === 'q' && interview.t < 210;
-  uiShakeX = urgent ? ((frame * 13) % 3) - 1 : 0;
+  uiShakeX = (urgent && !RMOTION) ? ((frame * 13) % 3) - 1 : 0; // reduced-motion: the clock still reddens, the judder sits out
   uiShakeY = urgent ? ((frame * 7) % 3) - 1 : 0;
   px(-2, -2, W + 4, H + 4, '#e8e4da');                      // daylight. terrifying. (oversized for the shake)
   px(0, 200, W, 70, '#c9c2b2');                             // floor
@@ -2577,10 +2587,10 @@ function drawBG(){
         cx.fillStyle = flame; cx.fillRect(Math.round(sx + 1), Math.round(ry + 9), 2, 4);
       };
       if (rt < 220){                                            // ascent
-        drawRocket(134 - (rt / 220) * 170, frame % 4 < 2 ? '#ff8c37' : '#ffd94a');
+        drawRocket(134 - (rt / 220) * 170, frame % 40 < 20 ? '#ff8c37' : '#ffd94a'); // 0.75Hz flame shimmer, not a 15Hz strobe (photosensitive band)
         if (frame % 3 === 0){ cx.fillStyle = 'rgba(220,220,230,.5)'; cx.fillRect(Math.round(sx - 1 + (frame % 5)), Math.round(147 - (rt / 220) * 170), 2, 2); }
       } else if (landing && rt < 440){                          // the 1-in-10 comeback
-        drawRocket(-36 + ((rt - 220) / 220) * 170, frame % 4 < 2 ? '#7ce0ff' : '#fff');
+        drawRocket(-36 + ((rt - 220) / 220) * 170, frame % 40 < 20 ? '#7ce0ff' : '#fff');
       } else if (landing && rt < 700){                          // stuck the landing
         cx.fillStyle = '#e8ecf5'; cx.fillRect(Math.round(sx), 128, 4, 9);
         cx.fillStyle = '#c0402a'; cx.fillRect(Math.round(sx + 1), 125, 2, 3);
@@ -2675,7 +2685,7 @@ function draw(){
   bubbleRects.length = 0;                   // speech-bubble stacking resets per frame
   lateDraws.length = 0;                     // post-player deferred draws reset per frame
   // hurt juice: 2-frame camera shake
-  if (shakeT > 0 && state === ST.PLAY){ cx.translate(frame % 2 ? 2 : -2, 0); }
+  if (shakeT > 0 && state === ST.PLAY && !RMOTION){ cx.translate(frame % 2 ? 2 : -2, 0); }
 
   drawBG();
 
