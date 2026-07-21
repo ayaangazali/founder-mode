@@ -922,3 +922,18 @@ A jumps. SELECT/START-style slanted silver pill wells labeled SOUND/START beneat
 silver speaker-slot grille returns (rounded slots, not the gradient bars the owner rejected), and the
 logo line reads **OMNICORP GAME BRO™** (owner-picked from four options) in DMG navy italic. Body
 greige matched to the photo. Landscape keeps the dark deck with lightened labels.
+
+## 2026-07-21 — [NIGHT PACK v1.4] dynamic window, PITCH hint, two powerups (owner asks before bed)
+
+1. **The portrait window is dynamic** — the fixed 70/30 crop hid the founder at spawn and on
+   walk-backs (owner: 'the character is out of the screen'). loop() now eases the visible window to
+   keep the player ~32% from its left edge (presentation-only CSS transform; the sim never moves).
+   Zoom relaxed 1.45x → 1.33x. camCropX/camCX turned live, so every crop-aware UI anchor follows.
+2. **PITCH hint**: grabbing a deck on touch pulses the B button for 4s with a floating 'PITCH ▼' tag
+   (time-boxed, not a standing strobe) and the pickup copy says 'hit B'.
+3. **OMNICORP CAMPUS BIKE** (owner asked for the gemini bike — archetyped per canon rule 3: primary-
+   color corporate frame, no brand): +speed (2.3, under cold brew's 2.5), and a mob hit dismounts you
+   instead of costing RUNWAY — one hit eaten, verified (hearts 3→3 through a gremlin). Pits still
+   kill; bikes don't fly. 10s, then 'bike reclaimed itself (they do that)'.
+4. **LOST EARBUDS**: flow state — coins ×2 for 10s (both collection paths), pristine case sprite with
+   a 1Hz pairing blink. Two spawns each, SOMA/Mission/Cerebral, outside arenas.

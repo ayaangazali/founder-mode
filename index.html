@@ -162,6 +162,12 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   #touch div#tJ::after, #touch div#tB::after { position:absolute; left:50%; bottom:-22px; transform:translateX(-50%);
                 content:'A'; color:#2d3a8c; font:bold italic 15px "Courier New",monospace; }
   #touch div#tB::after { content:'B'; }
+  /* deck-pickup hint: B pulses + a PITCH tag floats over it (time-boxed by deckHintT — not a standing strobe) */
+  #touch div#tB.bhint { animation:bpulse .6s ease-in-out infinite; }
+  #touch div#tB.bhint::before { content:'PITCH ▼'; position:absolute; left:50%; top:-30px; transform:translateX(-50%);
+                background:rgba(8,8,20,.9); color:#ffd94a; padding:3px 8px; border-radius:4px;
+                font:bold 12px "Courier New",monospace; white-space:nowrap; }
+  @keyframes bpulse { 0%,100% { scale:1; } 50% { scale:1.13; box-shadow:0 0 22px rgba(255,217,74,.75); } }
   /* landscape (dark deck): the navy labels vanish on #101120 — lighten there */
   @media (pointer: coarse) and (orientation: landscape) {
     #touch div#tJ::after, #touch div#tB::after { color:#8d99ae; }
@@ -329,7 +335,8 @@ const tv = document.getElementById('txt');
 const tcx = tv.getContext('2d');
 let TS = 2; // game-unit → overlay-pixel scale; set by fit()
 let camCropX = 0; // world px hidden by the portrait left-crop; left-anchored UI shifts right by this (fit() sets it)
-let camCX = 240;  // world x of the VISIBLE center — centered UI anchors here, not at W/2 (fit() sets it)
+let camCX = 240;  // world x of the VISIBLE center — centered UI anchors here, not at W/2
+let cropTotalW = 0, portS = 1, portMode = false; // portrait crop state; loop() slides the window each frame
 cx.fillText = function(str, x, y){
   tcx.font = cx.font.replace(/(\d+(?:\.\d+)?)px/, (m0, n) => (parseFloat(n) * TS) + 'px');
   tcx.fillStyle = cx.fillStyle;
@@ -357,7 +364,7 @@ function fit() {
   // portrait handheld zoom: render 1.22x width-fit and crop the overflow, 70% off
   // the LEFT (look-back) and 30% off the right — the sprites get readable and the
   // lookahead only drops 300->274 world px. Landscape/desktop keep the exact fit.
-  const VIS_W = 330; // world px visible in portrait (1.45x zoom; crop splits 70/30 so lookahead stays ~255 world px — the zoom costs look-back, which is cheap)
+  const VIS_W = 360; // world px visible in portrait (1.33x — owner: 1.45 felt too tight; the crop window is DYNAMIC now, loop() keeps the player ~32% from the visible left edge)
   const s = portrait ? window.innerWidth / VIS_W
                      : Math.min(window.innerWidth / W, window.innerHeight / H);
   const stack = document.getElementById('stack');
@@ -371,13 +378,16 @@ function fit() {
     const crop = Math.max(0, Math.floor(W * s) - window.innerWidth);
     stack.style.width = window.innerWidth + 'px';
     stack.style.height = Math.floor(H * s) + 'px';
-    cv.style.marginLeft = tv.style.marginLeft = -Math.round(crop * 0.7) + 'px';
-    camCropX = Math.round((crop * 0.7) / s);
+    portMode = true; portS = s; cropTotalW = Math.max(0, W - window.innerWidth / s);
+    camCropX = Math.min(camCropX, cropTotalW); // keep continuity across resizes; loop() eases it per frame
     camCX = Math.round(camCropX + (window.innerWidth / s) / 2);
+    cv.style.marginLeft = tv.style.marginLeft = '0px';
+    cv.style.transform = tv.style.transform = 'translateX(' + -Math.round(camCropX * s) + 'px)';
   } else {
     stack.style.width = ''; stack.style.height = '';
     cv.style.marginLeft = tv.style.marginLeft = '';
-    camCropX = 0; camCX = W / 2;
+    cv.style.transform = tv.style.transform = '';
+    portMode = false; camCropX = 0; camCX = W / 2;
   }
   document.getElementById('wrap').style.alignItems = portrait ? 'flex-start' : 'center';
   // Game Boy layouts: portrait = GB classic (screen up top, deck below: d-pad left,
@@ -820,14 +830,19 @@ const enemyDefs = [
 
 // powerups {x,y,t}  t: coffee | yc | sheet | matcha | contract | rug
 //                       press (GOOD PRESS shield) | deck (PITCH DECK attack) | angel (ANGEL CHECK refill)
+//                       bike (OMNICORP CAMPUS BIKE: +speed, eats one hit) | buds (LOST EARBUDS: coins ×2)
 const powerDefs = [
+  {x:830, y:196,t:'bike'},                                   // the bay is littered with these (v1.4)
   {x:1085,y:130,t:'coffee'},
+  {x:1520,y:150,t:'buds'},                                   // found on the sidewalk, obviously (v1.4)
   {x:2248,y:126,t:'matcha'},                                 // v1.0: the calm counter-meta
   {x:2585,y:154,t:'sheet'},
   {x:2820,y:196,t:'press'},                                  // shield: one bad take, absorbed
   {x:2900,y:200,t:'rug'},                                    // v1.0 trap: glints slightly wrong
   {x:4268,y:80, t:'deck'},                                   // top of the hacker-house climb — earn the pitch
+  {x:3060,y:196,t:'bike'},                                   // Mission rack (v1.4)
   {x:4715,y:122,t:'coffee'},                                 // CEREBRAL VALLEY
+  {x:4980,y:126,t:'buds'},                                   // (v1.4)
   {x:5060,y:126,t:'rug'},
   {x:5245,y:150,t:'sheet'},
   {x:5410,y:150,t:'deck'},                                   // on the arena perch: fight THE PLATFORM by air or by deck
@@ -1370,6 +1385,7 @@ function throwDeck(){
 
 let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
 let deckTipAt = 0; // playMs when a PITCH DECK first entered camera (persona backlog #6: teach the verb when the noun appears)
+let deckHintT = 0; // frames the B button pulses after a deck pickup (touch: the verb needs a finger)
 // PIVOT roulette (persona backlog #15, from the founder persona): the retry button's
 // joke is now mechanically true — every pivot renames the company. Invented names only.
 const PIVOTS = ['UNDISCLOSED.AI','VIBESHIFT','SYNERGYLESS','B2B2C DOT IO','STILL-STEALTH CO',
@@ -1389,7 +1405,7 @@ function reset(fromCheckpoint){
   const startX = fromCheckpoint ? checkpoint : 20;
   player = { x:startX, y:GROUND_Y-40, w:12, h:16, vx:0, vy:0, onGround:false, face:1,
              coffeeT:0, ycT:0, hurtT:0, bounceT:0, jbuf:0, coyote:0, pogo:false, runFrame:0,
-             matchaT:0, slowT:0,    // v1.0 powerups: zen jump / enterprise process
+             matchaT:0, slowT:0, bikeT:0, budsT:0, // v1.0 zen/process · v1.4 bike/earbuds
              shield:0, deckT:0 };   // GOOD PRESS charge / PITCH DECK attack window
   cam = Math.max(0, startX - 100);
   if (!fromCheckpoint){
@@ -1524,6 +1540,14 @@ function hurtPlayer(cause, word){
     beep(700, .12, 'triangle', .08);
     return;
   }
+  if (player.bikeT > 0){
+    // the bike takes the hit: you jump off and walk from here (owner spec)
+    player.bikeT = 0;
+    player.hurtT = 60; shakeT = 2; sHurt();
+    player.vy = -3.5; // the little dismount hop
+    addPop(player.x, player.y - 12, 'BIKE DOWN — you walk from here', '#39c46d', 140);
+    return;
+  }
   const tenx = interns.findIndex(i2 => i2.id === 'tenx');
   if (tenx >= 0){                  // the 10X intern tanks exactly one hit, then renegotiates
     interns.splice(tenx, 1);
@@ -1632,7 +1656,7 @@ function update(){
 
   // -------- player --------
   // cold brew boosts, enterprise process drags (×0.85, big logo heavy process)
-  const speed = (p.coffeeT > 0 ? 2.5 : 1.7) * (p.slowT > 0 ? 0.85 : 1) * (bmSyncT > 0 ? 0.8 : 1) * (cof().id === 'tech' ? 1.08 : 1); // technical cofounder ships; board syncs drag
+  const speed = (p.coffeeT > 0 ? 2.5 : p.bikeT > 0 ? 2.3 : 1.7) * (p.slowT > 0 ? 0.85 : 1) * (bmSyncT > 0 ? 0.8 : 1) * (cof().id === 'tech' ? 1.08 : 1); // cold brew > bike > feet; board syncs drag
   // cold-brew steam emits from the SIM, not from draw() (a paused frame was pushing particles forever)
   if (p.coffeeT > 0 && frame % 5 === 0) parts.push({x:p.x - 2 + Math.random()*4, y:p.y + 14, vx:-p.face, vy:-0.5, t:14, c:'#c58bff'});
   if (L()) { p.vx = -speed; p.face = -1; }
@@ -1707,6 +1731,8 @@ function update(){
   }
 
   if (p.coffeeT > 0) p.coffeeT--;
+  if (p.bikeT > 0){ p.bikeT--; if (!p.bikeT) addPop(p.x, p.y - 14, 'bike reclaimed itself (they do that)', '#8d99ae', 120); }
+  if (p.budsT > 0) p.budsT--;
   if (p.ycT > 0) p.ycT--;
   if (p.hurtT > 0) p.hurtT--;
   if (p.bounceT > 0) p.bounceT--;
@@ -1749,6 +1775,7 @@ function update(){
       hurtPlayer('burn'); if (state !== ST.PLAY) return;
     }
   }
+  if (deckHintT > 0) deckHintT--;
   if (Math.abs(p.vx) > 0.5 && p.onGround && frame % 6 === 0) p.runFrame ^= 1;
 
   // checkpoints — announced on first crossing (persona backlog #2: six personas
@@ -1768,7 +1795,8 @@ function update(){
   for (const c of coins){
     if (!c.got && aabb(p, c)){
       // NEPO intern on payroll: +20% per coin (his dad knows everyone)
-      const cv2 = interns.some(i2 => i2.id === 'nepo') ? Math.round(COIN_VALUE * 1.2) : COIN_VALUE;
+      let cv2 = interns.some(i2 => i2.id === 'nepo') ? Math.round(COIN_VALUE * 1.2) : COIN_VALUE;
+      if (p.budsT > 0) cv2 *= 2; // flow state: the earbuds double every coin
       c.got = true;
       if (cmoT > 0){ // in the vertical-video frame, money is impressions (B5)
         addPop(c.x, c.y - 6, '+0 REAL DOLLARS (impressions)', '#8d99ae');
@@ -1794,14 +1822,17 @@ function update(){
       if (pw.t === 'coffee'){ p.coffeeT = 60*10; addPop(pw.x, pw.y-8, 'COLD BREW! auto speed boost, 10s', '#c58bff', 150); }
       if (pw.t === 'yc'){ p.ycT = 60*8; addPop(pw.x, pw.y-8, 'ACCELERATED! invincible, 8s — just run', '#ff8c37', 150); }
       if (pw.t === 'matcha'){ p.matchaT = 60*10; addPop(pw.x, pw.y-8, 'MATCHA! auto +15% jump, 10s', '#39c46d', 150); }
+      if (pw.t === 'bike'){ p.bikeT = 60*10; addPop(pw.x, pw.y-8, 'CAMPUS BIKE! borrowed — +speed, eats one hit (10s)', '#39c46d', 150); }
+      if (pw.t === 'buds'){ p.budsT = 60*10; addPop(pw.x, pw.y-8, 'LOST EARBUDS! flow state — coins ×2 (10s)', '#c58bff', 150); }
       if (pw.t === 'press'){ p.shield = 1; addPop(pw.x, pw.y-8, 'GOOD PRESS! next hit is free (auto)', '#7ce0ff', 150); }
       if (pw.t === 'deck'){
         if (ped().id === 'teal'){ // paid $100K not to graduate; never learned to pitch code
           addPop(pw.x, pw.y-8, 'PITCH DECK — unusable (TEAL FELLOW: you never learned to code)', '#8d99ae', 180);
         } else {
           p.deckT = 60*15; // 15s: covers a full boss fight (playtest)
-          addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! tap — pitch AT them (15s)'
+          addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! hit B — pitch AT them (15s)'
                                                           : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a', 150);
+          if ('ontouchstart' in window) deckHintT = 240; // pulse B for 4s (owner: point at the fire button)
         }
       }
       if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5', 150); }
@@ -2170,7 +2201,8 @@ function update(){
             c.got = true;
             if (cmoT > 0){ addPop(c.x, c.y - 6, '+0 REAL DOLLARS (impressions)', '#8d99ae'); } // vanity binds the whole team
             else if (it.id === 'grinder'){
-              const icv = interns.some(i3 => i3.id === 'nepo') ? Math.round(COIN_VALUE * 1.2) : COIN_VALUE;
+              let icv = interns.some(i3 => i3.id === 'nepo') ? Math.round(COIN_VALUE * 1.2) : COIN_VALUE;
+              if (player.budsT > 0) icv *= 2;
               raised += icv; sCoin(); addPop(c.x, c.y - 6, '+$' + icv + 'K (intern)', '#7cffa5');
             }
             else addPop(c.x, c.y - 6, '+$0 (for exposure)', '#8d99ae');
@@ -3638,6 +3670,19 @@ function draw(){
       for (let i = 0; i < 3; i++) cx.fillRect(Math.round(x + 2), Math.round(pw.y + 5 + i * 2 + bob), 6, 1);
       px(x + 9, pw.y + 4 + bob, 3, 4, '#7ce0ff');                           // the flattering photo
       if ((frame >> 3) % 2) px(x - 1, pw.y - 1 + bob, 15, 1, 'rgba(124,224,255,.5)'); // press glow
+    } else if (pw.t === 'bike'){
+      // OMNICORP CAMPUS BIKE: corporate primary colors, permanently mislaid
+      px(x, pw.y + 8 + bob, 5, 5, '#1b1c26'); px(x + 9, pw.y + 8 + bob, 5, 5, '#1b1c26');   // wheels
+      px(x + 1, pw.y + 9 + bob, 3, 3, '#3a3d4d'); px(x + 10, pw.y + 9 + bob, 3, 3, '#3a3d4d');
+      px(x + 2, pw.y + 6 + bob, 10, 2, '#e8483f');                                          // frame
+      px(x + 4, pw.y + 4 + bob, 2, 3, '#3a7bd5'); px(x + 8, pw.y + 4 + bob, 2, 3, '#3fae5a'); // seat + head tube
+      px(x + 7, pw.y + 3 + bob, 4, 1, '#f2b53c');                                           // bars
+    } else if (pw.t === 'buds'){
+      // LOST EARBUDS: a pristine white case on the sidewalk. finders keepers.
+      px(x + 2, pw.y + 4 + bob, 9, 7, '#f2f2f5');
+      px(x + 2, pw.y + 6 + bob, 9, 1, '#c9c9d2');                                           // lid seam
+      px(x + 5, pw.y + 7 + bob, 3, 2, '#8d99ae');                                           // hinge glint
+      if ((frame % 60) < 30) px(x + 12, pw.y + 2 + bob, 1, 1, '#fff');                      // 1Hz pairing blink
     } else if (pw.t === 'deck'){
       // PITCH DECK: the founder's weapon, briefly
       px(x, pw.y + bob, 14, 10, '#7ce0ff');
@@ -3773,6 +3818,13 @@ function draw(){
       cx.strokeStyle = frame % 20 < 10 ? '#7ce0ff' : 'rgba(124,224,255,.4)';
       cx.lineWidth = 1;
       cx.strokeRect(Math.round(player.x - cam - 3) + 0.5, Math.round(player.y - 3) + 0.5, player.w + 6, player.h + 6);
+    }
+    if (player.bikeT > 0){ // the borrowed bike, under the founder
+      const bx2 = player.x - cam - 2, by2 = player.y + 12;
+      px(bx2, by2 + 2, 5, 5, '#1b1c26'); px(bx2 + 11, by2 + 2, 5, 5, '#1b1c26');
+      px(bx2 + 1, by2 + 3, 3, 3, '#3a3d4d'); px(bx2 + 12, by2 + 3, 3, 3, '#3a3d4d');
+      px(bx2 + 2, by2, 12, 2, '#e8483f');
+      if (frame % 4 < 2) px(bx2 - 2 - (player.face > 0 ? 2 : -18), by2 + 5, 2, 1, '#8d99ae'); // road dust
     }
     drawFounder(cx, player.x - cam, player.y, 1, player.face, player.runFrame, player.ycT > 0 && frame % 8 < 5);
     drawPedGear(cx, player.x - cam, player.y, 1);
@@ -4555,7 +4607,7 @@ function drawPause(){
   cx.fillText(('ontouchstart' in window) ? 'tap anywhere to resume' : 'ESC resumes · buttons above', camCX, 150);
   cx.textAlign = 'left';
 }
-let _pmShown = null, _pcShown = null, _cuShown = null; // cached DOM visibility (no per-frame style churn)
+let _pmShown = null, _pcShown = null, _cuShown = null, _bhShown = null; // cached DOM visibility (no per-frame style churn)
 function pauseUiSync(){
   const menu = paused && state === ST.PLAY, chip = !paused && state === ST.PLAY;
   if (menu !== _pmShown){ document.getElementById('pauseMenu').style.display = menu ? 'flex' : 'none'; _pmShown = menu; }
@@ -4563,12 +4615,26 @@ function pauseUiSync(){
   if (chipShow !== _pcShown){ document.getElementById('pauseChip').style.display = chipShow ? 'block' : 'none'; _pcShown = chipShow; }
   const cust = customizeOpen && state === ST.TITLE;      // the CUSTOMIZE panel only exists over the title
   if (cust !== _cuShown){ document.getElementById('custPanel').style.display = cust ? 'flex' : 'none'; _cuShown = cust; }
+  const bh = deckHintT > 0 && state === ST.PLAY;         // B pulses while the fresh deck begs to be pitched
+  if (bh !== _bhShown){ document.getElementById('tB').classList.toggle('bhint', bh); _bhShown = bh; }
 }
 function loop(now){
   acc += Math.min(now - (last || now), 100); last = now;
   pauseUiSync();
   if (paused && state === ST.PLAY){ acc = 0; }
   else while (acc >= STEP){ stepGame(); acc -= STEP; }
+  // portrait window slide (presentation only — reads sim, mutates CSS): keep the
+  // player ~32% from the visible left edge; clamped so spawn/walk-backs never hide them
+  if (portMode){
+    const visW = W - cropTotalW;
+    const target = state === ST.PLAY
+      ? clamp((player.x - cam) - visW * 0.32, 0, cropTotalW)
+      : cropTotalW * 0.7;
+    camCropX += (target - camCropX) * 0.12;
+    camCX = camCropX + visW / 2;
+    const shift = -Math.round(camCropX * portS);
+    cv.style.transform = tv.style.transform = 'translateX(' + shift + 'px)';
+  }
   draw();
   if (paused && state === ST.PLAY) drawPause();
   requestAnimationFrame(loop);
