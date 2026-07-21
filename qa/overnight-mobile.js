@@ -145,9 +145,15 @@ const tapXY = async (page, x, y) => { await page.touchscreen.tap(x, y); };
     const dp = await page.evaluate(() => window.__id);
     await tapXY(page, dp.x, dp.y);
     await page.waitForTimeout(200);
-    check('390x664: GOT IT closes the card and persists the dismissal', await page.evaluate(() => {
-      let seen = false; try { seen = localStorage.getItem('fm_a2hs2') === '1'; } catch(e){}
-      return document.getElementById('installCard').style.display === 'none' && seen;
+    check('390x664: GOT IT closes the card WITHOUT persisting (button is permanent; only ✕ persists)', await page.evaluate(() => {
+      let seen = false; try { seen = localStorage.getItem('fm_a2hs3') === '1'; } catch(e){}
+      return document.getElementById('installCard').style.display === 'none' && !seen;
+    }));
+    // the ✕ is the one forever-dismissal
+    check('390x664: ✕ writes the forever-dismissal', await page.evaluate(() => {
+      document.getElementById('a2hsX').dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      let seen = false; try { seen = localStorage.getItem('fm_a2hs3') === '1'; } catch(e){}
+      return seen && document.getElementById('a2hs').style.display === 'none';
     }));
 
     await page.screenshot({ path: path.join(SHOTDIR, 'mobile-390x664-portrait.png') });

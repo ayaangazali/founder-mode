@@ -79,11 +79,15 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
     #stack { overflow: hidden; }
   }
   #a2hs { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(52px + env(safe-area-inset-bottom, 0px));
-          display:none; z-index:20; background:#7ce0ff; border:0; color:#0d0d1f;
-          font:bold 16px "Courier New",monospace; padding:14px 22px; text-align:center; max-width:92vw;
-          border-radius:4px; box-shadow:0 5px 0 #1b5e75; }
-  #a2hs:active { transform:translateX(-50%) translateY(3px); box-shadow:0 2px 0 #1b5e75; }
-  #a2hs span { color:#123c4d; display:block; margin-top:3px; font-size:11px; font-weight:bold; }
+          display:none; z-index:20; color:#0d0d1f; border:0; border-radius:6px;
+          background:linear-gradient(180deg, #9ceaff 0%, #7ce0ff 55%, #54c4e8 100%);
+          font:bold 19px "Courier New",monospace; padding:18px 44px 18px 26px; text-align:center; max-width:94vw;
+          box-shadow:inset 0 2px 0 rgba(255,255,255,.5), 0 7px 0 #1b5e75, 0 10px 18px rgba(0,0,0,.35); }
+  #a2hs:active { transform:translateX(-50%) translateY(4px); box-shadow:inset 0 2px 0 rgba(255,255,255,.5), 0 3px 0 #1b5e75; }
+  #a2hs span { color:#123c4d; display:block; margin-top:4px; font-size:12px; font-weight:bold; }
+  #a2hsX { position:absolute; top:-12px; right:-12px; width:34px; height:34px; line-height:32px;
+           background:#141433; color:#8d99ae; border:2px solid #5d647a; border-radius:50%;
+           font:bold 16px "Courier New",monospace; text-align:center; }
   #installCard { position:fixed; inset:0; z-index:32; display:none; align-items:center; justify-content:center;
                  background:rgba(0,0,0,.72); }
   #installCard .card { background:#141433; border:3px solid #7ce0ff; box-shadow:0 6px 0 #1b5e75;
@@ -123,16 +127,19 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   #touch { position:fixed; inset:0; pointer-events:none; display:none; z-index:5; }
   #touch div {
     position:absolute; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); width:70px; height:70px; border-radius:14px;
-    background:#23253a; border:2px solid #101120; border-bottom-width:5px;
+    background:linear-gradient(180deg, #33364a 0%, #23253a 45%, #191b2a 100%);
+    border:2px solid #101120; border-bottom-width:6px;
     color:#9aa0b8; font:bold 26px "Courier New",monospace; text-align:center; line-height:62px;
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.08);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.14), inset 0 -3px 4px rgba(0,0,0,.4), 0 6px 10px rgba(0,0,0,.45);
     pointer-events:auto; user-select:none; -webkit-user-select:none;
   }
-  #touch div:active { border-bottom-width:2px; transform:translateY(3px); }
+  #touch div:active { border-bottom-width:2px; transform:translateY(4px);
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.3); }
   #tL{left:calc(18px + env(safe-area-inset-left, 0px)); border-radius:14px 4px 4px 14px}
   #tR{left:calc(104px + env(safe-area-inset-left, 0px)); border-radius:4px 14px 14px 4px}
   #touch div#tJ{right:calc(18px + env(safe-area-inset-right, 0px)); width:86px; height:86px; line-height:78px; border-radius:50%;
-                background:#a83355; color:#ffd6e0; border-color:#5e1b30;}
+                background:radial-gradient(circle at 34% 28%, #c8517c 0%, #a83355 55%, #7e1f3e 100%);
+                color:#ffd6e0; border-color:#5e1b30; text-shadow:0 2px 0 rgba(0,0,0,.35);}
   #touch div#tP, #touch div#tS{
     top:calc(10px + env(safe-area-inset-top, 0px)); bottom:auto;
     width:58px; height:26px; line-height:24px; font-size:10px; letter-spacing:1px;
@@ -145,9 +152,21 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   #shellBrand i { display:inline-block; width:6px; height:6px; border-radius:50%;
                   background:#7cffa5; margin-right:8px; vertical-align:1px; } /* power LED — steady, of course */
   @media (pointer: coarse) {
-    body { background:#101120; } /* the console body around the screen */
+    body { background:#101120; } /* landscape: dark, buttons float over the game */
     canvas#game { outline:6px solid #060812; border-radius:4px; box-shadow:0 0 0 12px #1a1c30, 0 14px 40px rgba(0,0,0,.6); }
   }
+  /* vintage handheld body (owner ask: '3D, vintage, like the old Nintendo handhelds') —
+     portrait only; the DMG greige, the charcoal screen surround, the slanted pills */
+  @media (pointer: coarse) and (orientation: portrait) {
+    body { background:linear-gradient(180deg, #b9b3a6 0%, #aaa294 55%, #9c9484 100%); }
+    canvas#game { outline:10px solid #3a3f4a; border-radius:6px;
+                  box-shadow:0 0 0 22px #454b58, 0 0 0 24px #2e323c, 0 10px 24px rgba(0,0,0,.35); }
+    #shellBrand { color:#6f6857; letter-spacing:3px; }
+    #touch div#tP, #touch div#tS { transform:rotate(-18deg); background:linear-gradient(180deg,#8f8878,#6f6857);
+                                   color:#f0ece2; border-color:#4a4437; border-bottom-width:4px; }
+  }
+  #bezelLabel { position:fixed; display:none; z-index:4; left:0; right:0; text-align:center;
+                font:bold 8px "Courier New",monospace; color:#8a92a6; letter-spacing:2px; pointer-events:none; }
   #rot { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(8px + env(safe-area-inset-bottom, 0px));
          display:none; z-index:20; background:rgba(8,8,20,.9); border:2px solid #ffd94a; color:#ffd94a;
          font:bold 13px "Courier New",monospace; padding:10px 14px; text-align:center; max-width:92vw; }
@@ -211,6 +230,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
 <div id="ui"><div class="card" id="uicard"></div></div>
 <div id="touch"><div id="tL">◀</div><div id="tR">▶</div><div id="tJ">A</div><div id="tP">START</div><div id="tS">SOUND</div></div>
 <div id="shellBrand"><i></i>SF SPEEDRUN</div>
+<div id="bezelLabel">DOT MATRIX WITH VENTURE SOUND</div>
 <button id="pauseChip">⏸ PAUSE</button>
 <div id="pauseMenu"><div class="card">
   <div style="color:#ffd94a; font-size:16px">PAUSED</div>
@@ -231,7 +251,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
   <button id="custDone">✓ DONE</button>
   <div class="foot" id="custHint">ESC — back · SPACE — ship it</div>
 </div></div>
-<div id="a2hs">⊞ GET THE APP<span>full screen · offline · zero VCs involved</span></div>
+<div id="a2hs">⊞ GET THE APP<span>full screen · offline · zero VCs involved</span><b id="a2hsX">✕</b></div>
 <div id="installCard"><div class="card">
   <h3>SF SPEEDRUN, the app</h3>
   <div class="why">full screen · works offline · lives on your home screen like it pays rent</div>
@@ -265,6 +285,7 @@ const tv = document.getElementById('txt');
 const tcx = tv.getContext('2d');
 let TS = 2; // game-unit → overlay-pixel scale; set by fit()
 let camCropX = 0; // world px hidden by the portrait left-crop; left-anchored UI shifts right by this (fit() sets it)
+let camCX = 240;  // world x of the VISIBLE center — centered UI anchors here, not at W/2 (fit() sets it)
 cx.fillText = function(str, x, y){
   tcx.font = cx.font.replace(/(\d+(?:\.\d+)?)px/, (m0, n) => (parseFloat(n) * TS) + 'px');
   tcx.fillStyle = cx.fillStyle;
@@ -292,7 +313,7 @@ function fit() {
   // portrait handheld zoom: render 1.22x width-fit and crop the overflow, 70% off
   // the LEFT (look-back) and 30% off the right — the sprites get readable and the
   // lookahead only drops 300->274 world px. Landscape/desktop keep the exact fit.
-  const VIS_W = 375; // world px visible in portrait (1.28x zoom; lookahead 300→255 world px)
+  const VIS_W = 330; // world px visible in portrait (1.45x zoom; crop splits 70/30 so lookahead stays ~255 world px — the zoom costs look-back, which is cheap)
   const s = portrait ? window.innerWidth / VIS_W
                      : Math.min(window.innerWidth / W, window.innerHeight / H);
   const stack = document.getElementById('stack');
@@ -308,10 +329,11 @@ function fit() {
     stack.style.height = Math.floor(H * s) + 'px';
     cv.style.marginLeft = tv.style.marginLeft = -Math.round(crop * 0.7) + 'px';
     camCropX = Math.round((crop * 0.7) / s);
+    camCX = Math.round(camCropX + (window.innerWidth / s) / 2);
   } else {
     stack.style.width = ''; stack.style.height = '';
     cv.style.marginLeft = tv.style.marginLeft = '';
-    camCropX = 0;
+    camCropX = 0; camCX = W / 2;
   }
   document.getElementById('wrap').style.alignItems = portrait ? 'flex-start' : 'center';
   // Game Boy layouts: portrait = GB classic (screen up top, deck below: d-pad left,
@@ -340,17 +362,20 @@ function fit() {
   }
   const brand = document.getElementById('shellBrand');
   brand.style.display = (isTouch && portrait) ? 'block' : 'none';
+  const bz = document.getElementById('bezelLabel');
   if (portrait){
     const deckTop = window.innerHeight - 120 - 80; // matches the d-pad bottom anchor
     const sb = stack.getBoundingClientRect().bottom;
-    brand.style.top = Math.round(sb + Math.max(10, (deckTop - sb) / 2)) + 'px';
-  }
+    bz.style.display = 'block'; bz.style.top = Math.round(sb + 30) + 'px';
+    brand.style.top = Math.round(sb + Math.max(44, (deckTop - sb) / 2)) + 'px';
+  } else bz.style.display = 'none';
   // install hint: iOS Safari, not yet installed, not dismissed, title only (stepGame hides it on start)
   const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-  let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs2') === '1'; } catch(e){}
+  let a2hsSeen = false; try { a2hsSeen = localStorage.getItem('fm_a2hs3') === '1'; } catch(e){}
   let onTitle = true; try { onTitle = state === 0; } catch(e){} // boot fit() predates the state let-binding (TDZ throws even on typeof); 0 = ST.TITLE
+  let a2hsUsed = false; try { a2hsUsed = a2hsSession; } catch(e){} // boot fit() predates the binding
   document.getElementById('a2hs').style.display =
-    (isTouch && !standalone && !a2hsSeen && onTitle) ? 'block' : 'none';
+    (isTouch && !standalone && !a2hsSeen && !a2hsUsed && onTitle) ? 'block' : 'none';
 }
 window.addEventListener('resize', fit); fit();
 // title-screen leaderboard panel (chip shows only on the title, like #credit)
@@ -375,8 +400,11 @@ document.getElementById('lbPanelClose').addEventListener('click', () => {
 document.getElementById('lbPanel').addEventListener('click', e => {
   if (e.target.id === 'lbPanel') document.getElementById('lbPanel').style.display = 'none';
 });
-// v2 dismissal key: dismissing the old tiny hint must not hide the new button
-const a2hsDismiss = () => { try { localStorage.setItem('fm_a2hs2', '1'); } catch(e){} document.getElementById('a2hs').style.display = 'none'; };
+// the button is PERMANENT (owner call): only the ✕ writes the forever-dismissal;
+// GOT IT / the native prompt just hide it for the session (v3 key: prior GOT-IT
+// dismissals under v2 semantics must not keep hiding it)
+const a2hsDismiss = () => { try { localStorage.setItem('fm_a2hs3', '1'); } catch(e){} document.getElementById('a2hs').style.display = 'none'; };
+const a2hsHide = () => { document.getElementById('a2hs').style.display = 'none'; };
 // Android/desktop Chrome fire beforeinstallprompt — capture it and installing is ONE tap.
 // Apple offers no API, so iOS gets a big per-browser instruction card instead.
 let bipEvent = null;
@@ -390,10 +418,12 @@ function installSteps(){
   if (iOS) return ['tap the share button <span class="ic">\u2b06</span> at the bottom of Safari', 'scroll down \u2192 <span class="ic">Add to Home Screen</span>', 'tap <span class="ic">Add</span> \u2014 done'];
   return ['tap the menu <span class="ic">\u22ee</span> top right', 'tap <span class="ic">Add to Home screen</span> (or <span class="ic">Install app</span>)', 'confirm \u2014 done'];
 }
+let a2hsSession = false; // GOT IT hides for THIS visit only; the ✕ is the only forever
 function installTap(){
+  a2hsSession = true;
   if (bipEvent){ // the frictionless path: real native install prompt, one tap
     const ev = bipEvent; bipEvent = null;
-    ev.prompt(); ev.userChoice.finally(a2hsDismiss);
+    ev.prompt(); ev.userChoice.finally(a2hsHide);
     return;
   }
   document.getElementById('installSteps').innerHTML = installSteps().map(t => '<li>' + t + '</li>').join('');
@@ -402,7 +432,9 @@ function installTap(){
 }
 document.getElementById('a2hs').addEventListener('touchstart', e => { e.preventDefault(); installTap(); }, {passive:false});
 document.getElementById('a2hs').addEventListener('mousedown', installTap);
-document.getElementById('installDone').addEventListener('pointerdown', e => { e.preventDefault(); document.getElementById('installCard').style.display = 'none'; a2hsDismiss(); });
+document.getElementById('installDone').addEventListener('pointerdown', e => { e.preventDefault(); document.getElementById('installCard').style.display = 'none'; a2hsHide(); });
+document.getElementById('a2hsX').addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); a2hsDismiss(); }, {passive:false});
+document.getElementById('a2hsX').addEventListener('mousedown', e => { e.stopPropagation(); a2hsDismiss(); });
 document.getElementById('installCard').addEventListener('pointerdown', e => { if (e.target.id === 'installCard') document.getElementById('installCard').style.display = 'none'; }); // backdrop = maybe later (chip returns next visit)
 
 // ------------------------- INPUT -------------------------
@@ -3699,11 +3731,12 @@ function draw(){
     const m = MOODS[moodLock ? 5 : moodTier] || { t: 'FOUNDER MODE', c: '#ffd94a' };
     cx.font = 'bold 7px monospace';
     const mw = cx.measureText(m.t).width;
-    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(Math.round(W/2 - mw/2 - 5), 22, Math.round(mw + 10), 11);
+    const myy = camCropX ? 38 : 22; // portrait: the wallet box reaches the visible center — the ticker ducks a row
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(Math.round(camCX - mw/2 - 5), myy, Math.round(mw + 10), 11);
     occlude(W/2 - mw/2 - 5, 22, mw + 10, 11);
     cx.fillStyle = m.c;
     if (moodTier === 4 && frame % 8 < 3 && !moodLock) cx.fillStyle = '#ffd94a'; // deranged shimmer
-    cx.fillText(m.t, Math.round(W/2 - mw/2), 30);
+    cx.fillText(m.t, Math.round(camCX - mw/2), myy + 8);
   }
 
   // popups + HUD only during play (end screens keep the frame clean behind the card)
@@ -3755,10 +3788,10 @@ function drawHUD(){
     px(hx0 + 46 + i * 11, 23, 9, 8, i < hearts ? '#39c46d' : '#333a44');
   // zone + timer
   if (!chat && !interview){ // mini-game headers own top-center while one is up
-    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W/2 - 55, 6, 110, 14); occlude(W/2 - 55, 6, 110, 14);
+    cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(camCX - 55, 6, 110, 14); occlude(camCX - 55, 6, 110, 14);
     cx.fillStyle = '#fff'; cx.font = 'bold 8px monospace';
     const zn = zoneName(player.x);
-    cx.fillText(zn, Math.round(W/2 - cx.measureText(zn).width/2), 16);
+    cx.fillText(zn, Math.round(camCX - cx.measureText(zn).width/2), 16);
   }
   if (muted){ // the toggle was invisible: nobody could tell whether M took (persona backlog #5)
     cx.fillStyle = 'rgba(0,0,0,.45)'; cx.fillRect(W - 130, 22, 56, 11); occlude(W - 130, 22, 56, 11);
@@ -3799,9 +3832,9 @@ function drawHUD(){
                                     : '←→ move · SPACE jump · stomp enemies');
     cx.font = 'bold 7px monospace';
     const ctw = cx.measureText(ct).width;
-    cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(W/2 - ctw/2 - 5), H - 20, Math.round(ctw + 10), 12);
+    cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(Math.round(camCX - ctw/2 - 5), H - 20, Math.round(ctw + 10), 12);
     occlude(W/2 - ctw/2 - 5, H - 20, ctw + 10, 12);
-    cx.fillStyle = '#cfd6e4'; cx.fillText(ct, Math.round(W/2 - ctw/2), H - 11);
+    cx.fillStyle = '#cfd6e4'; cx.fillText(ct, Math.round(camCX - ctw/2), H - 11);
   }
   if (corgi.following && !corgi.sitting && !inOverlay){ cx.fillStyle = '#39c46d'; cx.fillText('morale: high', camCropX + 12, 84); }
 }
@@ -3857,17 +3890,17 @@ function drawTitle(){
   // elements above the fold, was 11; three hues; fixation order title → CTA → sprite)
   cx.textAlign = 'center';
   cx.fillStyle = '#000'; cx.font = 'bold 30px monospace';
-  cx.fillText('SF SPEEDRUN', W/2 + 2, 92 + 2);
-  cx.fillStyle = '#ffd94a'; cx.fillText('SF SPEEDRUN', W/2, 92);
+  cx.fillText('SF SPEEDRUN', camCX + 2, 92 + 2);
+  cx.fillStyle = '#ffd94a'; cx.fillText('SF SPEEDRUN', camCX, 92);
   // owner rename 2026-07-21: the game is SF SPEEDRUN and the tagline is the question
   cx.fillStyle = '#fff'; cx.font = 'bold 9px monospace';
-  cx.fillText('how fast can your startup IPO?', W/2, 110);
+  cx.fillText('how fast can your startup IPO?', camCX, 110);
   // stakes line — gray, not green: the CTA owns green now. Absent = empty slot, fine.
   cx.font = 'bold 8px monospace'; cx.fillStyle = '#cfd6e4';
   if (lbTop && lbTop.length){
-    cx.fillText("today's top exit: " + fmtMoney(lbTop[0].val) + ' by ' + lbTop[0].name + ' — beat it', W/2, 124);
+    cx.fillText("today's top exit: " + fmtMoney(lbTop[0].val) + ' by ' + lbTop[0].name + ' — beat it', camCX, 124);
   } else { const b = lbBest(); if (b){
-    cx.fillText('your best exit: ' + fmtMoney(b.val) + (b.won ? ' ' + winEmoji(b.val) : ' (down round)'), W/2, 124);
+    cx.fillText('your best exit: ' + fmtMoney(b.val) + (b.won ? ' ' + winEmoji(b.val) : ' (down round)'), camCX, 124);
   } }
   // (owner call: market-conditions ticker + seed number dropped from the title —
   //  the daily seed system itself is untouched; MARKET.s still feeds the obituary)
@@ -3875,11 +3908,11 @@ function drawTitle(){
   // CTA: promoted to 14px, floor raised so screenshots never catch it dim
   cx.globalAlpha = 0.8 + 0.2 * Math.sin(frame * 0.1);
   cx.fillStyle = '#7cffa5'; cx.font = 'bold 14px monospace';
-  cx.fillText(('ontouchstart' in window) ? 'TAP TO START' : 'PRESS SPACE TO START', W/2, 164);
+  cx.fillText(('ontouchstart' in window) ? 'TAP TO START' : 'PRESS SPACE TO START', camCX, 164);
   cx.globalAlpha = 1;
   const ctrl = ('ontouchstart' in window) ? '◀ ▶ move · A jump' : '←→ move · SPACE jump';
   cx.font = 'bold 7px monospace'; cx.fillStyle = '#8d99ae';
-  cx.fillText(ctrl, W/2, 178); // one muted line needs no black plate
+  cx.fillText(ctrl, camCX, 178); // one muted line needs no black plate
   // ---- ONE customize entry (chip · sprite tap · C/H/V/X/P keys) ----
   cx.textAlign = 'left'; cx.font = 'bold 7px monospace';
   const custTxt = ('ontouchstart' in window) ? 'CUSTOMIZE FOUNDER ▸' : '[C] CUSTOMIZE FOUNDER';
@@ -3888,7 +3921,7 @@ function drawTitle(){
   cx.textAlign = 'center';
   cx.font = 'bold 8px monospace';
   cx.fillStyle = '#5d647a';
-  cx.fillText('a dumb side project. do not raise a round about it.', W/2, 258);
+  cx.fillText('a dumb side project. do not raise a round about it.', camCX, 258);
   cx.textAlign = 'left';
 }
 // ------------------------- END SCREENS + BADGE -------------------------
@@ -4457,11 +4490,11 @@ function drawPause(){
   px(0, 0, W, H, 'rgba(8,8,20,.7)'); occlude(0, 0, W, H);
   cx.textAlign = 'center';
   cx.fillStyle = '#ffd94a'; cx.font = 'bold 16px monospace';
-  cx.fillText('PAUSED', W/2, 118);
+  cx.fillText('PAUSED', camCX, 118);
   cx.fillStyle = '#8d99ae'; cx.font = 'bold 8px monospace';
-  cx.fillText('(the market, briefly, moves without you)', W/2, 134);
+  cx.fillText('(the market, briefly, moves without you)', camCX, 134);
   cx.fillStyle = '#fff';
-  cx.fillText(('ontouchstart' in window) ? 'tap anywhere to resume' : 'ESC resumes · buttons above', W/2, 150);
+  cx.fillText(('ontouchstart' in window) ? 'tap anywhere to resume' : 'ESC resumes · buttons above', camCX, 150);
   cx.textAlign = 'left';
 }
 let _pmShown = null, _pcShown = null, _cuShown = null; // cached DOM visibility (no per-frame style churn)
