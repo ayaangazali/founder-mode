@@ -17,7 +17,7 @@ const check = (n, ok, d) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${d ? ' 
 
 // mirrors PARTNERS.md — owner roster of 2026-07-14 (CLEAN + DEEL removed,
 // NOZOMIO added). Add here when a new real board lands a yes.
-const ALLOWED_REAL = ['SUPERSET','VERCEL','WARP','RESEND','EXA',
+const ALLOWED_REAL = ['CURSOR','VERCEL','WARP','RESEND','EXA', // SUPERSET→CURSOR, owner swap 2026-07-22
   'FIRECRAWL','BROWSER USE','MANUFACT','NOZOMIO','INSFORGE','CALLIX',
   'SUPERMEMORY','HYPERSPELL','AGENTMAIL','KINECT','IMAGINE AI'];
 // v2 owner pass removed GOJIBERRY / REPLIT / SUPABASE (the latter two stay on

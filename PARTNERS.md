@@ -16,7 +16,8 @@
 
 | Board | Company | Relationship | Real or parody now | Status | Yes evidence |
 |---|---|---|---|---|---|
-| SUPERSET | YC P26 (agent IDE) | reachable | REAL | DM founder | — |
+| CURSOR | cursor.com (the AI editor) | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — | <!-- owner swap 2026-07-22: replaced SUPERSET in the SOMA lead slot -->
+
 | VERCEL | vercel.com | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
 | WARP | warp.dev | aspirational (big) | affectionate-and-true tagline | approach w/ proof | — |
 | RESEND | resend.com | dev-darling | REAL | DM | — |
