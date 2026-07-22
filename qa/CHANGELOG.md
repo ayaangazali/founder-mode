@@ -994,3 +994,11 @@ Every DOM button (end card, pause menu, install card, customize DONE) ticks on p
 delegated pointerdown listener + a 35ms square blip, respecting mute. Excluded: the customize
 arrows (cycleLook already ticks) and the sound toggle (setMuted already confirms). Tests +
 minigames + mobile green.
+
+## 2026-07-22 — [HOTFIX: press feel] buttons stopped feeling fake
+
+The unified-cross refactor had killed the d-pad's travel (:active transform:none on the transparent
+arms). Now the whole cross ROCKS toward the held arm (perspective rotateY via .pl/.pr classes set
+from recompute() — real finger state, works mid-slide), A/B domes get deeper gradients + specular
+inset and visibly sink on press (translateY + scale + brightness), pills press into their wells.
+Mobile suite green.
