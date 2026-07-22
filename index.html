@@ -748,6 +748,14 @@ const sPow   = () => { [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,.1
 const sBoss  = () => beep(80, .5, 'sawtooth', .1, -30);
 const sWin   = () => { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.08),i*130)); };
 const sDead  = () => [392,311,262,196].forEach((f,i)=>beep(f,.24,'triangle',.09,-20,i*0.14)); // market-close bell, going down
+const sClick = () => beep(1150, .035, 'square', .045); // UI button tick — subtle, everywhere
+// every DOM button clicks (end card, pause, install, customize DONE) — except
+// controls that already speak for themselves (panel arrows tick via cycleLook,
+// the sound toggle confirms via setMuted)
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest && e.target.closest('button');
+  if (b && !e.target.closest('.arw, #pmSound')){ initAudio(); sClick(); }
+}, true);
 
 // ---- MUSIC: in-code chiptune loop (persona backlog #7 — six personas flagged the dead air) ----
 // A 16-step sequencer driven by the SIMULATED clock: pause, hitstop, blur and minigames all

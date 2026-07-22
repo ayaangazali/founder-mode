@@ -987,3 +987,10 @@ SHARE on win), share+save paired row, view-toggle + title as a small utility row
 compacted, redundant press-and-hold note cut. Desktop layout unchanged (order preserved incl. the
 FINAL-REVIEW §2 losers-share-first amendment). Whole card fits one 393x852 screen (was overflowing).
 Before/after: qa/launch-eve/endcard-*.png. Tests + mobile suite + obituary probe green.
+
+## 2026-07-22 — [HOTFIX: UI click sound]
+
+Every DOM button (end card, pause menu, install card, customize DONE) ticks on press — one
+delegated pointerdown listener + a 35ms square blip, respecting mute. Excluded: the customize
+arrows (cycleLook already ticks) and the sound toggle (setMuted already confirms). Tests +
+minigames + mobile green.
