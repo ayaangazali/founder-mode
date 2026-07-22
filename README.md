@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🦄 SF SPEEDRUN
+# SF SPEEDRUN
 
 ### how fast can your startup IPO?
 
@@ -8,7 +8,7 @@
 
 <br>
 
-<a href="https://sfspeedrun.com"><img src="https://img.shields.io/badge/▶_PLAY_NOW-sfspeedrun.com-ffd94a?style=for-the-badge&labelColor=141433" alt="Play now"></a>
+<a href="https://sfspeedrun.com"><img src="https://img.shields.io/badge/PLAY_NOW-sfspeedrun.com-ffd94a?style=for-the-badge&labelColor=141433" alt="Play now"></a>
 
 <br><br>
 
@@ -25,10 +25,38 @@
 <br>
 
 *Arrow keys / WASD to move · Space to jump · one file, no signup, no loading screen.*
-<br>
-*made by [ayaan gazali](https://www.linkedin.com/in/ayaangazali) · this page, as a website: [sfspeedrun.com/about.html](https://sfspeedrun.com/about.html)*
 
 </div>
+
+---
+
+A Mario-style pixel platformer that satirizes San Francisco startup culture — the whole thing is **one HTML file** of vanilla JavaScript, no framework, no build step, and zero image or audio assets. Every sprite is a stack of `fillRect` calls; every sound is a synthesized oscillator.
+
+**Play it:** [sfspeedrun.com](https://sfspeedrun.com) · **How it's built (as a web page):** [sfspeedrun.com/about.html](https://sfspeedrun.com/about.html) · **Made by:** [ayaan gazali](https://www.linkedin.com/in/ayaangazali)
+
+## Run it locally
+
+There is nothing to install and nothing to build. The game is the file.
+
+```bash
+git clone https://github.com/ayaangazali/founder-mode.git
+cd founder-mode
+open index.html        # or just double-click it — it runs from file://
+```
+
+The `api/` serverless functions (leaderboard + share cards) and the PWA files (`manifest.json`, `sw.js`) are optional extras; the game never needs them to run.
+
+## At a glance
+
+| | |
+|---|---|
+| **Stack** | Vanilla JS + Canvas 2D, ~4,700 lines, one file |
+| **Assets** | None — sprites are `fillRect`, audio is WebAudio oscillators |
+| **World** | 9,200px across five SF zones, three bosses, one IPO bell |
+| **Loop** | Fixed-timestep sim (60 steps/s), simulated `playMs` clock |
+| **Mobile** | Installable PWA, plays offline, portrait handheld shell |
+| **Backend** | Three tiny serverless functions (daily + all-time leaderboard) |
+| **Tests** | 3 Playwright suites + 9 probes + 2 bot profiles + a 4-hour CI sweep |
 
 ---
 
@@ -58,7 +86,7 @@ Audio is synthesized entirely in code through the WebAudio API: one `beep()` fun
 
 ## The phone becomes a handheld
 
-On a phone in portrait, the page stops being a website: warm greige console body, dark charcoal screen bezel labeled **DOT MATRIX WITH VENTURE SOUND**, the **OMNICORP GAME BRO™** nameplate stamped in the game's own gold-on-dark chip style, a solid black cross d-pad, two magenta dome buttons set on the classic diagonal (B pitches your deck, A jumps — labels printed under them on the shell), slanted silver pills for SOUND and START, and a diagonal speaker grille. The game view renders zoomed with a **dynamic camera window** that slides to keep the founder a third in from the left edge, and full-screen scenes (chats, interviews) snap to full width so nothing gets amputated. Add it to your home screen and it installs as a real app — its own icon (the founder under an SF wordmark, generated from the game's own drawing code), fullscreen with no browser chrome, playable offline underground on Muni via a service worker. A blue GET THE APP box greets every title visit with browser-aware directions: Safari users get a card at the bottom with a pulsing arrow at the share button; Chrome users get it at the top, arrow pointing at the address bar.
+On a phone in portrait, the page stops being a website: warm greige console body, dark charcoal screen bezel labeled **DOT MATRIX WITH VENTURE SOUND**, the **OMNICORP GAME BRO™** nameplate stamped in the game's own gold-on-dark chip style, a solid black cross d-pad, two magenta dome buttons set on the classic diagonal (SHOOT pitches your deck, A jumps — labels printed under them on the shell), slanted silver pills for SOUND and START, and a diagonal speaker grille. The game view renders zoomed with a **dynamic camera window** that slides to keep the founder a third in from the left edge, and full-screen scenes (chats, interviews) snap to full width so nothing gets amputated. Add it to your home screen and it installs as a real app — its own icon (the founder under an SF wordmark, generated from the game's own drawing code), fullscreen with no browser chrome, playable offline underground on Muni via a service worker. A blue GET THE APP box greets every title visit with browser-aware directions: Safari users get a card at the bottom with a pulsing arrow at the share button; Chrome users get it at the top, arrow pointing at the address bar.
 
 ## The distribution machine
 
@@ -68,4 +96,25 @@ Losing is the growth strategy. Every ending produces two share surfaces — the 
 
 The repo is half game, half immune system. Three asserting Playwright tests (smoke, playthrough, death) gate every commit. Nine standing probes grep-gate the legal lines — parody celebrity names may exist as draw-only cameos but can never reach a share surface; real-startup billboard names are consent-tracked in a ledger. Two bot profiles play the entire game end-to-end nightly — a frame-tight "clean" speedrunner and a "casual" tourist that reads signs and falls in pits — with death budgets. A CI sweep re-runs everything every four hours, scans for leaked API keys by value-shape, and audits its own dependencies. And when it matters, fleets of AI agents playtest it: ten SF-archetype personas (a skeptical HN graybeard, a Gen-Z thumb-gamer, a VC associate rating the badge's flex value) whose 15-item consensus backlog shipped in one night, and an eight-agent integration sweep that logged 162 passes and caught five bugs — including one where a misplaced code comment silently ate an investor's name, so a *perfect* coffee chat paid $0 while a mediocre one paid $50. Which, honestly, the game itself would consider canon.
 
+## Repo map
+
+| Path | What |
+|---|---|
+| `index.html` | The entire game — one file, vanilla JS + canvas |
+| `about.html` | This writeup, as a styled static page |
+| `api/` | Serverless functions: leaderboard, per-run share card, result page |
+| `manifest.json` · `sw.js` | PWA install + offline cache (optional) |
+| `test/` | Playwright suites + the two end-to-end bot profiles |
+| `qa/` | Probes, CI sweep, and evidence screenshots |
+
+---
+
+<div align="center">
+
 One file. No engine. No assets. A city, three funding rounds, a bell — and the most rigorously over-tested joke on the internet.
+
+**[▶ Play SF SPEEDRUN](https://sfspeedrun.com)**
+
+*a dumb side project. do not raise a round about it.*
+
+</div>
