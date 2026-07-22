@@ -978,3 +978,12 @@ hotfixes only until Thursday.
    Paths-probe clipboard expectation widened (file:// bare-domain vs http per-run link — both
    correct). celebs- and leaderboard-probes verified locally in the same-night ci-sweep (they need
    local builds/stubs by design).
+
+## 2026-07-22 — [HOTFIX: phone end card] (launch-day, owner-ordered — freeze-compliant)
+
+Touch end screens were a wall of five equal slabs + oversized math overflowing the viewport. Touch
+layout now: compact valuation block (12px, tight leading), hero action full-width (PIVOT on loss /
+SHARE on win), share+save paired row, view-toggle + title as a small utility row, name field
+compacted, redundant press-and-hold note cut. Desktop layout unchanged (order preserved incl. the
+FINAL-REVIEW §2 losers-share-first amendment). Whole card fits one 393x852 screen (was overflowing).
+Before/after: qa/launch-eve/endcard-*.png. Tests + mobile suite + obituary probe green.

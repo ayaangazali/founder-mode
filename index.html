@@ -123,6 +123,13 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
     margin:6px; cursor:pointer; box-shadow:0 4px 0 #8a6d00;
   }
   #ui button:active { transform:translateY(3px); box-shadow:0 1px 0 #8a6d00; }
+  /* phone end-card (launch-day polish): tighter grid, small utility row */
+  @media (pointer: coarse) {
+    #ui button { font-size:13px; padding:9px 10px; margin:3px; }
+    #ui button.wide { width:86%; }
+    #ui button.mini { font-size:11px; padding:6px 10px; }
+    #ui #cpMsg { font-size:12px; }
+  }
   #ui button.alt { background:#7ce0ff; box-shadow:0 4px 0 #1a6b85; }
   #ui button.alt:active { box-shadow:0 1px 0 #1a6b85; }
   /* GAME BOY SHELL (owner ask 2026-07-21): on touch the phone IS the console.
@@ -4470,32 +4477,39 @@ function showEndUI(won){
 
   // SHARE renders for EVERYONE (owner ask): native share sheet where it exists,
   // and the post text + link ride the clipboard on every click either way
-  const bShare = '<button id="bSh" class="alt">📤 SHARE</button>';
+  const bShare = `<button id="bSh" class="alt${isTouch && won ? ' wide' : ''}">📤 SHARE</button>`;
   const bSave  = `<button id="bDl">${surfaces[cur].save}</button>`;
-  const bRetry = `<button id="bRe">↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button><button id="bHome">🏠 TITLE SCREEN</button>`;
-  const bTog   = `<button id="bTg" style="font-size:12px; padding:6px 10px">${won ? 'view front page' : 'view classic badge'}</button>`;
+  const bHome  = `<button id="bHome"${isTouch ? ' class="mini"' : ''}>🏠 TITLE SCREEN</button>`;
+  const bRe    = `<button id="bRe"${isTouch && !won ? ' class="wide"' : ''}>↻ ${won ? 'RUN IT BACK' : 'PIVOT (RETRY)'}</button>`;
+  const bTog   = `<button id="bTg" ${isTouch ? 'class="mini"' : 'style="font-size:12px; padding:6px 10px"'}>${won ? 'view front page' : 'view classic badge'}</button>`;
   // losers are the comedy's best distributors: PIVOT first, share buttons
-  // immediately second (FINAL-REVIEW §2 amendment — outranks the spec's order)
-  const btns = won ? bShare + bSave + bRetry + bTog : bRetry + bShare + bSave + bTog;
+  // immediately second (FINAL-REVIEW §2 amendment — outranks the spec's order).
+  // Touch: hero action full-width, then the share pair, then a small utility row —
+  // the five equal slabs were a wall (owner, launch day).
+  const btns = isTouch
+    ? (won ? bShare + '<br>' + bSave + bRe + '<br>' + bTog + bHome
+           : bRe + '<br>' + bShare + bSave + '<br>' + bTog + bHome)
+    : (won ? bShare + bSave + bRe + bHome + bTog : bRe + bHome + bShare + bSave + bTog);
 
   const val = valuation(won);
   lastVal = val.v;
   try { const b = lbBest(); if (!b || lastVal > b.val)
     localStorage.setItem('fm_best', JSON.stringify({ val: lastVal, won, t: endTime || playMs })); } catch(e){}
+  const vfs = isTouch ? 12 : 15, vff = isTouch ? 16 : 19; // the math block was shouting on phones
   const valHtml = `
-    <div><div style="display:inline-block; text-align:left; font-weight:bold; font-size:15px; color:#cfd6e4; margin-top:8px; line-height:1.6; background:rgba(0,0,0,.4); padding:8px 16px">
+    <div><div style="display:inline-block; text-align:left; font-weight:bold; font-size:${vfs}px; color:#cfd6e4; margin-top:${isTouch ? 4 : 8}px; line-height:${isTouch ? 1.45 : 1.6}; background:rgba(0,0,0,.4); padding:${isTouch ? '6px 12px' : '8px 16px'}">
       ${val.lines.join('<br>')}<br>
-      ${cof().id !== 'none' ? 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label) + '<br>' : ''}<span style="color:#ffd94a; font-size:19px">= ${val.final}</span>
+      ${cof().id !== 'none' ? 'COFOUNDER: ' + (cof().id === 'mom' ? 'YOUR MOM' : cof().label) + '<br>' : ''}<span style="color:#ffd94a; font-size:${vff}px">= ${val.final}</span>
     </div></div>`;
   // name row always renders (the name stamps the badge + front page);
   // the POST button needs the network, so it's http(s)-only
   const lbHtml = `
     <div style="margin-top:6px">
       <input id="lbName" maxlength="14" placeholder="YOUR NAME" value="${escHtml((() => { try { return localStorage.getItem('fm_name') || ''; } catch(e){ return ''; } })())}"
-        style="width:170px; text-transform:uppercase; font:bold 16px 'Courier New',monospace; padding:8px 6px; text-align:center; border:3px solid #1a1a2e">
+        style="width:${isTouch ? 132 : 170}px; text-transform:uppercase; font:bold ${isTouch ? 14 : 16}px 'Courier New',monospace; padding:${isTouch ? '7px 5px' : '8px 6px'}; text-align:center; border:3px solid #1a1a2e">
       ${LB_ON ? '<button id="lbGo" class="alt">🏆 POST VALUATION</button>' : ''}
     </div>
-    <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:15px; margin-top:6px; line-height:1.6"></div>`;
+    <div id="lbList" style="color:#cfd6e4; font-weight:bold; font-size:${isTouch ? 12 : 15}px; margin-top:6px; line-height:${isTouch ? 1.45 : 1.6}"></div>`;
   const btnRows = `<div style="margin-top:8px">${btns}</div>
     ${isTouch ? '' : '<div style="color:#8d99ae; font-weight:bold; font-size:11px; margin-top:4px">R / SPACE to pivot</div>'}`;
   // short viewports (hidden-scrollbar laptops, landscape phones) sink the name/POST
@@ -4505,7 +4519,7 @@ function showEndUI(won){
   uicard.innerHTML = `
     <img id="endImg" src="${surfaces[cur].url}" style="width:min(720px,86vw,calc((100vh - 250px)*1.9)); border:4px solid ${won ? '#ffd94a' : '#d64550'}; image-rendering:pixelated;">
     ${valHtml}
-    ${isTouch ? '<div style="color:#8d99ae; font-weight:bold; font-size:12px; margin-top:4px">press &amp; hold the badge to save it. yes, really.</div>' : ''}
+
     ${shortView ? lbHtml + btnRows : btnRows + lbHtml}
     <div id="cpMsg" style="color:#7cffa5; font-weight:bold; min-height:20px; margin-top:4px"></div>`;
   ui.style.display = 'flex';
