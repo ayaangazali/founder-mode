@@ -183,7 +183,7 @@ if (/^https?:$/.test(location.protocol) && location.hostname !== 'localhost'
                 box-shadow:inset 0 4px 8px rgba(0,0,0,.5), 0 2px 4px rgba(0,0,0,.4); }
   #touch div#tJ::after, #touch div#tB::after { position:absolute; left:50%; bottom:-22px; transform:translateX(-50%);
                 content:'A'; color:#3d4152; font:bold 14px "Courier New",monospace; letter-spacing:1px; }
-  #touch div#tB::after { content:'B'; }
+  #touch div#tB::after { content:'SHOOT'; font-size:11px; letter-spacing:1px; }
   /* deck-pickup hint: B pulses + a PITCH tag floats over it (time-boxed by deckHintT — not a standing strobe) */
   #touch div#tB.bhint { animation:bpulse .6s ease-in-out infinite; }
   #touch div#tB.bhint::before { content:'PITCH ▼'; position:absolute; left:50%; top:-30px; transform:translateX(-50%);
@@ -675,7 +675,10 @@ if ('ontouchstart' in window) {
   document.getElementById('tB').addEventListener('touchstart', e => {
     e.preventDefault(); e.stopPropagation();
     initAudio();
-    if (state === ST.PLAY) throwDeck(); // B = pitch, only fires while holding a PITCH DECK (same as X)
+    if (state !== ST.PLAY) return;
+    if (deckTut){ deckTutClear = true; }              // tutorial freeze: this tap IS the lesson
+    if (player.deckT > 0) throwDeck();                // SHOOT = pitch, only while holding a PITCH DECK
+    else wantNoDeckMsg = true;                        // empty-handed: the sim answers with a popup
   }, {passive:false});
   cv.addEventListener('touchstart', e => {
     e.preventDefault(); anyKeyPressed = true; idleT = 0; initAudio();
@@ -1446,7 +1449,8 @@ function throwDeck(){
 
 let player, cam, coins, enemies, powers, bosses, shots, parts, popups, raised, hearts, maxHearts, checkpoint, bellDone;
 let deckTipAt = 0; // playMs when a PITCH DECK first entered camera (persona backlog #6: teach the verb when the noun appears)
-let deckHintT = 0; // frames the B button pulses after a deck pickup (touch: the verb needs a finger)
+let deckHintT = 0; // frames the SHOOT button pulses after a deck pickup (touch: the verb needs a finger)
+let deckTut = false, deckTutClear = false, wantNoDeckMsg = false; // SHOOT tutorial freeze + handler->sim flag handoffs
 // PIVOT roulette (persona backlog #15, from the founder persona): the retry button's
 // joke is now mechanically true — every pivot renames the company. Invented names only.
 const PIVOTS = ['UNDISCLOSED.AI','VIBESHIFT','SYNERGYLESS','B2B2C DOT IO','STILL-STEALTH CO',
@@ -1892,9 +1896,18 @@ function update(){
           addPop(pw.x, pw.y-8, 'PITCH DECK — unusable (TEAL FELLOW: you never learned to code)', '#8d99ae', 180);
         } else {
           p.deckT = 60*15; // 15s: covers a full boss fight (playtest)
-          addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! hit B — pitch AT them (15s)'
+          addPop(pw.x, pw.y-8, ('ontouchstart' in window) ? 'PITCH DECK! hit SHOOT (15s)'
                                                           : 'PITCH DECK! press X — pitch AT them (15s)', '#ffd94a', 150);
-          if ('ontouchstart' in window) deckHintT = 240; // pulse B for 4s (owner: point at the fire button)
+          if ('ontouchstart' in window){
+            deckHintT = 240; // pulse SHOOT for 4s (owner: point at the fire button)
+            let seen = false; try { seen = localStorage.getItem('fm_sawshoot') === '1'; } catch(e){}
+            if (!seen){
+              // first deck EVER on this device: freeze the world (max 6s) and point at
+              // the button until they press it — the tap itself resumes play
+              deckTut = true; hitstopT = 360; deckHintT = 360;
+              addPop(pw.x, pw.y - 22, 'SHOOT is live — tap it', '#7cffa5', 200);
+            }
+          }
         }
       }
       if (pw.t === 'angel'){ hearts = Math.max(maxHearts, 3); maxHearts = Math.max(maxHearts, hearts); addPop(pw.x, pw.y-8, 'ANGEL CHECK! RUNWAY REFILLED', '#7cffa5', 150); }
@@ -4020,7 +4033,7 @@ function drawHUD(){
   else if (player.coffeeT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('CAFFEINATED ' + Math.ceil(player.coffeeT/60) + 's', camCropX + 12, 44); }
   else if (player.matchaT > 0){ cx.fillStyle = '#39c46d'; cx.fillText("MATCHA'D " + Math.ceil(player.matchaT/60) + 's', camCropX + 12, 44); }
   else if (player.slowT > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('ENTERPRISE PROCESS ' + Math.ceil(player.slowT/60) + 's', camCropX + 12, 44); }
-  if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText((('ontouchstart' in window) ? 'PITCHING · B fires · ' : 'PITCHING · X fires · ') + Math.ceil(player.deckT/60) + 's', camCropX + 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
+  if (player.deckT > 0){ cx.fillStyle = '#ffd94a'; cx.fillText((('ontouchstart' in window) ? 'PITCHING · SHOOT fires · ' : 'PITCHING · X fires · ') + Math.ceil(player.deckT/60) + 's', camCropX + 12, player.coffeeT > 0 || player.ycT > 0 || player.matchaT > 0 || player.slowT > 0 ? 54 : 44); }
   if (player.shield > 0){ cx.fillStyle = '#7ce0ff'; cx.fillText('GOOD PRESS ✓', camCropX + 12, 64); }
   if (bmSyncT > 0){ cx.fillStyle = '#8d99ae'; cx.fillText('BOARD SYNC ' + Math.ceil(bmSyncT / 60) + 's', camCropX + 12, 94); }
   if (player.budsT > 0){ cx.fillStyle = '#c58bff'; cx.fillText('FLOW STATE · coins ×2 · ' + Math.ceil(player.budsT/60) + 's', camCropX + 12, 84); }
@@ -4037,7 +4050,7 @@ function drawHUD(){
   const deckTipUp = deckTipAt && playMs >= deckTipAt && playMs < deckTipAt + 5000;
   if ((playMs < 6000 || deckTipUp) && !chat && !interview){
     const ct = deckTipUp
-      ? (('ontouchstart' in window) ? 'that briefcase = your PITCH DECK — grab it, then B to pitch'
+      ? (('ontouchstart' in window) ? 'that briefcase = your PITCH DECK — grab it, then SHOOT'
                                     : 'that briefcase = your PITCH DECK — grab it, then X to pitch')
       : (('ontouchstart' in window) ? '◀ ▶ move · A jump · stomp enemies'
                                     : '←→ move · SPACE jump · stomp enemies');
@@ -4711,6 +4724,17 @@ function stepGame(){
     document.getElementById('lbPanel').style.display = 'none';
     if ('ontouchstart' in window) document.getElementById('touch').style.display = 'block'; // belt to goHome's suspenders
     reset(false); state = ST.PLAY;
+  }
+  if (deckTutClear){ // the tutorial tap: unfreeze, remember the lesson
+    deckTut = false; deckTutClear = false; hitstopT = 0; deckHintT = 120;
+    try { localStorage.setItem('fm_sawshoot', '1'); } catch(e){}
+  }
+  if (wantNoDeckMsg){ // SHOOT with empty hands: say why nothing happened
+    wantNoDeckMsg = false;
+    if (!popups.some(q => q.txt.includes('no PITCH DECK'))){
+      addPop(player.x, player.y - 20, 'no PITCH DECK — grab a briefcase first', '#8d99ae', 110);
+      beep(140, .08, 'triangle', .06);
+    }
   }
   if (shakeT > 0) shakeT--;                // decays here, not in draw() — sim owns all state
   if (endGraceT > 0 && state !== ST.PLAY) endGraceT--;

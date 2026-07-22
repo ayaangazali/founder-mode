@@ -1002,3 +1002,14 @@ arms). Now the whole cross ROCKS toward the held arm (perspective rotateY via .p
 from recompute() — real finger state, works mid-slide), A/B domes get deeper gradients + specular
 inset and visibly sink on press (translateY + scale + brightness), pills press into their wells.
 Mobile suite green.
+
+## 2026-07-22 — [HOTFIX: the SHOOT button teaches itself]
+
+Owner asks, all three: (1) the pitch button's shell label reads SHOOT (was B). (2) Pressing it
+empty-handed answers 'no PITCH DECK — grab a briefcase first' + a dull whiff (deduped, sim-side via
+a handler→update flag). (3) The FIRST deck pickup ever on a touch device freeze-frames the world
+(hitstop, 6s max), pops 'SHOOT is live — tap it', and pulses the button — the tap that ends the
+lesson also fires the first pitch; remembered in localStorage so it never repeats. Verified
+end-to-end: empty-tap message, frozen playMs during tutorial, tap→resume+shot+persisted, second
+pickup doesn't freeze. Copy updated everywhere the touch verb is named. Tests + mobile + minigames
+green.
