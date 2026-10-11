@@ -12538,3 +12538,33 @@
 
 ---
 
+## 2026-10-11 05:46 UTC · main @ 7b4db5e
+
+**Standing sweeps**
+- ✓ canon grep clean
+- ✓ secret scan clean (no key/JWT value shapes in tracked files)
+- npm audit: 1 moderate severity vulnerability
+- ✓ leaderboard plausibility clamps intact
+
+**Test battery (hard gates)**
+- ✓ smoketest
+- ❌ playtest FAILED (see log)
+- ✓ deathtest
+- ✓ billboards-probe
+- ✓ celebs-probe
+- ✓ corgi-probe
+- ✓ leaderboard-probe
+- ✓ minigames-probe
+- ✓ moments-probe
+- ✓ mood-probe
+- ✓ obituary-probe
+- ✓ verify-daily-seed
+
+**Fullrun bot (advisory — never fails the gate)**
+- clean profile PASS · 4 recoveries
+
+**RESULT: HARD GATE FAILED ❌ — triage before next deploy**
+
+
+---
+
